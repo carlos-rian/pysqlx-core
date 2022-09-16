@@ -1,0 +1,46 @@
+[project]
+name = "pysqlx-core"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+[tool.poetry]
+name = "pysqlx-core"
+version = "0.1.0"
+description = ""
+authors = ["carlos-rian <crian.rian@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+maturin = "^0.13.3"
+
+[tool.poetry.dev-dependencies]
+ipython = "^8.5.0"
+black = "^22.8.0"
+isort = "^5.10.1"
+
+[tool.maturin]
+bindings = "pyo3"
+python-source = "pysqlx_core"
+
+[build-system]
+requires = ["maturin>=0.13,<0.14"]
+build-backend = "maturin"
+
+[tool.black]
+color = true
+line-length = 120
+target-version = ['py37', 'py38', 'py39', 'py310']
+skip-string-normalization = true
+skip-magic-trailing-comma = true
+
+[tool.isort]
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+combine_as_imports = true
+color_output = true
