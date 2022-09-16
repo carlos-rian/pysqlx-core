@@ -16,6 +16,7 @@ authors = ["carlos-rian <crian.rian@gmail.com>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 maturin = "^0.13.3"
+isort = {version = "^5.10.1", extras = ["colors"]}
 
 [tool.poetry.dev-dependencies]
 ipython = "^8.5.0"

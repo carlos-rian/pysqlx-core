@@ -3,7 +3,7 @@ use pyo3::prelude::*;
 use pyo3;
 
 
-#[pyclass(module="pysqlx_core._core")]
+#[pyclass(module = "pysqlx_core._core")]
 #[derive(Debug, Clone)]
 pub struct Test {
     #[pyo3(get, set)]

@@ -1,6 +1,0 @@
-from typing_extensions import Self
-
-
-class Test:
-    def __new__(name: str, age: int, status: bool) -> Self: ...
-    def __str__(self) -> str: ...
