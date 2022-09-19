@@ -1,5 +1,6 @@
+pub mod db;
+
 use pyo3::prelude::*;
-//use pyo3::exceptions::PyException;
 use pyo3;
 
 
@@ -26,6 +27,10 @@ impl Test {
     }
     fn __str__(&self) -> String {
         format!("Test(name={}, age={}, status={}", self.name, self.age, self.status)
+    }
+
+    fn __repr__(&self) -> String {
+        format!("Repr Test(name={}, age={}, status={}", self.name, self.age, self.status)
     }
 }
 

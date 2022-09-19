@@ -6,10 +6,31 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "pysqlx_core"
-crate-type = ["cdylib"]
-
-[dependencies]
-pyo3 = { version = "0.17.1", features = ["extension-module"] }
+crate-type = ["cdylib", "rlib"]
 
 [package.metadata.maturin]
 python-source = "pysqlx_core"
+
+[dependencies]
+pyo3 = { version = "0.17.1", features = ["extension-module"] }
+tokio = { version = "1", features = ["full"] }
+
+[dependencies.sqlx]
+version = "0.6.2"
+features = [
+    "runtime-tokio-rustls",
+    "postgres",
+    "mysql",
+    "mssql",
+    "sqlite",
+    "any",
+    "macros",
+    "uuid",
+    "chrono",
+    "time",
+    "bstr",
+    "bigdecimal",
+    "ipnetwork",
+    "json",
+    "tls"
+]
