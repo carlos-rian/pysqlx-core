@@ -1,21 +1,24 @@
 use pysqlx_core::db::uri::Uri;
-use pysqlx_core::db::uri::Provider;
-use pysqlx_core::db::uri::PySQLXProviderError;
+use pysqlx_core::db::conn::Conn;
+use std::error::Error;
+use sqlx::Row;
+use sqlx::postgres::types::;
 
-fn connect(prov: &str, uri: &str) -> Result<Uri, PySQLXProviderError> {
-    let provider = match prov {
-        "sqlite" => Provider::Sqlite,
-        "mysql" => Provider::Mysql,
-        "mssql" => Provider::Mssql,
-        "postgresql" => Provider::Postgresql,
-        _ => return Err(PySQLXProviderError::Invalid)
 
-    };
 
-    Ok(Uri{uri: uri.to_string(), provider: provider})
-}
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>>{
+    let uri = Uri::new("postgresql", "postgresql://postgres:password@localhost:5432/fastapi_prisma")?;
+    let conn = Conn::new(uri);
+    let mut exec = conn.connect().await?;
+    let rows = sqlx::query("select * from peoples").fetch_all(&mut exec).await?;
 
-fn main(){
-    let uri = connect("sqlite", "sqlite::memory:");
-    print!("{:?}", uri);
+    for row in rows{
+        let columns = row.columns();
+        for column in columns {
+            println!("{:?}", column);
+        }
+    }
+
+    Ok(())
 }
