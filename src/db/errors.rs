@@ -5,7 +5,7 @@ use std::error;
 
 #[pyclass(extends=PyException)]
 pub struct DefaultError {
-    message: String,
+    pub message: String,
 }
 
 impl fmt::Debug for DefaultError {

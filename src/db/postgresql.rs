@@ -1,11 +1,13 @@
 use super::errors::DefaultError;
 use super::params::Params;
+use super::serializer::row_to_json;
 use sqlx::PgConnection;
 use sqlx::Connection as Conn;
+use sqlx::postgres::PgRow;
+use sqlx::Error;
 
 
 pub struct Postgresql {
-    params: Params,
     conn: PgConnection
 }
 
@@ -15,16 +17,15 @@ impl Postgresql {
             Ok(s) => s,
             Err(e) => return Err(DefaultError { message: e.to_string()})
         };
-        Ok(Self { params, conn })
+        Ok(Self { conn })
     }
     pub async fn disconnect(self) {
         match self.conn.close().await {
             _ => "ok",
         };
     }
-    pub async fn query(&self){//, q: str) {
-        let q = "SELECT * FROM peoples";
-        let records = sqlx::query!(q).fetch_all(&mut self.conn).await?;
-        return records
+    pub async fn query(&mut self, sql: &str) -> Result<Vec, Error>{
+        let records = sqlx::query(sql).fetch_all(&mut self.conn).await?;
+        Ok(records.iter().map(|row| row_to_json(row)).collect())
     }
 }
