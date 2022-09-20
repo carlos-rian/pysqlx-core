@@ -1,3 +1,3 @@
-pub mod base;
-pub mod uri;
-pub mod conn;
+pub mod params;
+pub mod postgresql;
+mod errors;

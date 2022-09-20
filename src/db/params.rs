@@ -14,12 +14,12 @@ pub enum Provider {
 }
 
 #[derive(Debug)]
-pub struct Uri {
+pub struct Params {
     pub provider: Provider,
     pub uri: String
 }
 
-impl Uri {
+impl Params {
     pub fn new(provider: &str, uri: &str) -> Result<Self, PySqlxUriError> { 
         let provider_ = match provider {
             "sqlite" => Provider::Sqlite,
