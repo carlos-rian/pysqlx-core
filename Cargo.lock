@@ -926,6 +926,7 @@ dependencies = [
  "pyo3",
  "sqlx",
  "tokio",
+ "tokio-stream",
 ]
 
 [[package]]
