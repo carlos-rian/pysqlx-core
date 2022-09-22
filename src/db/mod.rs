@@ -1,5 +1,5 @@
 pub mod params;
-pub mod postgresql;
+pub mod conn;
 mod errors;
 pub mod serializer;
 pub mod utils;

@@ -1,16 +1,16 @@
 
-use sqlx::postgres::{PgRow};
+use sqlx::any::AnyRow;
 use sqlx::{Decode};
 use sqlx;
 use serde_json::{ Map, Value };
 use sqlx::{ Row, Column };
 use sqlx::ValueRef;
 use sqlx::TypeInfo;
-//use sqlx::any::AnyRow;
-
 use super::utils::add_value_to_map;
+//use uuid::Uuid;
 
-pub fn row_to_json(row: PgRow) -> Value {
+
+pub fn row_to_json<'r>(row: AnyRow) -> Value {
     use Value::{Null, Object};
 
     let columns = row.columns();
@@ -36,13 +36,33 @@ pub fn row_to_json(row: PgRow) -> Value {
                 "BOOL" | "BOOLEAN" => <bool as Decode<sqlx::any::Any>>::decode(raw_value)
                     .unwrap_or_default()
                     .into(),
-                _ => <String as Decode<sqlx::any::Any>>::decode(raw_value)
+                //"JSON" | "JSON[]" | "JSONB" | "JSONB[]" if !raw_value.type_info().to_string().contains("Mssql") => {
+                //    <&[u8] as Decode<sqlx::any::Any>>::decode(raw_value)
+                //        .and_then(|rv| {
+                //            serde_json::from_slice::<Value>(rv).map_err(|e| {
+                //                Box::new(e) as Box<dyn std::error::Error + Sync + Send>
+                //            })
+                //        })
+                //        .unwrap_or_default()
+                //}
+                // Deserialize as a string by default
+                "UUID" => {
+                    let x = <String as Decode<sqlx::any::Any>>::decode(raw_value).unwrap_or_default().into();
+                    println!("v={}", x);
+                    x
+                }
+                _ => {
+                    println!("{}", raw_value.type_info());
+                    <String as Decode<sqlx::any::Any>>::decode(raw_value)
                     .unwrap_or_default()
-                    .into(),
+                    .into()
+                },
             },
-            Ok(_null) => Null,
+            Ok(_null) => {
+                Null
+            },
             Err(e) => {
-                //log::warn!("Unable to extract value from row: {:?}", e);
+                println!("Unable to extract value from row: {:?}", e);
                 Null
             }
         };

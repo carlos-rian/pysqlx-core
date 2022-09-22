@@ -1,19 +1,19 @@
 use super::errors::DefaultError;
 use super::params::Params;
+use serde_json::Value;
 use super::serializer::row_to_json;
-use sqlx::PgConnection;
+use sqlx::AnyConnection;
 use sqlx::Connection as Conn;
-use sqlx::postgres::PgRow;
 use sqlx::Error;
 
 
-pub struct Postgresql {
-    conn: PgConnection
+pub struct Connection {
+    conn: AnyConnection
 }
 
-impl Postgresql {
+impl Connection {
     pub async fn new(params: Params) -> Result<Self, DefaultError> { 
-        let conn = match PgConnection::connect(&params.uri.as_str()).await{
+        let conn = match AnyConnection::connect(&params.uri.as_str()).await{
             Ok(s) => s,
             Err(e) => return Err(DefaultError { message: e.to_string()})
         };
@@ -24,8 +24,8 @@ impl Postgresql {
             _ => "ok",
         };
     }
-    pub async fn query(&mut self, sql: &str) -> Result<Vec, Error>{
-        let records = sqlx::query(sql).fetch_all(&mut self.conn).await?;
-        Ok(records.iter().map(|row| row_to_json(row)).collect())
+    pub async fn query(&mut self, sql: &str) -> Result<Value, Error>{
+        let row = sqlx::query(sql).fetch_one(&mut self.conn).await?;
+        Ok(row_to_json(row))
     }
 }
