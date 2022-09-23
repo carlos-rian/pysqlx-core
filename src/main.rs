@@ -1,16 +1,34 @@
-use pysqlx_core::db::params::Params;
-use pysqlx_core::db::conn::Connection;
-use std::error::Error;
-//use sqlx::Row;
+use async_obdc_mssql_core::base::error::ConversionFailure;
+//use async_obdc_mssql_core::base::record::try_convert;
+use quaint::{prelude::*, single::Quaint};
 
-
-
+async fn sql_test() -> Result<(), ConversionFailure> {
+    let conn = match Quaint::new("postgresql://postgres:password@localhost:5432/fastapi_prisma?schema=public").await {
+        Ok(r) => r,
+        Err(_) => return Err(
+          ConversionFailure {
+              from: "Infinity",
+              to: "",
+          })  
+      };
+    let sql = "select * from peoples;";
+    let result = match conn.query_raw(sql, &[]).await {
+      Ok(r) => r,
+      Err(_) => return Err(
+        ConversionFailure {
+            from: "Infinity",
+            to: "",
+        })  
+    };
+    for row in result.into_iter() {
+        println!("{:#?}", row)
+    }
+    //let rows = try_convert(result)?;
+    //println!("{:#?}", rows);
+    Ok(())
+}
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>>{
-    let uri = Params::new("postgresql", "postgresql://postgres:password@localhost:5432/fastapi_prisma")?;
-    let mut db = Connection::new(uri).await?;
-    let sql = "select id, name from peoples";
-    let row = db.query(sql).await?;
-    println!("{}", row);
+async fn main() -> Result<(), ConversionFailure> {
+    sql_test().await?;
     Ok(())
 }
