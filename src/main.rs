@@ -1,4 +1,4 @@
-use async_obdc_mssql_core::base::error::ConversionFailure;
+use pysqlx_core::base::error::ConversionFailure;
 //use async_obdc_mssql_core::base::record::try_convert;
 use quaint::{prelude::*, single::Quaint};
 
