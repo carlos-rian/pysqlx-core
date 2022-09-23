@@ -20,8 +20,11 @@ async fn sql_test() -> Result<(), ConversionFailure> {
             to: "",
         })  
     };
-    for row in result.into_iter() {
-        println!("{:#?}", row)
+    let columns: Vec<String> = result.columns().iter().map(|c| c.to_string()).collect();
+    for (index, row) in result.into_iter().enumerate() {
+        for column in &columns { 
+            println!("line: {:?}{:?}", index, row.get(column.as_str()))
+        }
     }
     //let rows = try_convert(result)?;
     //println!("{:#?}", rows);
