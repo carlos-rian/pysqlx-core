@@ -1,4 +1,3 @@
-//use std::error::Error;
 use std::fmt::Display;
 use thiserror::Error;
 
@@ -7,7 +6,6 @@ pub struct ConversionFailure {
     pub from: &'static str,
     pub to: &'static str,
 }
-
 
 impl Display for ConversionFailure {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

@@ -1,32 +1,26 @@
+use super::error::ConversionFailure;
+use super::types::{PysqlxListValue, PysqlxResult};
 use bigdecimal::{BigDecimal, FromPrimitive};
 use chrono::prelude::*;
-use serde::{ser::Serializer, Deserialize, Deserializer, Serialize};
 use serde::de::Unexpected;
+use serde::{ser::Serializer, Deserialize, Deserializer, Serialize};
 use std::{convert::TryFrom, fmt, str::FromStr};
 use uuid::Uuid;
 
-use super::error::ConversionFailure;
-
-
-pub type PrismaListValue = Vec<PrismaValue>;
-pub type PrismaValueResult<T> = std::result::Result<T, ConversionFailure>;
-
-
-
 #[derive(Debug, PartialEq, Clone, Eq, Hash, Serialize, Deserialize, PartialOrd, Ord)]
 #[serde(untagged)]
-pub enum PrismaValue {
+pub enum PysqlxValue {
     String(String),
     Boolean(bool),
     Enum(String),
     Int(i64),
     Uuid(Uuid),
-    List(PrismaListValue),
+    List(PysqlxListValue),
     Json(String),
     Xml(String),
 
     /// A collections of key-value pairs constituting an object.
-    Object(Vec<(String, PrismaValue)>),
+    Object(Vec<(String, PysqlxValue)>),
 
     #[serde(serialize_with = "serialize_null")]
     Null,
@@ -34,7 +28,10 @@ pub enum PrismaValue {
     #[serde(serialize_with = "serialize_date")]
     DateTime(DateTime<FixedOffset>),
 
-    #[serde(serialize_with = "serialize_decimal", deserialize_with = "deserialize_decimal")]
+    #[serde(
+        serialize_with = "serialize_decimal",
+        deserialize_with = "deserialize_decimal"
+    )]
     Float(BigDecimal),
 
     #[serde(serialize_with = "serialize_bigint")]
@@ -58,77 +55,9 @@ pub fn encode_bytes(bytes: &[u8]) -> String {
     base64::encode(bytes)
 }
 
-pub fn decode_bytes(s: &str) -> PrismaValueResult<Vec<u8>> {
-    base64::decode(s).map_err(|_| ConversionFailure::new("base64 encoded bytes", "PrismaValue::Bytes"))
-}
-
-impl TryFrom<serde_json::Value> for PrismaValue {
-    type Error = super::error::ConversionFailure;
-
-    fn try_from(v: serde_json::Value) -> PrismaValueResult<Self> {
-        match v {
-            serde_json::Value::String(s) => Ok(PrismaValue::String(s)),
-            serde_json::Value::Array(v) => {
-                let vals: PrismaValueResult<Vec<PrismaValue>> = v.into_iter().map(PrismaValue::try_from).collect();
-                Ok(PrismaValue::List(vals?))
-            }
-            serde_json::Value::Null => Ok(PrismaValue::Null),
-            serde_json::Value::Bool(b) => Ok(PrismaValue::Boolean(b)),
-            serde_json::Value::Number(num) => {
-                if num.is_i64() {
-                    Ok(PrismaValue::Int(num.as_i64().unwrap()))
-                } else {
-                    let fl = num.as_f64().unwrap();
-                    let dec = BigDecimal::from_f64(fl).unwrap().normalized();
-
-                    Ok(PrismaValue::Float(dec))
-                }
-            }
-            serde_json::Value::Object(obj) => match obj.get("prisma__type").as_ref().and_then(|s| s.as_str()) {
-                Some("date") => {
-                    let value = obj
-                        .get("prisma__value")
-                        .and_then(|v| v.as_str())
-                        .ok_or_else(|| ConversionFailure::new("JSON date object", "PrismaValue"))?;
-
-                    let date = DateTime::parse_from_rfc3339(value)
-                        .map_err(|_| ConversionFailure::new("JSON date object", "PrismaValue"))?;
-
-                    Ok(PrismaValue::DateTime(date))
-                }
-                Some("bigint") => {
-                    let value = obj
-                        .get("prisma__value")
-                        .and_then(|v| v.as_str())
-                        .ok_or_else(|| ConversionFailure::new("JSON bigint value", "PrismaValue"))?;
-
-                    i64::from_str(value)
-                        .map(PrismaValue::BigInt)
-                        .map_err(|_| ConversionFailure::new("JSON bigint value", "PrismaValue"))
-                }
-                Some("decimal") => {
-                    let value = obj
-                        .get("prisma__value")
-                        .and_then(|v| v.as_str())
-                        .ok_or_else(|| ConversionFailure::new("JSON decimal value", "PrismaValue"))?;
-
-                    BigDecimal::from_str(value)
-                        .map(PrismaValue::Float)
-                        .map_err(|_| ConversionFailure::new("JSON decimal value", "PrismaValue"))
-                }
-                Some("bytes") => {
-                    let value = obj
-                        .get("prisma__value")
-                        .and_then(|v| v.as_str())
-                        .ok_or_else(|| ConversionFailure::new("JSON bytes value", "PrismaValue"))?;
-
-                    decode_bytes(value).map(PrismaValue::Bytes)
-                }
-
-                _ => Ok(PrismaValue::Json(serde_json::to_string(&obj).unwrap())),
-            },
-        }
-    }
+pub fn decode_bytes(s: &str) -> PysqlxResult<Vec<u8>> {
+    base64::decode(s)
+        .map_err(|_| ConversionFailure::new("base64 encoded bytes", "PysqlxValue::Bytes"))
 }
 
 fn serialize_date<S>(date: &DateTime<FixedOffset>, serializer: S) -> Result<S::Ok, S::Error>
@@ -163,7 +92,11 @@ fn serialize_decimal<S>(decimal: &BigDecimal, serializer: S) -> Result<S::Ok, S:
 where
     S: Serializer,
 {
-    decimal.to_string().parse::<f64>().unwrap().serialize(serializer)
+    decimal
+        .to_string()
+        .parse::<f64>()
+        .unwrap()
+        .serialize(serializer)
 }
 
 fn deserialize_decimal<'de, D>(deserializer: D) -> Result<BigDecimal, D::Error>
@@ -179,7 +112,10 @@ impl<'de> serde::de::Visitor<'de> for BigDecimalVisitor {
     type Value = BigDecimal;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(formatter, "a BigDecimal type representing a fixed-point number")
+        write!(
+            formatter,
+            "a BigDecimal type representing a fixed-point number"
+        )
     }
 
     fn visit_i64<E>(self, value: i64) -> Result<BigDecimal, E>
@@ -217,76 +153,76 @@ impl<'de> serde::de::Visitor<'de> for BigDecimalVisitor {
     }
 }
 
-impl PrismaValue {
+impl PysqlxValue {
     pub fn as_enum_value(&self) -> Option<&str> {
         match self {
-            PrismaValue::Enum(s) => Some(s.as_str()),
+            PysqlxValue::Enum(s) => Some(s.as_str()),
             _ => None,
         }
     }
 
     pub fn as_string(&self) -> Option<&str> {
         match self {
-            PrismaValue::String(s) => Some(s),
+            PysqlxValue::String(s) => Some(s),
             _ => None,
         }
     }
 
     pub fn is_null(&self) -> bool {
-        matches!(self, PrismaValue::Null)
+        matches!(self, PysqlxValue::Null)
     }
 
     pub fn into_string(self) -> Option<String> {
         match self {
-            PrismaValue::String(s) => Some(s),
-            PrismaValue::Enum(ev) => Some(ev),
+            PysqlxValue::String(s) => Some(s),
+            PysqlxValue::Enum(ev) => Some(ev),
             _ => None,
         }
     }
 
-    pub fn into_list(self) -> Option<PrismaListValue> {
+    pub fn into_list(self) -> Option<PysqlxListValue> {
         match self {
-            PrismaValue::List(l) => Some(l),
+            PysqlxValue::List(l) => Some(l),
             _ => None,
         }
     }
 
-    pub fn new_float(float: f64) -> PrismaValue {
-        PrismaValue::Float(BigDecimal::from_f64(float).unwrap())
+    pub fn new_float(float: f64) -> PysqlxValue {
+        PysqlxValue::Float(BigDecimal::from_f64(float).unwrap())
     }
 
-    pub fn new_datetime(datetime: &str) -> PrismaValue {
-        PrismaValue::DateTime(DateTime::parse_from_rfc3339(datetime).unwrap())
+    pub fn new_datetime(datetime: &str) -> PysqlxValue {
+        PysqlxValue::DateTime(DateTime::parse_from_rfc3339(datetime).unwrap())
     }
 
     pub fn as_boolean(&self) -> Option<&bool> {
         match self {
-            PrismaValue::Boolean(bool) => Some(bool),
+            PysqlxValue::Boolean(bool) => Some(bool),
             _ => None,
         }
     }
 }
 
-impl fmt::Display for PrismaValue {
+impl fmt::Display for PysqlxValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            PrismaValue::String(x) => x.fmt(f),
-            PrismaValue::Float(x) => x.fmt(f),
-            PrismaValue::Boolean(x) => x.fmt(f),
-            PrismaValue::DateTime(x) => x.fmt(f),
-            PrismaValue::Enum(x) => x.fmt(f),
-            PrismaValue::Int(x) => x.fmt(f),
-            PrismaValue::Null => "null".fmt(f),
-            PrismaValue::Uuid(x) => x.fmt(f),
-            PrismaValue::Json(x) => x.fmt(f),
-            PrismaValue::Xml(x) => x.fmt(f),
-            PrismaValue::BigInt(x) => x.fmt(f),
-            PrismaValue::List(x) => {
+            PysqlxValue::String(x) => x.fmt(f),
+            PysqlxValue::Float(x) => x.fmt(f),
+            PysqlxValue::Boolean(x) => x.fmt(f),
+            PysqlxValue::DateTime(x) => x.fmt(f),
+            PysqlxValue::Enum(x) => x.fmt(f),
+            PysqlxValue::Int(x) => x.fmt(f),
+            PysqlxValue::Null => "null".fmt(f),
+            PysqlxValue::Uuid(x) => x.fmt(f),
+            PysqlxValue::Json(x) => x.fmt(f),
+            PysqlxValue::Xml(x) => x.fmt(f),
+            PysqlxValue::BigInt(x) => x.fmt(f),
+            PysqlxValue::List(x) => {
                 let as_string = format!("{:?}", x);
                 as_string.fmt(f)
             }
-            PrismaValue::Bytes(b) => encode_bytes(b).fmt(f),
-            PrismaValue::Object(pairs) => {
+            PysqlxValue::Bytes(b) => encode_bytes(b).fmt(f),
+            PysqlxValue::Object(pairs) => {
                 let joined = pairs
                     .iter()
                     .map(|(key, value)| format!(r#""{}": {}"#, key, value))
@@ -299,82 +235,82 @@ impl fmt::Display for PrismaValue {
     }
 }
 
-impl From<&str> for PrismaValue {
+impl From<&str> for PysqlxValue {
     fn from(s: &str) -> Self {
-        PrismaValue::from(s.to_string())
+        PysqlxValue::from(s.to_string())
     }
 }
 
-impl From<String> for PrismaValue {
+impl From<String> for PysqlxValue {
     fn from(s: String) -> Self {
-        PrismaValue::String(s)
+        PysqlxValue::String(s)
     }
 }
 
-impl TryFrom<f64> for PrismaValue {
+impl TryFrom<f64> for PysqlxValue {
     type Error = ConversionFailure;
 
-    fn try_from(f: f64) -> PrismaValueResult<PrismaValue> {
+    fn try_from(f: f64) -> PysqlxResult<PysqlxValue> {
         BigDecimal::from_f64(f)
-            .map(PrismaValue::Float)
+            .map(PysqlxValue::Float)
             .ok_or_else(|| ConversionFailure::new("f64", "Decimal"))
     }
 }
 
-impl From<bool> for PrismaValue {
+impl From<bool> for PysqlxValue {
     fn from(b: bool) -> Self {
-        PrismaValue::Boolean(b)
+        PysqlxValue::Boolean(b)
     }
 }
 
-impl From<i32> for PrismaValue {
+impl From<i32> for PysqlxValue {
     fn from(i: i32) -> Self {
-        PrismaValue::Int(i64::from(i))
+        PysqlxValue::Int(i64::from(i))
     }
 }
 
-impl From<i64> for PrismaValue {
+impl From<i64> for PysqlxValue {
     fn from(i: i64) -> Self {
-        PrismaValue::Int(i)
+        PysqlxValue::Int(i)
     }
 }
 
-impl From<usize> for PrismaValue {
+impl From<usize> for PysqlxValue {
     fn from(u: usize) -> Self {
-        PrismaValue::Int(u as i64)
+        PysqlxValue::Int(u as i64)
     }
 }
 
-impl From<Uuid> for PrismaValue {
+impl From<Uuid> for PysqlxValue {
     fn from(s: Uuid) -> Self {
-        PrismaValue::Uuid(s)
+        PysqlxValue::Uuid(s)
     }
 }
 
-impl From<PrismaListValue> for PrismaValue {
-    fn from(s: PrismaListValue) -> Self {
-        PrismaValue::List(s)
+impl From<PysqlxListValue> for PysqlxValue {
+    fn from(s: PysqlxListValue) -> Self {
+        PysqlxValue::List(s)
     }
 }
 
-impl TryFrom<PrismaValue> for i64 {
+impl TryFrom<PysqlxValue> for i64 {
     type Error = ConversionFailure;
 
-    fn try_from(value: PrismaValue) -> PrismaValueResult<i64> {
+    fn try_from(value: PysqlxValue) -> PysqlxResult<i64> {
         match value {
-            PrismaValue::Int(i) => Ok(i),
-            _ => Err(ConversionFailure::new("PrismaValue", "i64")),
+            PysqlxValue::Int(i) => Ok(i),
+            _ => Err(ConversionFailure::new("PysqlxValue", "i64")),
         }
     }
 }
 
-impl TryFrom<PrismaValue> for String {
+impl TryFrom<PysqlxValue> for String {
     type Error = ConversionFailure;
 
-    fn try_from(pv: PrismaValue) -> PrismaValueResult<String> {
+    fn try_from(pv: PysqlxValue) -> PysqlxResult<String> {
         match pv {
-            PrismaValue::String(s) => Ok(s),
-            _ => Err(ConversionFailure::new("PrismaValue", "String")),
+            PysqlxValue::String(s) => Ok(s),
+            _ => Err(ConversionFailure::new("PysqlxValue", "String")),
         }
     }
 }
