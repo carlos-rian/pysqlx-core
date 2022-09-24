@@ -1,22 +1,26 @@
-use std::collections::HashMap;
 //use std::option::Option;
 use super::base::error::ConversionFailure;
-use crate::{base::row::PysqlxValue, value::to_value};
-use quaint::connector::ResultSet;
+use crate::{base::types::PysqlxRow, value::to_value};
+use quaint::{connector::ResultSet, prelude::ResultRow};
 
-pub fn try_convert(
-    result_set: ResultSet,
-) -> Result<Vec<HashMap<String, PysqlxValue>>, ConversionFailure> {
+pub fn try_convert(result_set: ResultSet) -> Result<Vec<Vec<PysqlxRow>>, ConversionFailure> {
     let columns: Vec<String> = result_set.columns().iter().map(|c| c.to_string()).collect();
-    let mut new_rows: Vec<HashMap<String, PysqlxValue>> = Vec::new();
+    let mut new_rows: Vec<Vec<PysqlxRow>> = Vec::new();
 
-    if let Some(row) = result_set.into_iter().next() {
-        let mut new_row: HashMap<String, PysqlxValue> = HashMap::new();
-        for (i, val) in row.into_iter().enumerate() {
-            let value = to_value(val)?;
-            new_row.insert(columns[i].clone(), value);
-        }
-        new_rows.push(new_row);
+    for row in result_set.into_iter() {
+        new_rows.push(try_convert_row(&columns, row)?);
     }
     Ok(new_rows)
+}
+
+pub fn try_convert_row(
+    columns: &Vec<String>,
+    row: ResultRow,
+) -> Result<Vec<PysqlxRow>, ConversionFailure> {
+    let mut values: Vec<PysqlxRow> = Vec::new();
+    for (index, val) in row.into_iter().enumerate() {
+        let value = to_value(val)?;
+        values.push(PysqlxRow::new(columns[index].clone(), value));
+    }
+    Ok(values)
 }

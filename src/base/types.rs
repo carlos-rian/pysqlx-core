@@ -5,7 +5,7 @@ use std::fmt::Display;
 pub type PysqlxListValue = Vec<PysqlxValue>;
 pub type PysqlxResult<T> = std::result::Result<T, ConversionFailure>;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct PysqlxRow {
     column: String,
     value: PysqlxValue,
@@ -38,5 +38,3 @@ impl Display for PysqlxRow {
         write!(f, "PysqlxRow(column={}, value={})", self.column, self.value)
     }
 }
-
-
