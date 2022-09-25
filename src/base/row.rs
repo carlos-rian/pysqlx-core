@@ -13,7 +13,11 @@ pub enum PysqlxValue {
     String(String),
     Boolean(bool),
     Enum(String),
+
     Int(i64),
+    #[serde(serialize_with = "serialize_bigint")]
+    BigInt(i64),
+
     Uuid(Uuid),
     List(PysqlxListValue),
     Json(String),
@@ -33,9 +37,6 @@ pub enum PysqlxValue {
         deserialize_with = "deserialize_decimal"
     )]
     Float(BigDecimal),
-
-    #[serde(serialize_with = "serialize_bigint")]
-    BigInt(i64),
 
     #[serde(serialize_with = "serialize_bytes")]
     Bytes(Vec<u8>),
@@ -312,5 +313,23 @@ impl TryFrom<PysqlxValue> for String {
             PysqlxValue::String(s) => Ok(s),
             _ => Err(ConversionFailure::new("PysqlxValue", "String")),
         }
+    }
+}
+
+pub fn get_pysqlx_type(row: PysqlxValue) -> String {
+    match row {
+        PysqlxValue::String(_) => "str".to_string(),
+        PysqlxValue::Boolean(_) => "bool".to_string(),
+        PysqlxValue::Enum(_) => "str".to_string(),
+        PysqlxValue::BigInt(_) | PysqlxValue::Int(_) => "int".to_string(),
+        PysqlxValue::Float(_) => "float".to_string(),
+        PysqlxValue::Uuid(_) => "uuid".to_string(),
+        PysqlxValue::List(_) => "list".to_string(),
+        PysqlxValue::Json(_) => "json".to_string(),
+        PysqlxValue::Xml(_) => "xml".to_string(),
+        PysqlxValue::Object(_) => "str".to_string(),
+        PysqlxValue::Null => "null".to_string(),
+        PysqlxValue::DateTime(_) => "datetime".to_string(),
+        PysqlxValue::Bytes(_) => "bytes".to_string(),
     }
 }

@@ -1,40 +1,45 @@
+use super::row::get_pysqlx_type;
 use super::{error::ConversionFailure, row::PysqlxValue};
-use std::fmt::Display;
-//use quaint::single::Quaint;
+use std::collections::{hash_map::RandomState, HashMap};
 
 pub type PysqlxListValue = Vec<PysqlxValue>;
 pub type PysqlxResult<T> = std::result::Result<T, ConversionFailure>;
 
 #[derive(Clone, Debug)]
-pub struct PysqlxRow {
-    column: String,
-    value: PysqlxValue,
+pub struct PysqlxRows {
+    pub types: HashMap<String, String>,
+    pub rows: Vec<HashMap<String, PysqlxValue>>,
 }
 
-impl PysqlxRow {
-    pub fn new(column: String, value: PysqlxValue) -> Self {
-        Self { column, value }
-    }
+impl std::ops::Deref for PysqlxRows {
+    type Target = Vec<HashMap<String, PysqlxValue>>;
 
-    pub fn column(&self) -> &str {
-        self.column.as_ref()
-    }
-
-    pub fn set_column(&mut self, column: String) {
-        self.column = column;
-    }
-
-    pub fn value(&self) -> &PysqlxValue {
-        &self.value
-    }
-
-    pub fn set_value(&mut self, value: PysqlxValue) {
-        self.value = value;
+    fn deref(&self) -> &Self::Target {
+        &self.rows
     }
 }
 
-impl Display for PysqlxRow {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "PysqlxRow(column={}, value={})", self.column, self.value)
+impl PysqlxRows {
+    pub fn new() -> Self {
+        let rows: Vec<HashMap<String, PysqlxValue>> = Vec::new();
+        let types: HashMap<String, String> = HashMap::new();
+        Self { rows, types }
+    }
+
+    pub fn push(&mut self, row: HashMap<String, PysqlxValue>) {
+        self.rows.push(row);
+    }
+
+    pub fn rows(&self) -> &[HashMap<String, PysqlxValue, RandomState>] {
+        self.rows.as_ref()
+    }
+
+    pub fn load_types(&mut self) {
+        if let Some(first_row) = self.rows.get(0) {
+            for (column, value) in first_row {
+                self.types
+                    .insert(column.clone(), get_pysqlx_type(value.clone()));
+            }
+        }
     }
 }
