@@ -9,7 +9,7 @@ pub type PysqlxListValue = Vec<PysqlxValue>;
 pub type PysqlxResult<T> = std::result::Result<T, DBError>;
 pub type PysqlxRow = Result<Option<HashMap<String, PysqlxValue>>, DBError>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PysqlxRows {
     pub types: HashMap<String, String>,
     pub rows: Vec<HashMap<String, PysqlxValue>>,

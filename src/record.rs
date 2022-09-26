@@ -1,4 +1,3 @@
-//use super::base::error::ConversionError;
 use super::base::error::DBError;
 use crate::{
     base::{row::PysqlxValue, types::PysqlxRows},

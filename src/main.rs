@@ -7,9 +7,13 @@ async fn sql_test() -> Result<(), DBError> {
     let conn = Connection::new(uri.to_string()).await?;
     let rows = conn.query(sql).await?;
 
-    println!("{:?}", rows);
+    let row = conn.query_one(sql).await?;
+
+    println!("{:#?}", rows);
+    println!("{:#?}", row);
     Ok(())
 }
+
 #[tokio::main]
 async fn main() -> Result<(), DBError> {
     sql_test().await?;

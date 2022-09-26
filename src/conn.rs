@@ -12,7 +12,7 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub async fn new(uri: String) -> Result<Self, DBError> {
+    async fn new(uri: String) -> Result<Self, DBError> {
         let conn = match Quaint::new(uri.as_str()).await {
             Ok(r) => r,
             Err(e) => {
@@ -48,7 +48,7 @@ impl Connection {
             )),
         }
     }
-    pub async fn query_first(&self, sql: &str) -> PysqlxRow {
+    pub async fn query_one(&self, sql: &str) -> PysqlxRow {
         let rows = self.query(sql).await?;
         Ok(rows.first())
     }
