@@ -12,7 +12,7 @@ pub struct Connection {
 }
 
 impl Connection {
-    async fn new(uri: String) -> Result<Self, DBError> {
+    pub async fn new(uri: String) -> Result<Self, DBError> {
         let conn = match Quaint::new(uri.as_str()).await {
             Ok(r) => r,
             Err(e) => {
