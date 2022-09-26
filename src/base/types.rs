@@ -1,9 +1,13 @@
+use super::error::DBError;
 use super::row::get_pysqlx_type;
-use super::{error::ConversionFailure, row::PysqlxValue};
+use super::row::PysqlxValue;
 use std::collections::{hash_map::RandomState, HashMap};
+use std::option::Option;
+use std::result::Result;
 
 pub type PysqlxListValue = Vec<PysqlxValue>;
-pub type PysqlxResult<T> = std::result::Result<T, ConversionFailure>;
+pub type PysqlxResult<T> = std::result::Result<T, DBError>;
+pub type PysqlxRow = Result<Option<HashMap<String, PysqlxValue>>, DBError>;
 
 #[derive(Clone, Debug)]
 pub struct PysqlxRows {
@@ -40,6 +44,13 @@ impl PysqlxRows {
                 self.types
                     .insert(column.clone(), get_pysqlx_type(value.clone()));
             }
+        }
+    }
+    pub fn first(&self) -> Option<HashMap<String, PysqlxValue>> {
+        let first_row = self.rows.get(0);
+        match first_row {
+            Some(row) => Some(row.clone()),
+            None => None,
         }
     }
 }

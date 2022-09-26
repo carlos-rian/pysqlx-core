@@ -1,4 +1,4 @@
-use super::base::error::ConversionFailure;
+use super::base::error::DBError;
 use super::base::row::PysqlxValue;
 use super::base::types::PysqlxResult;
 use bigdecimal::{BigDecimal, FromPrimitive};
@@ -12,20 +12,16 @@ pub fn to_value(quaint_value: Value<'_>) -> PysqlxResult<PysqlxValue> {
             .unwrap_or(PysqlxValue::Null),
         Value::Int64(i) => i.map(PysqlxValue::Int).unwrap_or(PysqlxValue::Null),
         Value::Float(Some(f)) => match f {
-            f if f.is_nan() => return Err(ConversionFailure::new("NaN", "BigDecimal").into()),
-            f if f.is_infinite() => {
-                return Err(ConversionFailure::new("Infinity", "BigDecimal").into())
-            }
+            f if f.is_nan() => return Err(DBError::ConversionError("NaN", "BigDecimal")),
+            f if f.is_infinite() => return Err(DBError::ConversionError("Infinity", "BigDecimal")),
             _ => PysqlxValue::Float(BigDecimal::from_f32(f).unwrap().normalized()),
         },
 
         Value::Float(None) => PysqlxValue::Null,
 
         Value::Double(Some(f)) => match f {
-            f if f.is_nan() => return Err(ConversionFailure::new("NaN", "BigDecimal").into()),
-            f if f.is_infinite() => {
-                return Err(ConversionFailure::new("Infinity", "BigDecimal").into())
-            }
+            f if f.is_nan() => return Err(DBError::ConversionError("NaN", "BigDecimal")),
+            f if f.is_infinite() => return Err(DBError::ConversionError("Infinity", "BigDecimal")),
             _ => PysqlxValue::Float(BigDecimal::from_f64(f).unwrap().normalized()),
         },
 

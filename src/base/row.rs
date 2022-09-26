@@ -1,4 +1,4 @@
-use super::error::ConversionFailure;
+use super::error::DBError;
 use super::types::{PysqlxListValue, PysqlxResult};
 use bigdecimal::{BigDecimal, FromPrimitive};
 use chrono::prelude::*;
@@ -58,7 +58,7 @@ pub fn encode_bytes(bytes: &[u8]) -> String {
 
 pub fn decode_bytes(s: &str) -> PysqlxResult<Vec<u8>> {
     base64::decode(s)
-        .map_err(|_| ConversionFailure::new("base64 encoded bytes", "PysqlxValue::Bytes"))
+        .map_err(|_| DBError::ConversionError("base64 encoded bytes", "PysqlxValue::Bytes"))
 }
 
 fn serialize_date<S>(date: &DateTime<FixedOffset>, serializer: S) -> Result<S::Ok, S::Error>
@@ -249,12 +249,12 @@ impl From<String> for PysqlxValue {
 }
 
 impl TryFrom<f64> for PysqlxValue {
-    type Error = ConversionFailure;
+    type Error = DBError;
 
     fn try_from(f: f64) -> PysqlxResult<PysqlxValue> {
         BigDecimal::from_f64(f)
             .map(PysqlxValue::Float)
-            .ok_or_else(|| ConversionFailure::new("f64", "Decimal"))
+            .ok_or_else(|| DBError::ConversionError("f64", "Decimal"))
     }
 }
 
@@ -295,23 +295,23 @@ impl From<PysqlxListValue> for PysqlxValue {
 }
 
 impl TryFrom<PysqlxValue> for i64 {
-    type Error = ConversionFailure;
+    type Error = DBError;
 
     fn try_from(value: PysqlxValue) -> PysqlxResult<i64> {
         match value {
             PysqlxValue::Int(i) => Ok(i),
-            _ => Err(ConversionFailure::new("PysqlxValue", "i64")),
+            _ => Err(DBError::ConversionError("PysqlxValue", "i64")),
         }
     }
 }
 
 impl TryFrom<PysqlxValue> for String {
-    type Error = ConversionFailure;
+    type Error = DBError;
 
     fn try_from(pv: PysqlxValue) -> PysqlxResult<String> {
         match pv {
             PysqlxValue::String(s) => Ok(s),
-            _ => Err(ConversionFailure::new("PysqlxValue", "String")),
+            _ => Err(DBError::ConversionError("PysqlxValue", "String")),
         }
     }
 }

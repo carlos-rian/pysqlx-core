@@ -1,4 +1,5 @@
-use super::base::error::ConversionFailure;
+//use super::base::error::ConversionError;
+use super::base::error::DBError;
 use crate::{
     base::{row::PysqlxValue, types::PysqlxRows},
     value::to_value,
@@ -6,7 +7,7 @@ use crate::{
 use quaint::{connector::ResultSet, prelude::ResultRow};
 use std::collections::HashMap;
 
-pub fn try_convert(result_set: ResultSet) -> Result<PysqlxRows, ConversionFailure> {
+pub fn try_convert(result_set: ResultSet) -> Result<PysqlxRows, DBError> {
     let columns: Vec<String> = result_set.columns().iter().map(|c| c.to_string()).collect();
     let mut rows = PysqlxRows::new();
 
@@ -20,7 +21,7 @@ pub fn try_convert(result_set: ResultSet) -> Result<PysqlxRows, ConversionFailur
 pub fn try_convert_row(
     columns: &Vec<String>,
     quaint_row: ResultRow,
-) -> Result<HashMap<String, PysqlxValue>, ConversionFailure> {
+) -> Result<HashMap<String, PysqlxValue>, DBError> {
     let mut row: HashMap<String, PysqlxValue> = HashMap::new();
     for (index, val) in quaint_row.into_iter().enumerate() {
         let value = to_value(val)?;

@@ -1,20 +1,30 @@
-use std::fmt::Display;
+use std::fmt::Debug;
 use thiserror::Error;
 
-#[derive(Debug, Error)]
-pub struct ConversionFailure {
-    pub from: &'static str,
-    pub to: &'static str,
+#[derive(Error)]
+pub enum DBError {
+    #[error("RawQuery(code={0}, message='{1}')")]
+    RawQuery(String, String),
+    #[error("ConnectionError(code={0}, message='{1}')")]
+    ConnectionError(String, String),
+    #[error("ConversionError(message='could not convert from `{0}` to `{1}`')")]
+    ConversionError(&'static str, &'static str),
 }
 
-impl Display for ConversionFailure {
+impl Debug for DBError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Could not convert from `{}` to `{}`", self.from, self.to)
-    }
-}
-
-impl ConversionFailure {
-    pub fn new(from: &'static str, to: &'static str) -> ConversionFailure {
-        ConversionFailure { from, to }
+        match self {
+            DBError::RawQuery(code, msg) => write!(f, "RawQuery(code={}, message='{}')", code, msg),
+            DBError::ConnectionError(code, msg) => {
+                write!(f, "ConnectionError(code={}, message='{}')", code, msg)
+            }
+            DBError::ConversionError(from, to) => {
+                write!(
+                    f,
+                    "ConversionError(message='could not convert from `{0}` to `{1}`')",
+                    from, to
+                )
+            }
+        }
     }
 }
