@@ -46,11 +46,16 @@ impl PysqlxRows {
             }
         }
     }
+
     pub fn first(&self) -> Option<HashMap<String, PysqlxValue>> {
         let first_row = self.rows.get(0);
         match first_row {
             Some(row) => Some(row.clone()),
             None => None,
         }
+    }
+
+    pub fn types(&self) -> &HashMap<String, String> {
+        &self.types
     }
 }

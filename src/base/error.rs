@@ -1,5 +1,16 @@
+use pyo3::exceptions::PyException;
+use pyo3::exceptions::PyTypeError;
+use pyo3::prelude::*;
 use std::fmt::Debug;
+use std::fmt::Display;
 use thiserror::Error;
+
+#[pyclass(extends=PyException)]
+#[derive(Clone, Error)]
+pub struct PysqlxDBError {
+    code: String,
+    error: String,
+}
 
 #[derive(Error)]
 pub enum DBError {
@@ -26,5 +37,48 @@ impl Debug for DBError {
                 )
             }
         }
+    }
+}
+
+impl From<DBError> for PysqlxDBError {
+    fn from(error: DBError) -> PysqlxDBError {
+        PysqlxDBError {
+            code: match error {
+                DBError::RawQuery(code, _) => code,
+                DBError::ConnectionError(code, _) => code,
+                DBError::ConversionError(_, _) => String::from("0"),
+            },
+            error: match error {
+                DBError::RawQuery(_, msg) => msg,
+                DBError::ConnectionError(_, msg) => msg,
+                DBError::ConversionError(_, _) => String::from("0"),
+            },
+        }
+    }
+}
+
+impl Debug for PysqlxDBError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "PysqlxDBError(code={}, message='{}')",
+            self.code, self.error
+        )
+    }
+}
+
+impl Display for PysqlxDBError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "PysqlxDBError(code={}, message='{}')",
+            self.code, self.error
+        )
+    }
+}
+
+impl From<PysqlxDBError> for PyErr {
+    fn from(err: PysqlxDBError) -> PyErr {
+        PyTypeError::new_err(err.to_string())
     }
 }
