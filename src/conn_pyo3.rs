@@ -61,11 +61,7 @@ impl Connection {
                         Ok(r) => match try_convert(r) {
                             Ok(mut rows) => {
                                 rows.load_types();
-                                let mut _rows = PyDict::new(py);
-                                for (k, v) in rows.types() {
-                                    _rows.set_item(k, v)?;
-                                }
-                                _rows
+                                rows.types()
                             }
                             Err(error) => return Err(PysqlxDBError::from(error).into()),
                         },
