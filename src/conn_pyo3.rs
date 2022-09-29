@@ -5,9 +5,9 @@ use crate::{
     },
     record::try_convert,
 };
-use pyo3::prelude::PyAny;
 use pyo3::prelude::PyResult;
 use pyo3::prelude::*;
+use pyo3::{prelude::PyAny, types::PyDict};
 use pyo3_asyncio;
 use quaint::{prelude::Queryable, single::Quaint};
 
@@ -58,7 +58,11 @@ impl Connection {
                     Ok(r) => match try_convert(r) {
                         Ok(mut rows) => {
                             rows.load_types();
-                            return Ok(rows.types());
+                            let mut new_rows = PyDict::new(py);
+                            for (k, v) in rows.types() {
+                                new_rows.set_item(k, v)?;
+                            }
+                            return Python::with_gil(|py| Ok(new_rows.into()));
                         }
                         Err(error) => return Err(PysqlxDBError::from(error).into()),
                     },
