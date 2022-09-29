@@ -51,33 +51,39 @@ impl Connection {
         })
     }
 
-    pub fn query<'p>(&self, sql: &str, py: Python<'p>) -> PyResult<&'p PyAny> {
+    pub fn query<'p>(&self, sql: &str) -> PyResult<&PyAny> {
+        let gil = Python::acquire_gil();
+        let py = gil.python();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            if let Some(conn) = &self.conn {
-                match conn.query_raw(sql, &[]).await {
-                    Ok(r) => match try_convert(r) {
-                        Ok(mut rows) => {
-                            rows.load_types();
-                            let mut new_rows = PyDict::new(py);
-                            for (k, v) in rows.types() {
-                                new_rows.set_item(k, v)?;
+            match &self.conn {
+                Some(conn) => {
+                    let new_rows = match conn.query_raw(sql, &[]).await {
+                        Ok(r) => match try_convert(r) {
+                            Ok(mut rows) => {
+                                rows.load_types();
+                                let mut _rows = PyDict::new(py);
+                                for (k, v) in rows.types() {
+                                    _rows.set_item(k, v)?;
+                                }
+                                _rows
                             }
-                            return Python::with_gil(|py| Ok(new_rows.into()));
+                            Err(error) => return Err(PysqlxDBError::from(error).into()),
+                        },
+                        Err(e) => {
+                            return Err(PysqlxDBError::from(DBError::RawQuery(
+                                String::from(e.original_code().unwrap_or_default()),
+                                String::from(e.original_message().unwrap_or_default()),
+                            ))
+                            .into())
                         }
-                        Err(error) => return Err(PysqlxDBError::from(error).into()),
-                    },
-                    Err(e) => Err(PysqlxDBError::from(DBError::RawQuery(
-                        String::from(e.original_code().unwrap_or_default()),
-                        String::from(e.original_message().unwrap_or_default()),
-                    ))
-                    .into()),
+                    };
+                    Python::with_gil(|py| Ok(new_rows.to_object(py)))
                 }
-            } else {
-                Err(PysqlxDBError::from(DBError::ConnectionError(
+                _ => Err(PysqlxDBError::from(DBError::ConnectionError(
                     String::from("0"),
                     String::from("Connection is not established"),
                 ))
-                .into())
+                .into()),
             }
         })
     }
