@@ -1,13 +1,10 @@
 use crate::{
-    base::{
-        error::{DBError, PysqlxDBError},
-        types::{PysqlxRow, PysqlxRows},
-    },
+    base::error::{DBError, PysqlxDBError},
     record::try_convert,
 };
+use pyo3::prelude::PyAny;
 use pyo3::prelude::PyResult;
 use pyo3::prelude::*;
-use pyo3::{prelude::PyAny, types::PyDict};
 use pyo3_asyncio;
 use quaint::{prelude::Queryable, single::Quaint};
 
@@ -24,7 +21,7 @@ impl Connection {
         Self { uri, conn: None }
     }
 
-    pub fn connect(&self) -> PyResult<&PyAny> {
+    pub fn connect<'a>(self) -> PyResult<&'a PyAny> {
         let gil = Python::acquire_gil();
         let py = gil.python();
         pyo3_asyncio::tokio::future_into_py(py, async move {
@@ -53,7 +50,7 @@ impl Connection {
         })
     }
 
-    pub fn query(&self, sql: &str) -> PyResult<&PyAny> {
+    pub fn query<'a>(self, sql: &str) -> PyResult<&'a PyAny> {
         let gil = Python::acquire_gil();
         let py = gil.python();
         pyo3_asyncio::tokio::future_into_py(py, async move {
@@ -86,13 +83,25 @@ impl Connection {
         })
     }
 
-    pub async fn execute(&self, sql: &str) -> Result<u64, DBError> {
-        match self.conn.execute_raw(sql, &[]).await {
-            Ok(r) => Ok(r),
-            Err(e) => Err(DBError::RawQuery(
-                String::from(e.original_code().unwrap_or_default()),
-                String::from(e.original_message().unwrap_or_default()),
-            )),
-        }
+    pub fn execute<'a>(self, sql: &str) -> PyResult<&'a PyAny> {
+        let gil = Python::acquire_gil();
+        let py = gil.python();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            match &self.conn {
+                Some(conn) => match conn.execute_raw(sql, &[]).await {
+                    Ok(r) => Python::with_gil(|py| Ok(r.to_object(py))),
+                    Err(e) => Err(PysqlxDBError::from(DBError::RawQuery(
+                        String::from(e.original_code().unwrap_or_default()),
+                        String::from(e.original_message().unwrap_or_default()),
+                    ))
+                    .into()),
+                },
+                _ => Err(PysqlxDBError::from(DBError::ConnectionError(
+                    String::from("0"),
+                    String::from("Connection is not established"),
+                ))
+                .into()),
+            }
+        })
     }
 }
