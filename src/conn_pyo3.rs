@@ -17,13 +17,13 @@ pub struct Connection {
 #[pymethods]
 impl Connection {
     #[new]
-    pub fn new(uri: String) -> Self {
+    pub fn py_new(uri: String) -> Self {
         Self { uri, conn: None }
     }
 
-    pub fn connect<'a>(self) -> PyResult<&'a PyAny> {
-        let gil = Python::acquire_gil();
-        let py = gil.python();
+    pub fn connect<'p>(self, py: Python<'p>) -> PyResult<&'p PyAny> {
+        //let gil = Python::acquire_gil();
+        //let py = gil.python();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let conn = match Quaint::new(self.uri.as_str()).await {
                 Ok(r) => r,
@@ -50,9 +50,9 @@ impl Connection {
         })
     }
 
-    pub fn query<'a>(self, sql: &str) -> PyResult<&'a PyAny> {
-        let gil = Python::acquire_gil();
-        let py = gil.python();
+    pub fn query<'p>(&self, py: Python<'p>, sql: &str) -> PyResult<&'p PyAny> {
+        //let gil = Python::acquire_gil();
+        //let py = gil.python();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             match &self.conn {
                 Some(conn) => {
@@ -83,7 +83,7 @@ impl Connection {
         })
     }
 
-    pub fn execute<'a>(self, sql: &str) -> PyResult<&'a PyAny> {
+    pub fn execute<'p>(&self, py: Python<'p>, sql: &str) -> PyResult<&'p PyAny> {
         let gil = Python::acquire_gil();
         let py = gil.python();
         pyo3_asyncio::tokio::future_into_py(py, async move {
