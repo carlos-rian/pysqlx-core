@@ -24,7 +24,9 @@ impl Connection {
         Self { uri, conn: None }
     }
 
-    pub fn connect<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    pub fn connect(&self) -> PyResult<&PyAny> {
+        let gil = Python::acquire_gil();
+        let py = gil.python();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let conn = match Quaint::new(self.uri.as_str()).await {
                 Ok(r) => r,
@@ -51,7 +53,7 @@ impl Connection {
         })
     }
 
-    pub fn query<'p>(&self, sql: &str) -> PyResult<&PyAny> {
+    pub fn query(&self, sql: &str) -> PyResult<&PyAny> {
         let gil = Python::acquire_gil();
         let py = gil.python();
         pyo3_asyncio::tokio::future_into_py(py, async move {
@@ -83,10 +85,7 @@ impl Connection {
             }
         })
     }
-    pub async fn query_one(&self, sql: &str) -> PysqlxRow {
-        let rows = self.query(sql).await?;
-        Ok(rows.first())
-    }
+
     pub async fn execute(&self, sql: &str) -> Result<u64, DBError> {
         match self.conn.execute_raw(sql, &[]).await {
             Ok(r) => Ok(r),
