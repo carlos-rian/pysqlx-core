@@ -8,7 +8,9 @@ use thiserror::Error;
 #[pyclass(extends=PyException)]
 #[derive(Clone, Error)]
 pub struct PysqlxDBError {
+    #[pyo3(get)]
     code: String,
+    #[pyo3(get)]
     error: String,
 }
 
@@ -78,7 +80,7 @@ impl Display for PysqlxDBError {
 }
 
 impl From<PysqlxDBError> for PyErr {
-    fn from(err: PysqlxDBError) -> PyErr {
+    fn from(err: PysqlxDBError) -> Self {
         PyTypeError::new_err(err.to_string())
     }
 }
