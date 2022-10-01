@@ -12,7 +12,7 @@ pub struct PysqlxDBError {
     error: String,
 }
 
-#[derive(Error)]
+#[derive(Error, Clone)]
 pub enum DBError {
     #[error("RawQuery(code={0}, message='{1}')")]
     RawQuery(String, String),
@@ -43,12 +43,12 @@ impl Debug for DBError {
 impl From<DBError> for PysqlxDBError {
     fn from(error: DBError) -> PysqlxDBError {
         PysqlxDBError {
-            code: match error {
+            code: match error.clone() {
                 DBError::RawQuery(code, _) => code,
                 DBError::ConnectionError(code, _) => code,
                 DBError::ConversionError(_, _) => String::from("0"),
             },
-            error: match error {
+            error: match error.clone() {
                 DBError::RawQuery(_, msg) => msg,
                 DBError::ConnectionError(_, msg) => msg,
                 DBError::ConversionError(_, _) => String::from("0"),
