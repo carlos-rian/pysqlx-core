@@ -1,4 +1,5 @@
 import asyncio
+from lib2to3.pytree import Base
 import pysqlx_core
 
 #await pysqlx_core.connect(uri="postgresql://postgres:password@localhost:5432/fastapi_pr")
