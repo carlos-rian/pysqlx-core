@@ -1,4 +1,4 @@
-use pysqlx_core::{base::error::DBError, conn::Connection};
+use pysqlx_core::{base::error::DBError, test_conn::Connection};
 
 async fn sql_test() -> Result<(), DBError> {
     let uri = "postgresql://postgres:password@localhost:5432/fastapi_prisma?schema=public";
