@@ -15,7 +15,7 @@ pub fn connect<'a>(py: Python<'a>, uri: String) -> Result<&'a PyAny, pyo3::PyErr
         let conn = match _connect(uri).await {
             Ok(r) => r,
             Err(e) => {
-                return Err(pyo3::exceptions::PyException::new_err(e.to_string()));
+                return Err(PyErr::from(e));
             }
         };
         Python::with_gil(|py| Ok(PyConnection { conn }.into_py(py)))

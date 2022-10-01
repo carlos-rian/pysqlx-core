@@ -1,12 +1,11 @@
-use pyo3::exceptions::PyException;
-use pyo3::exceptions::PyTypeError;
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::fmt::Debug;
-use std::fmt::Display;
 use thiserror::Error;
 
-#[pyclass(extends=PyException)]
-#[derive(Clone, Error)]
+#[pyclass(extends=PyValueError)]
+#[derive(Clone)]
+#[cfg_attr(debug_assertions, derive(Debug))]
 pub struct PysqlxDBError {
     #[pyo3(get)]
     code: String,
@@ -14,7 +13,7 @@ pub struct PysqlxDBError {
     error: String,
 }
 
-#[derive(Error, Clone)]
+#[derive(Error, Clone, Debug)]
 pub enum DBError {
     #[error("RawQuery(code={0}, message='{1}')")]
     RawQuery(String, String),
@@ -22,24 +21,6 @@ pub enum DBError {
     ConnectionError(String, String),
     #[error("ConversionError(message='could not convert from `{0}` to `{1}`')")]
     ConversionError(&'static str, &'static str),
-}
-
-impl Debug for DBError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DBError::RawQuery(code, msg) => write!(f, "RawQuery(code={}, message='{}')", code, msg),
-            DBError::ConnectionError(code, msg) => {
-                write!(f, "ConnectionError(code={}, message='{}')", code, msg)
-            }
-            DBError::ConversionError(from, to) => {
-                write!(
-                    f,
-                    "ConversionError(message='could not convert from `{0}` to `{1}`')",
-                    from, to
-                )
-            }
-        }
-    }
 }
 
 impl From<DBError> for PysqlxDBError {
@@ -59,28 +40,25 @@ impl From<DBError> for PysqlxDBError {
     }
 }
 
-impl Debug for PysqlxDBError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "PysqlxDBError(code={}, message='{}')",
-            self.code, self.error
-        )
-    }
-}
-
-impl Display for PysqlxDBError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "PysqlxDBError(code={}, message='{}')",
-            self.code, self.error
-        )
-    }
-}
-
 impl From<PysqlxDBError> for PyErr {
-    fn from(err: PysqlxDBError) -> Self {
-        PyTypeError::new_err(err.to_string())
+    fn from(err: PysqlxDBError) -> PyErr {
+        PyErr::new::<PysqlxDBError, _>((err.code, err.error))
+    }
+}
+
+#[pymethods]
+impl PysqlxDBError {
+    #[new]
+    fn py_new(code: String, error: String) -> PysqlxDBError {
+        PysqlxDBError { code, error }
+    }
+    fn __str__(&self) -> String {
+        format!(
+            "PysqlxDBError(code='{}', message='{}')",
+            self.code, self.error
+        )
+    }
+    fn __repr__(&self) -> String {
+        self.__str__()
     }
 }

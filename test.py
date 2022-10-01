@@ -1,11 +1,14 @@
-from pysqlx_core import Test
+import asyncio
+import pysqlx_core
 
-c = Test(name="carlos", age=28, status=True)
-print(c)
+#await pysqlx_core.connect(uri="postgresql://postgres:password@localhost:5432/fastapi_pr")
+exc = None
 
-class X:
-    def __init__(self, l: list) -> None:
-        self.l: list = l
-
-    def __add__(self, l2):
-        return self.l + l2
+async def main():
+    try:
+        conn = await pysqlx_core.connect(uri="postgresql://postgres:password@localhost:5432/fastapi_pr")
+    except Exception as e:
+        exc = e
+        print(e)
+        
+asyncio.run(main())
