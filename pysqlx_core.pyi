@@ -1,18 +1,19 @@
-from typing import Any, Dict, List
-__all__ = ('Test',)
+from typing import Dict
+__all__ = ('PysqlRows', "PyConnection", "connect", "query")
 
 class PysqlRows:
-    def get_type(self) -> 'Dict[str, Any]': ...
+    def get_types(self) -> 'Dict[str, str]': ...
 
 class PyConnection:
-    ...
-
-async def connect(uri: str) -> 'PyConnection':
-    ...
-
-async def query(conn: PyConnection, sql: str) -> 'List[Dict[str, Any]]':
     ...
     
 class PysqlxDBError(Exception):
     code: str
     error: str
+
+async def connect(uri: str) -> 'PyConnection':
+    ...
+
+async def query(conn: PyConnection, sql: str) -> 'PysqlRows':
+    ...
+    
