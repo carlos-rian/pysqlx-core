@@ -1,17 +1,14 @@
-use pyo3::exceptions::PyException;
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use std::fmt::{Debug, Display, Formatter};
 use thiserror::Error;
 
-#[pyclass(name = "PysqlxDBError", extends = PyException)]
+#[pyclass(name = "PysqlxDBError", extends = PyTypeError)]
 #[derive(Error, Clone)]
 #[cfg_attr(debug_assertions, derive(Debug))]
 pub struct PysqlxDBError {
-    #[pyo3(get, set)]
     code: String,
-    #[pyo3(get, set)]
     error: String,
-    #[pyo3(get, set)]
     type_: String,
 }
 
@@ -66,16 +63,34 @@ impl From<PysqlxDBError> for PyErr {
 #[pymethods]
 impl PysqlxDBError {
     #[new]
-    fn py_new(code: String, error: String, type_: String) -> PysqlxDBError {
+    pub fn py_new(code: String, error: String, type_: String) -> PysqlxDBError {
         PysqlxDBError { code, error, type_ }
     }
-    fn __str__(&self) -> String {
+
+    fn __str__(&self, py: Python) -> PyObject {
         format!(
             "PysqlxDBError(code='{}', message='{}')",
             self.code, self.error
         )
+        .into_py(py)
     }
-    fn __repr__(&self) -> String {
-        self.__str__()
+
+    fn __repr__(&self, py: Python) -> PyObject {
+        self.__str__(py)
+    }
+
+    #[getter]
+    pub fn code(&self) -> String {
+        self.code.clone()
+    }
+
+    #[getter]
+    pub fn error(&self) -> String {
+        self.error.clone()
+    }
+
+    #[getter]
+    pub fn type_(&self) -> String {
+        self.type_.clone()
     }
 }
