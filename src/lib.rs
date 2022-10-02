@@ -22,8 +22,8 @@ pub fn connect<'a>(py: Python<'a>, uri: String) -> Result<&'a PyAny, pyo3::PyErr
 }
 
 #[pyfunction]
-pub fn query<'a>(py: Python<'a>, py_obj: Py<PyAny>, sql: String) -> Result<&'a PyAny, pyo3::PyErr> {
-    let db = py_obj.extract::<PyConnection>(py)?;
+pub fn query<'a>(py: Python<'a>, conn: Py<PyAny>, sql: String) -> Result<&'a PyAny, pyo3::PyErr> {
+    let db = conn.extract::<PyConnection>(py)?;
     pyo3_asyncio::tokio::future_into_py(py, async move {
         let rows = match db.query(sql).await {
             Ok(r) => r,
@@ -38,6 +38,7 @@ pub fn query<'a>(py: Python<'a>, py_obj: Py<PyAny>, sql: String) -> Result<&'a P
 #[pymodule]
 fn pysqlx_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(connect, m)?)?;
+    m.add_function(wrap_pyfunction!(query, m)?)?;
     m.add_class::<PysqlxDBError>()?;
     Ok(())
 }

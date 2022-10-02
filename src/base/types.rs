@@ -1,7 +1,8 @@
 use super::error::DBError;
 use super::row::get_pysqlx_type;
 use super::row::PysqlxValue;
-use pyo3::prelude::pyclass;
+use pyo3::conversion::ToPyObject;
+use pyo3::prelude::*;
 use std::collections::{hash_map::RandomState, HashMap};
 use std::option::Option;
 use std::result::Result;
@@ -60,4 +61,15 @@ impl PysqlxRows {
     pub fn types(&self) -> &HashMap<String, String> {
         &self.types
     }
+}
+
+#[pymethods]
+impl PysqlxRows {
+    pub fn get_types(&self, py: Python) -> PyObject {
+        self.types.clone().to_object(py)
+    }
+
+    //pub fn get_rows(&self, py: Python) -> PyList {
+    //    self.rows.clone().to_object(py)
+    //}
 }

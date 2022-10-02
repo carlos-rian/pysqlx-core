@@ -9,11 +9,13 @@ use quaint::single::Quaint;
 #[derive(Clone, Debug)]
 pub struct PyConnection {
     pub conn: Quaint,
+    #[pyo3(get)]
+    pub connected: bool,
 }
 
 impl PyConnection {
     pub async fn new(uri: String) -> Result<Self, PysqlxDBError> {
-        let conn = match Quaint::new(uri.as_str()).await {
+        let db = match Quaint::new(uri.as_str()).await {
             Ok(r) => r,
             Err(e) => {
                 if e.original_code().is_none() || e.original_message().is_none() {
@@ -29,7 +31,10 @@ impl PyConnection {
                 }
             }
         };
-        Ok(Self { conn })
+        Ok(Self {
+            conn: db,
+            connected: true,
+        })
     }
 
     pub async fn query(&self, sql: String) -> Result<PysqlxRows, PysqlxDBError> {
