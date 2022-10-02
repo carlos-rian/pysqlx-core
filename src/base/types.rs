@@ -1,6 +1,7 @@
 use super::error::DBError;
 use super::row::get_pysqlx_type;
 use super::row::PysqlxValue;
+use pyo3::prelude::pyclass;
 use std::collections::{hash_map::RandomState, HashMap};
 use std::option::Option;
 use std::result::Result;
@@ -9,6 +10,7 @@ pub type PysqlxListValue = Vec<PysqlxValue>;
 pub type PysqlxResult<T> = std::result::Result<T, DBError>;
 pub type PysqlxRow = Result<Option<HashMap<String, PysqlxValue>>, DBError>;
 
+#[pyclass]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PysqlxRows {
     pub types: HashMap<String, String>,

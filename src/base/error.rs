@@ -55,7 +55,7 @@ impl From<DBError> for PysqlxDBError {
 }
 
 impl From<PysqlxDBError> for PyErr {
-    fn from(err: PysqlxDBError) -> PyErr {
+    fn from(err: PysqlxDBError) -> Self {
         PyErr::new::<PysqlxDBError, _>((err.code, err.error, err.type_))
     }
 }
