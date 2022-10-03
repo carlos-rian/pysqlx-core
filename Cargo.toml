@@ -23,8 +23,8 @@ thiserror = "1.0"
 tokio = { version = "1.17.0", features = ["full"] }
 uuid = { version = "1.1.2", features = ["serde"] }
 
-pyo3 = { version = "0.14", features = ["extension-module"] }
-pyo3-asyncio = { version = "0.14", features = ["tokio-runtime"] }
+pyo3 = { version = "0.16", features = ["extension-module"] }
+pyo3-asyncio = { version = "0.16", features = ["tokio-runtime"] }
 
 [features]
 vendored-openssl = ["quaint/vendored-openssl"]
