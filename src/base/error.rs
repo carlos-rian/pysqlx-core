@@ -4,8 +4,7 @@ use std::fmt::{Debug, Display, Formatter};
 use thiserror::Error;
 
 #[pyclass(name = "PysqlxDBError", extends = PyTypeError)]
-#[derive(Error, Clone)]
-#[cfg_attr(debug_assertions, derive(Debug))]
+#[derive(Error, Clone, Debug)]
 pub struct PysqlxDBError {
     code: String,
     error: String,

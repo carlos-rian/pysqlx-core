@@ -6,17 +6,9 @@ import pysqlx_core
 exc = None
 
 async def main():
-    try:
-        ini = time()
-        conn = await pysqlx_core.connect(uri="postgresql://postgres:password@localhost:5432/fastapi_prisma")
-        sql = "SELECT * FROM peoples"
-        result = await pysqlx_core.query(conn=conn, sql=sql)
-        print(result.get_types())
-        print(time() - ini)
-    except Exception as e:
-        exc = e
-        print(e)
-    
-    print(conn)
-        
+    conn = await pysqlx_core.connect(uri="postgresql://postgres:password@localhost:5432/fastapi_prisma?schema=public")
+    result = await pysqlx_core.query(conn, "SELECT * FROM peoples")
+    #print(result.get_types())
+ini = time()
 asyncio.run(main())
+print(time() - ini)
