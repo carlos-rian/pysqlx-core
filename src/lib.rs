@@ -3,6 +3,7 @@ pub mod db;
 pub mod record;
 pub mod test_conn;
 pub mod value;
+mod pyvalue;
 use base::error::PysqlxDBError;
 use db::PyConnection;
 use pyo3::prelude::*;
