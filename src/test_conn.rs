@@ -62,3 +62,5 @@ impl Connection {
         }
     }
 }
+
+#[pymethods]
