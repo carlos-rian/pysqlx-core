@@ -17,3 +17,6 @@ async def connect(uri: str) -> 'PyConnection':
 async def query(conn: PyConnection, sql: str) -> 'PysqlRows':
     ...
     
+async def test_query() -> 'list[dict[str, str]]':
+    ...
+    
