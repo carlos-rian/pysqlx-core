@@ -1,3 +1,5 @@
+//use std::ops::{Deref, DerefMut};
+
 use crate::{
     base::{
         error::{DBError, PysqlxDBError},
@@ -8,11 +10,11 @@ use crate::{
 use pyo3::prelude::*;
 use pythonize::pythonize;
 use quaint::{prelude::Queryable, single::Quaint};
-
 #[pyclass]
 #[derive(Clone, Debug)]
 pub struct Connection {
     conn: Quaint,
+    result: Option<PysqlxRows>,
 }
 
 impl Connection {
@@ -35,7 +37,10 @@ impl Connection {
                 }
             }
         };
-        Ok(Self { conn: con })
+        Ok(Self {
+            conn: con,
+            result: None,
+        })
     }
     pub async fn _query(&self, sql: &str) -> Result<PysqlxRows, DBError> {
         match self.conn.query_raw(sql, &[]).await {
@@ -83,6 +88,23 @@ impl Connection {
         })
     }
 
+    pub fn query_one<'a>(&mut self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
+        let slf = self.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let rows = match slf._query_one(sql.as_str()).await {
+                Ok(r) => r,
+                Err(e) => return Err(PyErr::from(PysqlxDBError::from(e))),
+            };
+            Python::with_gil(|py| match rows {
+                Some(r) => {
+                    let pyrow = pythonize(py, &r).unwrap();
+                    Ok(pyrow)
+                }
+                None => Ok(py.None()),
+            })
+        })
+    }
+
     pub fn execute<'a>(&mut self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
         let slf = self.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
@@ -91,5 +113,25 @@ impl Connection {
                 Err(e) => Err(PyErr::from(PysqlxDBError::from(e))),
             }
         })
+    }
+
+    pub fn get_result<'a>(&mut self, py: Python<'a>) -> PyResult<Py<PyAny>> {
+        match &self.result {
+            Some(r) => {
+                let rows = pythonize(py, &r.rows()).unwrap();
+                Ok(rows)
+            }
+            None => Ok(py.None()),
+        }
+    }
+
+    pub fn get_types<'a>(&mut self, py: Python<'a>) -> PyResult<Py<PyAny>> {
+        match &self.result {
+            Some(r) => {
+                let types = pythonize(py, &r.types()).unwrap();
+                Ok(types)
+            }
+            None => Ok(py.None()),
+        }
     }
 }
