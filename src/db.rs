@@ -4,6 +4,7 @@ use crate::base::types::PysqlxRows;
 use crate::record::try_convert;
 
 use pyo3::prelude::*;
+use pythonize::pythonize;
 use quaint::prelude::Queryable;
 use quaint::single::Quaint;
 
@@ -80,6 +81,20 @@ impl Connection {
                 Ok(r) => Ok(r),
                 Err(e) => Err(PyErr::from(PysqlxDBError::from(e))),
             }
+        })
+    }
+
+    pub fn query_py_obj<'a>(&mut self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
+        let slf = self.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let rows = match slf._query(sql.as_str()).await {
+                Ok(r) => r,
+                Err(e) => return Err(PyErr::from(PysqlxDBError::from(e))),
+            };
+            Python::with_gil(|py| {
+                let pyrows = pythonize(py, &rows._rows()).unwrap();
+                Ok(pyrows)
+            })
         })
     }
 }
