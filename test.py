@@ -28,7 +28,7 @@ TYPES = {
     "array": list,
     "xml": str,
     # not implement
-    "bytes": Any,  # bytes
+    "bytes": str,  # base64
     "enum": Any,  # Enum
     "null": Any,
 }
@@ -37,7 +37,8 @@ TYPES = {
 async def main():
     conn = await pysqlx_core.new(uri="postgresql://postgres:password@localhost:5432/fastapi_prisma?schema=public")
     
-    rows = await conn.query("SELECT * FROM peoples")
+    #rows = await conn.query("SELECT * FROM peoples")
+    rows = await conn.query("SELECT * FROM table_test")
     all = rows.get_all()
     first = rows.get_first()
     types = rows.get_types()
