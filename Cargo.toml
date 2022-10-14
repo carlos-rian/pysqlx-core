@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [lib]
 name = "pysqlx_core"
-crate-type = ["rlib"]#, "cdylib",]
+crate-type = ["rlib", "cdylib"]
 
 [package.metadata.maturin]
 python-source = "pysqlx_core"

@@ -13,7 +13,6 @@ pub type PysqlxResult<T> = Result<T, DBError>;
 pub type PysqlxRow = Result<Option<HashMap<String, PysqlxValue>>, DBError>;
 
 #[pyclass]
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PysqlxRows {
     pub types: HashMap<String, String>,
     pub rows: Vec<HashMap<String, PysqlxValue>>,
