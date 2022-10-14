@@ -1,25 +1,21 @@
-//use std::ops::{Deref, DerefMut};
-
 use crate::{
     base::{
         error::{DBError, PysqlxDBError},
-        types::{PysqlxRow, PysqlxRows},
+        types::PysqlxRows,
     },
     record::try_convert,
 };
 use pyo3::prelude::*;
-use pythonize::pythonize;
 use quaint::{prelude::Queryable, single::Quaint};
 #[pyclass]
 #[derive(Clone, Debug)]
 pub struct Connection {
     conn: Quaint,
-    result: Option<PysqlxRows>,
 }
 
 impl Connection {
     pub async fn _new(uri: String) -> Result<Self, DBError> {
-        let con = match Quaint::new(uri.as_str()).await {
+        let conn = match Quaint::new(uri.as_str()).await {
             Ok(r) => r,
             Err(e) => {
                 println!("{}", e.to_string());
@@ -37,10 +33,7 @@ impl Connection {
                 }
             }
         };
-        Ok(Self {
-            conn: con,
-            result: None,
-        })
+        Ok(Self { conn })
     }
     pub async fn _query(&self, sql: &str) -> Result<PysqlxRows, DBError> {
         match self.conn.query_raw(sql, &[]).await {
@@ -56,10 +49,6 @@ impl Connection {
                 String::from(e.original_message().unwrap_or_default()),
             )),
         }
-    }
-    pub async fn _query_one(&self, sql: &str) -> PysqlxRow {
-        let rows = self._query(sql).await?;
-        Ok(rows.first())
     }
     pub async fn _execute(&self, sql: &str) -> Result<u64, DBError> {
         match self.conn.execute_raw(sql, &[]).await {
@@ -77,31 +66,10 @@ impl Connection {
     pub fn query<'a>(&mut self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
         let slf = self.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let rows = match slf._query(sql.as_str()).await {
-                Ok(r) => r,
-                Err(e) => return Err(PyErr::from(PysqlxDBError::from(e))),
-            };
-            Python::with_gil(|py| {
-                let pyrows = pythonize(py, &rows.rows()).unwrap();
-                Ok(pyrows)
-            })
-        })
-    }
-
-    pub fn query_one<'a>(&mut self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
-        let slf = self.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let rows = match slf._query_one(sql.as_str()).await {
-                Ok(r) => r,
-                Err(e) => return Err(PyErr::from(PysqlxDBError::from(e))),
-            };
-            Python::with_gil(|py| match rows {
-                Some(r) => {
-                    let pyrow = pythonize(py, &r).unwrap();
-                    Ok(pyrow)
-                }
-                None => Ok(py.None()),
-            })
+            match slf._query(sql.as_str()).await {
+                Ok(r) => Ok(r),
+                Err(e) => Err(PyErr::from(PysqlxDBError::from(e))),
+            }
         })
     }
 
@@ -113,25 +81,5 @@ impl Connection {
                 Err(e) => Err(PyErr::from(PysqlxDBError::from(e))),
             }
         })
-    }
-
-    pub fn get_result<'a>(&mut self, py: Python<'a>) -> PyResult<Py<PyAny>> {
-        match &self.result {
-            Some(r) => {
-                let rows = pythonize(py, &r.rows()).unwrap();
-                Ok(rows)
-            }
-            None => Ok(py.None()),
-        }
-    }
-
-    pub fn get_types<'a>(&mut self, py: Python<'a>) -> PyResult<Py<PyAny>> {
-        match &self.result {
-            Some(r) => {
-                let types = pythonize(py, &r.types()).unwrap();
-                Ok(types)
-            }
-            None => Ok(py.None()),
-        }
     }
 }
