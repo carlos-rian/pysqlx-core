@@ -22,5 +22,8 @@ class Connection:
     async def execute(self, sql: str) -> "int":
         raise PysqlxDBError()
 
+    async def query_py_obj(self, sql: str) -> "List[Dict[str, Any]]":
+        raise PysqlxDBError()
+
 async def new(uri: str) -> 'Connection':
     raise PysqlxDBError()
