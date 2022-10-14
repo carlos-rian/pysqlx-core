@@ -1,9 +1,12 @@
 use super::base::error::DBError;
-use crate::{
-    base::{row::PysqlxValue, types::PysqlxRows},
-    value::to_value,
-};
-use quaint::{connector::ResultSet, prelude::ResultRow};
+
+use crate::base::row::PysqlxValue;
+use crate::base::types::PysqlxRows;
+use crate::value::to_value;
+
+use quaint::connector::ResultSet;
+use quaint::prelude::ResultRow;
+
 use std::collections::HashMap;
 
 pub fn try_convert(result_set: ResultSet) -> Result<PysqlxRows, DBError> {

@@ -1,12 +1,11 @@
 pub mod base;
-pub mod conn;
 pub mod db;
 pub mod record;
 pub mod value;
 
 use base::error::PysqlxDBError;
 use base::types::PysqlxRows;
-use conn::Connection;
+use db::Connection;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
