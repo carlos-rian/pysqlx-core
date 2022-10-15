@@ -3,10 +3,10 @@ from time import time
 import asyncpg
 
 async def main():
-    conn = await asyncpg.connect(user='postgres', password='password',
-                                 database='fastapi_prisma', host='127.0.0.1')
+    conn = await asyncpg.connect(user='postgres', password='postgrespw',
+                                 database='postgres', host='127.0.0.1', port="49153")
     values = await conn.fetch(
-        'SELECT * FROM table_test'
+        'SELECT * FROM test'
     )
     print(values)
     await conn.close()
