@@ -2,7 +2,6 @@ use super::base::error::DBError;
 use super::base::row::PysqlxValue;
 use super::base::types::PysqlxResult;
 use bigdecimal::{BigDecimal, FromPrimitive};
-use chrono::{DateTime, NaiveDate, Utc};
 use quaint::Value;
 
 pub fn to_value(quaint_value: Value<'_>) -> PysqlxResult<PysqlxValue> {
@@ -60,20 +59,14 @@ pub fn to_value(quaint_value: Value<'_>) -> PysqlxResult<PysqlxValue> {
 
         Value::Uuid(uuid) => uuid.map(PysqlxValue::Uuid).unwrap_or(PysqlxValue::Null),
 
-        Value::Date(d) => d
-            .map(|d| {
-                let dt = DateTime::<Utc>::from_utc(d.and_hms(0, 0, 0), Utc);
-                PysqlxValue::DateTime(dt.into())
-            })
-            .unwrap_or(PysqlxValue::Null),
-
-        Value::Time(t) => t
-            .map(|t| {
-                let d = NaiveDate::from_ymd(1970, 1, 1);
-                let dt = DateTime::<Utc>::from_utc(d.and_time(t), Utc);
-                PysqlxValue::DateTime(dt.into())
-            })
-            .unwrap_or(PysqlxValue::Null),
+        Value::Date(d) => match d {
+            Some(v) => PysqlxValue::Date(v.to_string()),
+            None => PysqlxValue::Null,
+        },
+        Value::Time(t) => match t {
+            Some(t) => PysqlxValue::Time(t.to_string()),
+            None => PysqlxValue::Null,
+        },
 
         Value::DateTime(dt) => dt
             .map(|dt| PysqlxValue::DateTime(dt.into()))

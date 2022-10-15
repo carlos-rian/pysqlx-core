@@ -23,8 +23,13 @@ pub enum PysqlxValue {
     Json(String),
     Xml(String),
 
+    // when return a 00:00:00 time, it will be a string
+    Time(String),
+    // when return a 2020-01-01 date, it will be a string
+    Date(String),
+
     /// A collections of key-value pairs constituting an object.
-    Object(Vec<(String, PysqlxValue)>),
+    //Object(Vec<(String, PysqlxValue)>),
 
     #[serde(serialize_with = "serialize_null")]
     Null,
@@ -222,16 +227,9 @@ impl fmt::Display for PysqlxValue {
                 let as_string = format!("{:?}", x);
                 as_string.fmt(f)
             }
+            PysqlxValue::Time(x) => x.fmt(f),
+            PysqlxValue::Date(x) => x.fmt(f),
             PysqlxValue::Bytes(b) => encode_bytes(b).fmt(f),
-            PysqlxValue::Object(pairs) => {
-                let joined = pairs
-                    .iter()
-                    .map(|(key, value)| format!(r#""{}": {}"#, key, value))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-
-                write!(f, "{{ {} }}", joined)
-            }
         }
     }
 }
@@ -318,18 +316,24 @@ impl TryFrom<PysqlxValue> for String {
 
 pub fn get_pysqlx_type(row: PysqlxValue) -> String {
     match row {
-        PysqlxValue::String(_) => "str".to_string(),
         PysqlxValue::Boolean(_) => "bool".to_string(),
+        PysqlxValue::Bytes(_) => "bytes".to_string(),
+        PysqlxValue::Null => "null".to_string(),
+        //string default
         PysqlxValue::Enum(_) => "str".to_string(),
+        PysqlxValue::String(_) => "str".to_string(),
+        // number
         PysqlxValue::BigInt(_) | PysqlxValue::Int(_) => "int".to_string(),
         PysqlxValue::Float(_) => "float".to_string(),
+        // datetime, date, time
+        PysqlxValue::Time(_) => "time".to_string(),
+        PysqlxValue::Date(_) => "date".to_string(),
+        PysqlxValue::DateTime(_) => "datetime".to_string(),
+        // id
         PysqlxValue::Uuid(_) => "uuid".to_string(),
+        // structs and lists
         PysqlxValue::List(_) => "list".to_string(),
         PysqlxValue::Json(_) => "json".to_string(),
         PysqlxValue::Xml(_) => "xml".to_string(),
-        PysqlxValue::Object(_) => "str".to_string(),
-        PysqlxValue::Null => "null".to_string(),
-        PysqlxValue::DateTime(_) => "datetime".to_string(),
-        PysqlxValue::Bytes(_) => "bytes".to_string(),
     }
 }

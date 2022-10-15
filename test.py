@@ -12,25 +12,26 @@ from pydantic import Json, create_model, parse_obj_as
 
 
 TYPES = {
-    "int": int,
-    "bigint": int,
-    "float": float,
-    "double": float,
-    "string": str,
     "bool": bool,
-    "char": str,
-    "decimal": Decimal,
-    "json": Json,
-    "uuid": UUID,
-    "datetime": datetime,
-    "date": date,
+    "bytes": str,  # base64
+    "null": Any,
+    #
+    "enum": str,  # Enum
+    "str": str,
+    #
+    "int": int,
+    "float": float,
+    #
     "time": time,
-    "array": list,
+    "date": date,
+    "datetime": datetime,
+    #
+    "uuid": UUID,
+    #
+    "json": Json,
+    "list": list,
     "xml": str,
     # not implement
-    "bytes": str,  # base64
-    "enum": Any,  # Enum
-    "null": Any,
 }
 
 
