@@ -35,13 +35,26 @@ TYPES = {
 
 
 async def main():
-    conn = await pysqlx_core.new(uri="postgresql://postgres:password@localhost:5432/fastapi_prisma?schema=public")
-    
-    #rows = await conn.query("SELECT * FROM peoples")
-    rows = await conn.query("SELECT * FROM table_test")
+    conn = await pysqlx_core.new(uri="postgresql://postgres:postgrespw@localhost:49153")
+
+    #check is_healthy
+    print(conn.is_healthy())
+
+    sql = "SELECT * FROM test;"
+
+    # test query with list
+    rows = await conn.query_py_obj(sql)
+    print(rows)
+
+    # test query with PysqlxRow
+    rows = await conn.query(sql)
     all = rows.get_all()
     first = rows.get_first()
     types = rows.get_types()
+    print(all, first, types, sep="\n\n\n")
+
+    # test serializer
+
     for key, value in types.copy().items():
         types.update({key: (TYPES.get(value, Any), None)})
     model = create_model("Model", **types)

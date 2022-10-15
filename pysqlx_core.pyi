@@ -1,5 +1,5 @@
 from typing import Any, Dict, List
-__all__ = ("connect", "Connection", 'PysqlxDBError', "PysqlxRows")
+__all__ = ("new", "Connection", 'PysqlxDBError', "PysqlxRows")
 
 class PysqlxDBError(Exception):
     code: str
@@ -23,6 +23,9 @@ class Connection:
         raise PysqlxDBError()
 
     async def query_py_obj(self, sql: str) -> "List[Dict[str, Any]]":
+        raise PysqlxDBError()
+    
+    def is_healthy(self) -> "bool":
         raise PysqlxDBError()
 
 async def new(uri: str) -> 'Connection':

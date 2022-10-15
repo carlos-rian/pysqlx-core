@@ -97,4 +97,8 @@ impl Connection {
             })
         })
     }
+
+    pub fn is_healthy(&self) -> bool {
+        self.conn.is_healthy()
+    }
 }
