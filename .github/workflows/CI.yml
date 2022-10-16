@@ -10,12 +10,17 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:
+    - name: Install depends
+      run: apt install pkg-config
+
     - uses: actions/checkout@v3
+
     - uses: messense/maturin-action@v1
       with:
         manylinux: auto
         command: build
         args: --release --sdist -o dist --find-interpreter
+        
     - name: Upload wheels
       uses: actions/upload-artifact@v2
       with:
