@@ -55,7 +55,6 @@ async def main():
     print(all, first, types, sep="\n\n\n")
 
     # test serializer
-
     for key, value in types.copy().items():
         types.update({key: (TYPES.get(value, Any), None)})
     model = create_model("Model", **types)

@@ -12,8 +12,12 @@ jobs:
     steps:
     - name: Install depends
       run: |
-        sudo apt install pkg-config && \
-        sudo apt-get install libudev-dev
+        sudo apt-get update --fix-missing \
+        sudo apt-get upgrade -y \
+        sudo apt install pkg-config -y \
+        sudo apt install libudev-dev -y \
+        sudo apt install libssl-dev -y
+
 
     - uses: actions/checkout@v3
 
