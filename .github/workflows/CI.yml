@@ -8,10 +8,12 @@ on:
 
 jobs:
   linux:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
     - name: Install depends
-      run: sudo apt-get install pkg-config libssl-dev
+      run: |
+        sudo apt install pkg-config && \
+        sudo apt-get install libudev-dev
 
     - uses: actions/checkout@v3
 
