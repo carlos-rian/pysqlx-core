@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install depends
-      run: apt install pkg-config
+      run: sudo apt-get install pkg-config libssl-dev
 
     - uses: actions/checkout@v3
 
@@ -20,7 +20,7 @@ jobs:
         manylinux: auto
         command: build
         args: --release --sdist -o dist --find-interpreter
-        
+
     - name: Upload wheels
       uses: actions/upload-artifact@v2
       with:
