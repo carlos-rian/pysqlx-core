@@ -5,6 +5,25 @@ classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
+    'Development Status :: 3 - Alpha',
+    'Environment :: Console',
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Information Technology',
+    'Intended Audience :: System Administrators',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: POSIX :: Linux',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: MacOS',
+    'Environment :: MacOS X',
+    'Topic :: Software Development :: Libraries :: Python Modules',
 ]
 
 [tool.poetry]
@@ -14,7 +33,7 @@ description = ""
 authors = ["carlos-rian <crian.rian@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 maturin = "^0.13.3"
 isort = {version = "^5.10.1", extras = ["colors"]}
 
