@@ -12,9 +12,9 @@ jobs:
     steps:
     - name: Install depends
       run: |
-        sudo apt install pkg-config -y \
-        sudo apt install libudev-dev -y \
-        sudo apt install libssl-dev -y
+        sudo apt install pkg-config \
+        sudo apt install libudev-dev \
+        sudo apt install libssl-dev
 
 
     - uses: actions/checkout@v3
