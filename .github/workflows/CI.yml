@@ -16,10 +16,15 @@ jobs:
 
     - uses: actions/checkout@v3
 
-    - name: Run Maturin
-      run: |
-        pip install --upgrade pip maturin
-        maturin build --release --sdist -o dist --find-interpreter
+    #- name: Run Maturin
+    #  run: |
+    #    pip install --upgrade pip maturin
+    #    maturin build --release --sdist -o dist --find-interpreter
+
+    - uses: messense/maturin-action@v1
+      with:
+        command: build
+        args: --release -o dist --find-interpreter
 
     - name: Upload wheels
       uses: actions/upload-artifact@v2
