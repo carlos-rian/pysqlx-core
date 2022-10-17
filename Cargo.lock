@@ -1538,6 +1538,7 @@ dependencies = [
  "bigdecimal",
  "chrono",
  "once_cell",
+ "openssl",
  "pyo3",
  "pyo3-asyncio",
  "pythonize",

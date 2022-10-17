@@ -6,6 +6,9 @@ on:
       - "*"
   pull_request:
 
+env:
+  PKG_CONFIG_ALLOW_CROSS: 1
+
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -15,7 +18,7 @@ jobs:
         sudo apt-get install pkg-config libudev-dev libssl-dev clang
         pip install 'maturin>=0.13,<0.14'
         pip install maturin[zig]
-        export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
+        echo $PKG_CONFIG_ALLOW_CROSS
 
     - uses: actions/checkout@v3
 

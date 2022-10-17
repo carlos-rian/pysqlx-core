@@ -27,6 +27,8 @@ pyo3 = { version = "0.17", features = ["extension-module"] }
 pyo3-asyncio = { version = "0.17", features = ["tokio-runtime"] }
 pythonize = "0.17.0"
 
+openssl = { version = "0.10.40", features = ["vendored"] }
+
 [features]
 vendored-openssl = ["quaint/vendored-openssl"]
 
