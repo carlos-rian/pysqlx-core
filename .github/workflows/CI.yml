@@ -16,7 +16,6 @@ jobs:
         pip install 'maturin>=0.13,<0.14'
         pip install maturin[zig]
         export PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig
-        cargo tree --target=x86_64-unknown-linux-musl -i openssl-sys | grep openssel
 
     - uses: actions/checkout@v3
 
