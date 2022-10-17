@@ -36,7 +36,7 @@ dependencies = [
 
 [tool.poetry]
 name = "pysqlx-core"
-version = "0.1.0"
+version = "0.1.1"
 description = "building"
 authors = ["carlos-rian <crian.rian@gmail.com>"]
 
