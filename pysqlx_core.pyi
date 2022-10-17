@@ -25,8 +25,9 @@ class Connection:
     async def query_py_obj(self, sql: str) -> "List[Dict[str, Any]]":
         raise PysqlxDBError()
     
-    def is_healthy(self) -> "bool":
-        raise PysqlxDBError()
+    def is_healthy(self) -> "bool": ...
+
+    def requires_isolation_first(self) -> "bool": ...
 
 async def new(uri: str) -> 'Connection':
     raise PysqlxDBError()
