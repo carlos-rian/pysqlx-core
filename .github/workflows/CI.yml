@@ -9,6 +9,8 @@ on:
 env:
   PKG_CONFIG_ALLOW_CROSS: 1
 
+
+
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -16,8 +18,6 @@ jobs:
     - name: Install depends
       run: |
         sudo apt-get install pkg-config libudev-dev libssl-dev clang
-        pip install 'maturin>=0.13,<0.14'
-        pip install maturin[zig]
         echo $PKG_CONFIG_ALLOW_CROSS
 
     - uses: actions/checkout@v3
@@ -26,7 +26,7 @@ jobs:
       with:
         manylinux: auto
         command: build
-        args: --release --sdist -o dist --find-interpreter --zig
+        args: --release --sdist -o dist --find-interpreter
         rust-toolchain: stable
     
         #maturin build --release --target aarch64-unknown-linux-gnu --zig
