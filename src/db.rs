@@ -101,4 +101,8 @@ impl Connection {
     pub fn is_healthy(&self) -> bool {
         self.conn.is_healthy()
     }
+
+    pub fn requires_isolation_first(&self) -> bool {
+        self.conn.requires_isolation_first()
+    }
 }
