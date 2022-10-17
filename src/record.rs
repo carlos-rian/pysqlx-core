@@ -16,7 +16,6 @@ pub fn try_convert(result_set: ResultSet) -> Result<PysqlxRows, DBError> {
     for quaint_row in result_set.into_iter() {
         rows.push(try_convert_row(&columns, quaint_row)?);
     }
-    rows.load_types();
     Ok(rows)
 }
 
@@ -30,4 +29,22 @@ pub fn try_convert_row(
         row.insert(columns[index].clone(), value);
     }
     Ok(row)
+}
+
+#[cfg(test)]
+mod tests {
+    use quaint::{prelude::ResultSet, Value};
+    use std::borrow::Cow;
+
+    #[test]
+    fn test_try_convert_row() {
+        let val: Cow<'_, str> = Cow::Owned("test".to_string());
+        let cols = vec!["id".to_string(), "name".to_string()];
+        let rows = vec![vec![Value::Int32(Some(1)), Value::Text(Some(val))]];
+        let result = ResultSet::new(cols, rows);
+
+        let py_result = super::try_convert(result).unwrap();
+
+        assert_eq!(py_result._rows().len(), 1);
+    }
 }
