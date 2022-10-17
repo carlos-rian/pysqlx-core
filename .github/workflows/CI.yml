@@ -71,13 +71,27 @@ jobs:
     #if: "startsWith(github.ref, 'refs/tags/')"
     needs: [ macos, windows, linux ]
     steps:
-      - uses: actions/download-artifact@v2
+      - name: Install Twine
+        run: pip install -U twine
+
+      - name: Download articart
+        uses: actions/download-artifact@v2
         with:
           name: wheels
-      - name: Publish to PyPI
-        uses: messense/maturin-action@v1
+
+      - name: Twine check
+        run: twine check *
+
+      - name: upload to pypi
+        run: twine upload *
         env:
-          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        with:
-          command: upload
-          args: --skip-existing *
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
+      #- name: Publish to PyPI
+      #  uses: messense/maturin-action@v1
+      #  env:
+      #    MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      #  with:
+      #    command: upload
+      #    args: --skip-existing *
