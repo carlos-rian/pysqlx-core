@@ -1,7 +1,6 @@
 use super::error::DBError;
 use super::types::{PysqlxListValue, PysqlxResult};
 use bigdecimal::{BigDecimal, FromPrimitive};
-use chrono::prelude::*;
 use serde::de::Unexpected;
 use serde::{ser::Serializer, Deserialize, Deserializer, Serialize};
 use std::{convert::TryFrom, fmt, str::FromStr};
@@ -27,15 +26,11 @@ pub enum PysqlxValue {
     Time(String),
     // when return a 2020-01-01 date, it will be a string
     Date(String),
-
-    /// A collections of key-value pairs constituting an object.
-    //Object(Vec<(String, PysqlxValue)>),
+    // when return a 2020-01-01T00:00:01 dateTIME, it will be a string
+    DateTime(String),
 
     #[serde(serialize_with = "serialize_null")]
     Null,
-
-    #[serde(serialize_with = "serialize_date")]
-    DateTime(DateTime<FixedOffset>),
 
     #[serde(
         serialize_with = "serialize_decimal",
@@ -47,16 +42,6 @@ pub enum PysqlxValue {
     Bytes(Vec<u8>),
 }
 
-/// Stringify a date to the following format
-/// 1999-05-01T00:00:00.000Z
-pub fn stringify_date(date: &DateTime<FixedOffset>) -> String {
-    // Warning: Be careful if you plan on changing the code below
-    // The findUnique batch optimization expects date inputs to have exactly the same format as date outputs
-    // This works today because clients always send date inputs in the same format as the serialized format below
-    // Updating this without transforming date inputs to the same format WILL break the findUnique batch optimization
-    date.to_rfc3339_opts(SecondsFormat::Millis, true)
-}
-
 pub fn encode_bytes(bytes: &[u8]) -> String {
     base64::encode(bytes)
 }
@@ -64,13 +49,6 @@ pub fn encode_bytes(bytes: &[u8]) -> String {
 pub fn decode_bytes(s: &str) -> PysqlxResult<Vec<u8>> {
     base64::decode(s)
         .map_err(|_| DBError::ConversionError("base64 encoded bytes", "PysqlxValue::Bytes"))
-}
-
-fn serialize_date<S>(date: &DateTime<FixedOffset>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    stringify_date(date).serialize(serializer)
 }
 
 fn serialize_bytes<S>(bytes: &[u8], serializer: S) -> Result<S::Ok, S::Error>
@@ -195,10 +173,6 @@ impl PysqlxValue {
 
     pub fn new_float(float: f64) -> PysqlxValue {
         PysqlxValue::Float(BigDecimal::from_f64(float).unwrap())
-    }
-
-    pub fn new_datetime(datetime: &str) -> PysqlxValue {
-        PysqlxValue::DateTime(DateTime::parse_from_rfc3339(datetime).unwrap())
     }
 
     pub fn as_boolean(&self) -> Option<&bool> {
