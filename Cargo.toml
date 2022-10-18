@@ -1,6 +1,6 @@
 [package]
 name = "pysqlx-core"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -27,7 +27,7 @@ pyo3 = { version = "0.17", features = ["extension-module"] }
 pyo3-asyncio = { version = "0.17", features = ["tokio-runtime"] }
 pythonize = "0.17.0"
 
-openssl = { version = "0.10.40", features = ["vendored"] }
+openssl = { version = "0.10.42", features = ["vendored"] }
 
 [features]
 vendored-openssl = ["quaint/vendored-openssl"]
