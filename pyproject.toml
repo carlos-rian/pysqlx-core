@@ -37,12 +37,11 @@ classifiers = [
 ]
 
 dynamic = ["version"]
+keywords = ["async", "database", "sql", "faster", "pysqlx"]
 
 [project.urls]
-repository = "https://github.com/carlos-rian/pysqlx-core"
-homepage = "https://carlos-rian.github.io/pysqlx-core"
-documentation = "https://carlos-rian.github.io/pysqlx-core"
-keywords = ["async", "database", "sql", "faster", "pysqlx"]
+Homepage = "https://github.com/carlos-rian/pysqlx-core"
+Source = "https://github.com/carlos-rian/pysqlx-core"
 
 
 [tool.maturin]
