@@ -77,3 +77,24 @@ impl PysqlxRows {
         Ok(pythonize(py, &self._first()).unwrap())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pysqlx_rows() {
+        let mut rows = PysqlxRows::new();
+        let mut row = HashMap::new();
+        row.insert("id".to_string(), PysqlxValue::Int(1));
+        row.insert("name".to_string(), PysqlxValue::String("test".to_string()));
+        rows.push(row);
+        rows.load_types();
+        assert_eq!(rows._types().len(), 2);
+        assert_eq!(
+            rows._first().unwrap().get("id").unwrap(),
+            &PysqlxValue::Int(1)
+        );
+        assert_eq!(rows._rows().len(), 1);
+    }
+}
