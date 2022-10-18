@@ -28,10 +28,8 @@ classifiers = [
     'Operating System :: MacOS',
     'Topic :: Software Development :: Libraries :: Python Modules',
 ]
-dependencies = [
-    'typing_extensions; python_version < "3.11.0"'
-]
-dynamic = ["version"]
+version = "0.1.1"
+
 
 [tool.maturin]
 bindings = "pyo3"
