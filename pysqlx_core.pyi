@@ -1,5 +1,6 @@
 from typing import Any, Dict, List
 __all__ = ("new", "Connection", 'PysqlxDBError', "PysqlxRows")
+__version__: str
 
 class PysqlxDBError(Exception):
     code: str
