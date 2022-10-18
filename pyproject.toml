@@ -11,7 +11,6 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     'Development Status :: 3 - Alpha',
-    'Environment :: Console',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
     'Programming Language :: Python :: 3 :: Only',
@@ -27,28 +26,12 @@ classifiers = [
     'Operating System :: POSIX :: Linux',
     'Operating System :: Microsoft :: Windows',
     'Operating System :: MacOS',
-    'Environment :: MacOS X',
     'Topic :: Software Development :: Libraries :: Python Modules',
 ]
 dependencies = [
     'typing_extensions; python_version < "3.11.0"'
 ]
-
-[tool.poetry]
-name = "pysqlx-core"
-version = "0.1.1"
-description = "building"
-authors = ["carlos-rian <crian.rian@gmail.com>"]
-
-[tool.poetry.dependencies]
-python = "^3.7"
-maturin = "^0.13.3"
-isort = {version = "^5.10.1", extras = ["colors"]}
-
-[tool.poetry.dev-dependencies]
-ipython = "^8.5.0"
-black = "^22.8.0"
-isort = "^5.10.1"
+dynamic = ["version"]
 
 [tool.maturin]
 bindings = "pyo3"
