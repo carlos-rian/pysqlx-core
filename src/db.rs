@@ -19,8 +19,6 @@ impl Connection {
         let conn = match Quaint::new(uri.as_str()).await {
             Ok(r) => r,
             Err(e) => {
-                println!("{}", e.to_string());
-                println!("{:?} {:?}", e.original_code(), e.original_message());
                 if e.original_code().is_none() || e.original_message().is_none() {
                     return Err(DBError::ConnectionError(
                         String::from("0"),

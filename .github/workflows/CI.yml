@@ -82,8 +82,14 @@ jobs:
       - name: Twine check
         run: twine check *
 
+      - name: Twine test
+        run: twine upload -r testpypi *
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
       - name: upload to pypi
-        run: twine upload *
+        run: twine upload * --skip-existing
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
