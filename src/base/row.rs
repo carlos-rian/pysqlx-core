@@ -311,3 +311,74 @@ pub fn get_pysqlx_type(row: PysqlxValue) -> String {
         PysqlxValue::Xml(_) => "xml".to_string(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pysqlx_value_from() {
+        assert_eq!(
+            PysqlxValue::from("test"),
+            PysqlxValue::String("test".to_string())
+        );
+        assert_eq!(
+            PysqlxValue::from("test".to_string()),
+            PysqlxValue::String("test".to_string())
+        );
+        assert_eq!(
+            PysqlxValue::try_from(1.0 as f64).unwrap(),
+            PysqlxValue::Float(BigDecimal::from_f64(1.0).unwrap())
+        );
+        assert_eq!(PysqlxValue::from(true), PysqlxValue::Boolean(true));
+        assert_eq!(PysqlxValue::from(1), PysqlxValue::Int(1));
+        assert_eq!(PysqlxValue::from(1 as i64), PysqlxValue::Int(1));
+        assert_eq!(PysqlxValue::from(1 as usize), PysqlxValue::Int(1));
+
+        let uuid = Uuid::parse_str("a1a2a3a4b1b2c1c2d1d2d3d4d5d6d7d8").unwrap();
+        assert_eq!(PysqlxValue::from(uuid), PysqlxValue::Uuid(uuid));
+        assert_eq!(
+            PysqlxValue::from(PysqlxListValue::new()),
+            PysqlxValue::List(PysqlxListValue::new())
+        );
+    }
+
+    #[test]
+    fn test_get_pysqlx_type() {
+        assert_eq!(get_pysqlx_type(PysqlxValue::Boolean(true)), "bool");
+        assert_eq!(get_pysqlx_type(PysqlxValue::Bytes(vec![])), "bytes");
+        assert_eq!(get_pysqlx_type(PysqlxValue::Null), "null");
+        assert_eq!(get_pysqlx_type(PysqlxValue::Enum("".to_string())), "str");
+        assert_eq!(get_pysqlx_type(PysqlxValue::String("".to_string())), "str");
+        assert_eq!(get_pysqlx_type(PysqlxValue::BigInt(0)), "int");
+        assert_eq!(get_pysqlx_type(PysqlxValue::Int(0)), "int");
+        assert_eq!(
+            get_pysqlx_type(PysqlxValue::Float(BigDecimal::from(0))),
+            "float"
+        );
+        assert_eq!(
+            get_pysqlx_type(PysqlxValue::Time("00:00:00".to_string())),
+            "time"
+        );
+        assert_eq!(
+            get_pysqlx_type(PysqlxValue::Date("0000-00-00".to_string())),
+            "date"
+        );
+        assert_eq!(
+            get_pysqlx_type(PysqlxValue::DateTime("0000-00-00 00:00:00".to_string())),
+            "datetime"
+        );
+        assert_eq!(
+            get_pysqlx_type(PysqlxValue::Uuid(
+                Uuid::parse_str("a1a2a3a4b1b2c1c2d1d2d3d4d5d6d7d8").unwrap()
+            )),
+            "uuid"
+        );
+        assert_eq!(
+            get_pysqlx_type(PysqlxValue::List(PysqlxListValue::new())),
+            "list"
+        );
+        assert_eq!(get_pysqlx_type(PysqlxValue::Json("".to_string())), "json");
+        assert_eq!(get_pysqlx_type(PysqlxValue::Xml("".to_string())), "xml");
+    }
+}

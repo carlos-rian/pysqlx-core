@@ -93,3 +93,30 @@ impl PysqlxDBError {
         self.type_.clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pysqlxdberror() {
+        let err = PysqlxDBError {
+            code: String::from("0"),
+            error: String::from("test"),
+            type_: String::from("test"),
+        };
+
+        assert_eq!(err.code(), "0");
+        assert_eq!(err.error(), "test");
+        assert_eq!(err.type_(), "test");
+    }
+
+    #[test]
+    fn test_db_error_from() {
+        let err = DBError::RawQuery(String::from("0"), String::from("test"));
+        let pysqlxdberr: PysqlxDBError = err.into();
+        assert_eq!(pysqlxdberr.code(), "0");
+        assert_eq!(pysqlxdberr.error(), "test");
+        assert_eq!(pysqlxdberr.type_(), "RawQuery");
+    }
+}
