@@ -42,5 +42,7 @@ features = [
     "json",
     "uuid",
     "chrono",
-    "bigdecimal"
+    "bigdecimal",
+    "pooled",
+    "fmt-sql"
 ]
