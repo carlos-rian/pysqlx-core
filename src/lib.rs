@@ -1,11 +1,6 @@
-pub mod base;
-pub mod db;
-pub mod record;
-pub mod value;
+use database::Connection;
+use py_types::{PySQLXError, PySQLXResult};
 
-use base::error::PysqlxDBError;
-use base::types::PysqlxRows;
-use db::Connection;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 
@@ -22,9 +17,9 @@ pub fn get_version() -> String {
 #[pyfunction]
 fn new<'a>(py: Python<'a>, uri: String) -> Result<&'a PyAny, pyo3::PyErr> {
     pyo3_asyncio::tokio::future_into_py(py, async move {
-        match Connection::_new(uri).await {
+        match Connection::new(uri).await {
             Ok(r) => Ok(r),
-            Err(e) => return Err(PyErr::from(PysqlxDBError::from(e))),
+            Err(e) => return Err(e.to_pyerr()),
         }
     })
 }
@@ -34,7 +29,7 @@ fn pysqlx_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add("__version__", get_version())?;
     m.add_function(wrap_pyfunction!(new, m)?)?;
     m.add_class::<Connection>()?;
-    m.add_class::<PysqlxRows>()?;
-    m.add_class::<PysqlxDBError>()?;
+    m.add_class::<PySQLXResult>()?;
+    m.add_class::<PySQLXError>()?;
     Ok(())
 }

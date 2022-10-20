@@ -1,10 +1,10 @@
 from typing import Any, Dict, List
-__all__ = ("__version__", "new", "Connection", 'PysqlxDBError', "PysqlxRows")
+__all__ = ("__version__", "new", "Connection", 'PySQLXError', "PySQLXResult")
 __version__: str
 
-class PysqlxDBError(Exception):
+class PySQLXError(Exception):
     """
-    ## PysqlxDBError
+    ## PySQLXError
 
     ### Base class for all exceptions raised by pysqlx.
      
@@ -12,15 +12,17 @@ class PysqlxDBError(Exception):
     `error`: str - description of the error
     """
     code: str
+    message: str
     error: str
+
 
     def code(self) -> str: 
         """Returns the error code"""
         ...
-    def error(self) -> str: 
+    def message(self) -> str: 
         """Returns the error message"""
         ...
-    def type_(self) -> str: 
+    def error(self) -> str: 
         """
         Returns the type of the error
         * RawQuery
@@ -30,36 +32,36 @@ class PysqlxDBError(Exception):
         """
         ...
 
-class PysqlxRows:
+class PySQLXResult:
     """
-    PysqlxRows is a class that represents the result of a query.
+    PySQLXResult is a class that represents the result of a query.
     It is returned by the `query` method of the `Connection` class.
     """
     def get_types(self) -> "Dict[str, str]":
         """Returns a dictionary of column names and their types used to generate Pydantic BaseModel."""
-        raise PysqlxDBError()
+        raise PySQLXError()
     
     def get_all(self) -> "List[Dict[str, Any]]":
         """Returns a list of dictionaries representing the rows of the query result."""
-        raise PysqlxDBError()
+        raise PySQLXError()
     
     def get_first(self) -> "Dict[str, Any]":
         """Returns the first row of the query result as a dictionary."""
-        raise PysqlxDBError()
+        raise PySQLXError()
 
 class Connection:
     """Creates a new connection to the database. Create after calling `new`."""
-    async def query(self, sql: str) -> "PysqlxRows":
-        """Returns a `PysqlxRows` object representing the result of the query."""
-        raise PysqlxDBError()
+    async def query(self, sql: str) -> "PySQLXResult":
+        """Returns a `PySQLXResult` object representing the result of the query."""
+        raise PySQLXError()
     
     async def execute(self, sql: str) -> "int":
         """Executes a query and returns the number of rows affected."""
-        raise PysqlxDBError()
+        raise PySQLXError()
 
-    async def query_py_obj(self, sql: str) -> "List[Dict[str, Any]]":
+    async def query_as_list(self, sql: str) -> "List[Dict[str, Any]]":
         """Returns a list of dictionaries representing the rows of the query result."""
-        raise PysqlxDBError()
+        raise PySQLXError()
     
     def is_healthy(self) -> "bool": 
         """Returns `True` if the connection is healthy, `False` otherwise."""
@@ -73,4 +75,4 @@ class Connection:
 
 async def new(uri: str) -> 'Connection':
     """Creates a new connection to the database. Returns a `Connection` object."""
-    raise PysqlxDBError()
+    raise PySQLXError()
