@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use crate::base::error::DBError;
 use crate::base::error::PysqlxDBError;
 use crate::base::types::PysqlxRows;
@@ -7,7 +5,6 @@ use crate::record::try_convert;
 
 use pyo3::prelude::*;
 use pythonize::pythonize;
-use quaint::pooled::{Builder as PooledBuilder, Quaint as PooledQuaint};
 use quaint::prelude::*;
 use quaint::single::Quaint;
 
@@ -125,99 +122,5 @@ impl Connection {
 
     pub fn requires_isolation_first(&self) -> bool {
         self.conn.requires_isolation_first()
-    }
-}
-
-#[pyclass]
-pub struct PooledConnection {
-    pool: PooledQuaint,
-}
-
-impl PooledConnection {
-    pub fn new(uri: String) -> Result<Self, DBError> {
-        let mut builder = match PooledQuaint::builder(uri.as_str()) {
-            Ok(r) => r,
-            Err(e) => {
-                if e.original_code().is_none() || e.original_message().is_none() {
-                    return Err(DBError::ConnectionError(
-                        String::from("0"),
-                        String::from(e.to_string()),
-                    ));
-                } else {
-                    return Err(DBError::ConnectionError(
-                        String::from(e.original_code().unwrap_or_default()),
-                        String::from(e.original_message().unwrap_or_default()),
-                    ));
-                }
-            }
-        };
-        builder.test_on_check_out(true);
-        builder.max_idle_lifetime(Duration::from_secs(3));
-        let pool = builder.build();
-
-        Ok(Self { pool })
-    }
-
-    pub async fn get_new_conn(self) {
-        let conn = match self.pool.check_out().await {
-            Ok(r) => r,
-            Err(e) => {
-                if e.original_code().is_none() || e.original_message().is_none() {
-                    return Err(DBError::ConnectionError(
-                        String::from("0"),
-                        String::from(e.to_string()),
-                    ));
-                } else {
-                    return Err(DBError::ConnectionError(
-                        String::from(e.original_code().unwrap_or_default()),
-                        String::from(e.original_message().unwrap_or_default()),
-                    ));
-                }
-            }
-        };
-    }
-
-    pub async fn _query(&self, sql: &str) -> Result<PysqlxRows, DBError> {
-        match self.conn.query_raw(sql, &[]).await {
-            Ok(r) => match try_convert(r) {
-                Ok(mut rows) => {
-                    rows.load_types();
-                    return Ok(rows);
-                }
-                Err(error) => return Err(error),
-            },
-            Err(e) => {
-                if e.original_code().is_none() || e.original_message().is_none() {
-                    Err(DBError::RawQuery(
-                        String::from("0"),
-                        String::from(e.to_string()),
-                    ))
-                } else {
-                    Err(DBError::RawQuery(
-                        String::from(e.original_code().unwrap_or_default()),
-                        String::from(e.original_message().unwrap_or_default()),
-                    ))
-                }
-            }
-        }
-    }
-
-    pub async fn _execute(&self, sql: &str) -> Result<u64, DBError> {
-        match self.conn.execute_raw(sql, &[]).await {
-            Ok(r) => Ok(r),
-            Err(e) => {
-                if e.original_code().is_none() || e.original_message().is_none() {
-                    Err(DBError::RawQuery(
-                        String::from("0"),
-                        String::from(e.to_string()),
-                    ))
-                } else {
-                    Err(DBError::RawQuery(
-                        String::from(e.original_code().unwrap_or_default()),
-                        String::from(e.original_message().unwrap_or_default()),
-                    ))
-                }
-            }
-        }
     }
 }

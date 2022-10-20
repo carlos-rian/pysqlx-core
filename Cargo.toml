@@ -8,6 +8,10 @@ edition = "2021"
 name = "pysqlx_core"
 crate-type = ["rlib", "cdylib"]
 
+[workspace]
+resolver = "2"
+members = ["types"]
+
 [package.metadata.maturin]
 python-source = "pysqlx_core"
 
@@ -27,7 +31,7 @@ pyo3 = { version = "0.17", features = ["extension-module"] }
 pyo3-asyncio = { version = "0.17", features = ["tokio-runtime"] }
 pythonize = "0.17.0"
 
-openssl = { version = "0.10.42", features = ["vendored"] }
+openssl = { version = "0.10", features = ["vendored"] }
 
 [features]
 vendored-openssl = ["quaint/vendored-openssl"]
@@ -43,6 +47,6 @@ features = [
     "uuid",
     "chrono",
     "bigdecimal",
-    "pooled",
+    #"pooled",
     "fmt-sql"
 ]
