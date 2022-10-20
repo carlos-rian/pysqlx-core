@@ -231,3 +231,5 @@ $RECYCLE.BIN/
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Rust,Linux,macOS,Python,Windows,VisualStudioCode
 
 .local
+
+.vscode
