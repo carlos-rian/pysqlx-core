@@ -22,7 +22,7 @@ fn get_type(value: &Value) -> String {
         Value::Float(_) => "float".to_string(),
         Value::Double(_) => "float".to_string(),
         Value::Bytes(_) => "bytes".to_string(),
-        Value::Numeric(_) => "string".to_string(),
+        Value::Numeric(_) => "decimal".to_string(),
     }
 }
 
