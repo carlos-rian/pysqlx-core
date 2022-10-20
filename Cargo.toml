@@ -8,45 +8,15 @@ edition = "2021"
 name = "pysqlx_core"
 crate-type = ["rlib", "cdylib"]
 
-[workspace]
-resolver = "2"
-members = ["types"]
 
 [package.metadata.maturin]
 python-source = "pysqlx_core"
 
 [dependencies]
-anyhow = "1.0.26"
-base64 = "0.13.0"
-bigdecimal = "0.3"
-chrono = { version = "0.4", features = ["serde"] }
-once_cell = "1.8.0"
-serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1.0", features = ["float_roundtrip"] }
-thiserror = "1.0"
-tokio = { version = "1.17.0", features = ["full"] }
-uuid = { version = "1.1.2", features = ["serde"] }
-
 pyo3 = { version = "0.17", features = ["extension-module"] }
 pyo3-asyncio = { version = "0.17", features = ["tokio-runtime"] }
-pythonize = "0.17.0"
 
-openssl = { version = "0.10", features = ["vendored"] }
-
-[features]
-vendored-openssl = ["quaint/vendored-openssl"]
-
-[dependencies.quaint]
-git = "https://github.com/prisma/quaint"
-features = [
-    "postgresql",
-    "mysql",
-    "mssql",
-    "sqlite",
-    "json",
-    "uuid",
-    "chrono",
-    "bigdecimal",
-    #"pooled",
-    "fmt-sql"
-]
+# my packages
+py_types = { path = "py_types", package = "types"}
+convert = { path = "convert"}
+database = { path = "database"}

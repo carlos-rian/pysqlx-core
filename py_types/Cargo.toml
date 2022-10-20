@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 pyo3 = { version = "0.17", features = ["extension-module"] }
-chrono = { version = "0.4", features = ["serde"] }
+chrono = { version = "0.4"}
 
 [dependencies.quaint]
 git = "https://github.com/prisma/quaint"
