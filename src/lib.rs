@@ -19,7 +19,7 @@ fn new<'a>(py: Python<'a>, uri: String) -> Result<&'a PyAny, pyo3::PyErr> {
     pyo3_asyncio::tokio::future_into_py(py, async move {
         match Connection::new(uri).await {
             Ok(r) => Ok(r),
-            Err(e) => return Err(e.to_pyerr()),
+            Err(e) => Err(e.to_pyerr()),
         }
     })
 }
