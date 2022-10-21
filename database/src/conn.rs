@@ -91,11 +91,3 @@ impl Connection {
         self.conn.requires_isolation_first()
     }
 }
-
-pub async fn connection(uri: String) -> Result<String, PySQLXError> {
-    let _conn = match Quaint::new(uri.as_str()).await {
-        Ok(_r) => println!("Connected"),
-        Err(e) => print!("Error: {}", e),
-    };
-    Ok("ok".to_string())
-}

@@ -1,4 +1,3 @@
-use database::connection;
 use database::Connection;
 use py_types::{PySQLXError, PySQLXResult};
 
@@ -25,19 +24,10 @@ fn new<'a>(py: Python<'a>, uri: String) -> Result<&'a PyAny, pyo3::PyErr> {
     })
 }
 
-#[pyfunction]
-fn conn<'a>(py: Python<'a>, uri: String) -> Result<&'a PyAny, pyo3::PyErr> {
-    pyo3_asyncio::tokio::future_into_py(py, async move {
-        connection(uri).await.unwrap();
-        Python::with_gil(|py| Ok(py.None()))
-    })
-}
-
 #[pymodule]
 fn pysqlx_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add("__version__", get_version())?;
     m.add_function(wrap_pyfunction!(new, m)?)?;
-    m.add_function(wrap_pyfunction!(conn, m)?)?;
     m.add_class::<Connection>()?;
     m.add_class::<PySQLXResult>()?;
     m.add_class::<PySQLXError>()?;
