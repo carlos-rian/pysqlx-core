@@ -1,14 +1,6 @@
-import enum
 from typing import Any, Dict, List
 __all__ = ("__version__", "new", "Connection", 'PySQLXError', "PySQLXResult")
 __version__: str
-
-class IsolationLevel(enum.Enum):
-    ReadUncommitted = "ReadUncommitted"
-    ReadCommitted = "ReadCommitted"
-    RepeatableRead = "RepeatableRead"
-    Snapshot = "Snapshot"
-    Serializable = "Serializable"
 
 
 class PySQLXError(Exception):
@@ -72,6 +64,10 @@ class Connection:
         """Returns a list of dictionaries representing the rows of the query result."""
         raise PySQLXError()
     
+    async def raw_cmd(self, sql: str) -> "str": 
+        """Run a command in the database, for queries that can't be run using prepared statements."""
+        ...
+
     def is_healthy(self) -> "bool": 
         """Returns false, if connection is considered to not be in a working state"""
         ...
@@ -82,41 +78,13 @@ class Connection:
         for example, sqlserver requires isolation before executing a query using begin.
         
         - Signals if the isolation level SET needs to happen before or after the tx BEGIN
-        """
-        ...
 
-    async def set_tx_isolation_level(self, isolation_level: IsolationLevel) -> "None":
-        """
-        Controls the locking and row versioning behavior of connections or transactions.
-        The levels correspond to the ANSI standard isolation levels, plus `Snapshot` for SQL Server.
-
-        Details on exact behavior and validity can be found in the documentation of the database vendors:
         * [SQL Server documentation]: (https://docs.microsoft.com/en-us/sql/t-sql/statements/set-transaction-isolation-level-transact-sql?view=sql-server-ver15)
         * [Postgres documentation]: (https://www.postgresql.org/docs/current/sql-set-transaction.html)
         * [MySQL documentation]: (https://dev.mysql.com/doc/refman/8.0/en/innodb-transaction-isolation-levels.html)
         * [SQLite documentation]: (https://www.sqlite.org/isolation.html)
-
-        isolation_level: 
-            * ReadUncommitted
-            * ReadCommitted
-            * RepeatableRead
-            * Snapshot
-            * Serializable
         """
-        raise PySQLXError()
-    
-    async def start_transaction(self, isolation_level: IsolationLevel) -> "None":
-        """
-        Starts a transaction with the given isolation level.
-
-        isolation_level: 
-            * ReadUncommitted
-            * ReadCommitted
-            * RepeatableRead
-            * Snapshot
-            * Serializable
-        """
-        raise PySQLXError()
+        ...
 
 async def new(uri: str) -> 'Connection':
     """Creates a new connection to the database. Returns a `Connection` object."""

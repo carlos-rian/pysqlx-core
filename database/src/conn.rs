@@ -3,7 +3,6 @@ use convert::convert_result_set_as_list;
 use py_types::PyRows;
 use py_types::{py_error, DBError, PySQLXError, PySQLXResult};
 use pyo3::prelude::*;
-use quaint::connector::IsolationLevel;
 use quaint::prelude::*;
 use quaint::single::Quaint;
 
@@ -22,71 +21,31 @@ impl Connection {
         Ok(Self { conn })
     }
 
-    pub async fn _query(&self, sql: &str) -> Result<PySQLXResult, PySQLXError> {
+    async fn _query(&self, sql: &str) -> Result<PySQLXResult, PySQLXError> {
         match self.conn.query_raw(sql, &[]).await {
             Ok(r) => Ok(convert_result_set(r)),
             Err(e) => Err(py_error(e, DBError::QueryError)),
         }
     }
 
-    pub async fn _query_as_list(&self, sql: &str) -> Result<PyRows, PySQLXError> {
+    async fn _query_as_list(&self, sql: &str) -> Result<PyRows, PySQLXError> {
         match self.conn.query_raw(sql, &[]).await {
             Ok(r) => Ok(convert_result_set_as_list(r)),
             Err(e) => Err(py_error(e, DBError::QueryError)),
         }
     }
 
-    pub async fn _execute(&self, sql: &str) -> Result<u64, PySQLXError> {
+    async fn _execute(&self, sql: &str) -> Result<u64, PySQLXError> {
         match self.conn.execute_raw(sql, &[]).await {
             Ok(r) => Ok(r),
             Err(e) => Err(py_error(e, DBError::ExecuteError)),
         }
     }
 
-    fn get_isolation(&self, isolation_level: String) -> Result<IsolationLevel, PySQLXError> {
-        match isolation_level.as_str() {
-            "ReadUncommitted" => Ok(IsolationLevel::ReadUncommitted),
-            "ReadCommitted" => Ok(IsolationLevel::ReadCommitted),
-            "RepeatableRead" => Ok(IsolationLevel::RepeatableRead),
-            "Snapshot" => Ok(IsolationLevel::Snapshot),
-            "Serializable" => Ok(IsolationLevel::Serializable),
-            _ => {
-                return Err(PySQLXError::new(
-                    "I1001".to_string(),
-                    "Invalid isolation level".to_string(),
-                    DBError::IsoLevelError,
-                ))
-            }
-        }
-    }
-
-    pub async fn _set_tx_isolation_level(
-        &self,
-        isolation_level: String,
-    ) -> Result<(), PySQLXError> {
-        let level = self.get_isolation(isolation_level)?;
-        match self.conn.set_tx_isolation_level(level).await {
+    async fn _raw_cmd(&self, sql: &str) -> Result<(), PySQLXError> {
+        match self.conn.raw_cmd(sql).await {
             Ok(_) => Ok(()),
-            Err(e) => Err(py_error(e, DBError::IsoLevelError)),
-        }
-    }
-
-    pub async fn _start_transaction(
-        &self,
-        isolation_level: Option<String>,
-    ) -> Result<(), PySQLXError> {
-        let level: Option<IsolationLevel>;
-
-        if let Some(iso_level) = isolation_level {
-            let iso = self.get_isolation(iso_level)?;
-            level = Some(iso);
-        } else {
-            level = None;
-        }
-
-        match self.conn.start_transaction(level).await {
-            Ok(_) => Ok(()),
-            Err(e) => Err(py_error(e, DBError::IsoLevelError)),
+            Err(e) => Err(py_error(e, DBError::ExecuteError)),
         }
     }
 }
@@ -135,29 +94,11 @@ impl Connection {
         self.conn.requires_isolation_first()
     }
 
-    pub fn set_tx_isolation_level<'a>(
-        &mut self,
-        py: Python<'a>,
-        isolation_level: String,
-    ) -> PyResult<&'a PyAny> {
+    pub fn raw_cmd<'a>(&mut self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
         let slf = self.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf._set_tx_isolation_level(isolation_level).await {
-                Ok(r) => Ok(r),
-                Err(e) => Err(e.to_pyerr()),
-            }
-        })
-    }
-
-    pub fn start_transaction<'a>(
-        &mut self,
-        py: Python<'a>,
-        isolation_level: String,
-    ) -> PyResult<&'a PyAny> {
-        let slf = self.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf._set_tx_isolation_level(isolation_level).await {
-                Ok(r) => Ok(r),
+            match slf._raw_cmd(sql.as_str()).await {
+                Ok(_) => Ok(()),
                 Err(e) => Err(e.to_pyerr()),
             }
         })
