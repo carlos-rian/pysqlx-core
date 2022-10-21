@@ -2,8 +2,19 @@
 name = "pysqlx-core"
 version = "0.1.6"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+include = [
+    "/pyproject.toml",
+    "/LICENSE",
+    "/README.md",
+    "/convert",
+    "/database",
+    "/py_types",
+    "/pysqlx_core.pyi",
+    "/src"
+]
+
 [lib]
 name = "pysqlx_core"
 crate-type = ["rlib", "cdylib"]

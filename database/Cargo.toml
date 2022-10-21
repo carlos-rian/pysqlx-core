@@ -2,17 +2,6 @@
 name = "database"
 version = "0.1.0"
 edition = "2021"
-workspace = "."
-include = [
-    "/pyproject.toml",
-    "/LICENSE",
-    "/README.md",
-    "/convert",
-    "/database",
-    "/py_types",
-    "/pysqlx_core.pyi",
-    "/src"
-]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
