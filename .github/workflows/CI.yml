@@ -87,10 +87,6 @@ jobs:
     #if: "startsWith(github.ref, 'refs/tags/')"
     needs: [ macos, windows, linux ]
     steps:
-      - uses: actions/setup-python@v4
-        with:
-          cache: 'pip'
-
       - name: Install Twine
         run: pip install -U twine
 
