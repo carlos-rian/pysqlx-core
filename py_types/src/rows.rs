@@ -29,6 +29,7 @@ impl PySQLXResult {
     pub fn rows(&self) -> &PyRows {
         &self.rows
     }
+
     pub fn set_column_types(&mut self, column_types: PyColumnTypes) {
         self.column_types = column_types;
     }

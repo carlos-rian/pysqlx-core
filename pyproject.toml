@@ -62,3 +62,20 @@ include_trailing_comma = true
 force_grid_wrap = 0
 combine_as_imports = true
 color_output = true
+
+
+[tool.poetry]
+name = "pysqlx-engine"
+version = "0.1.6"
+description = "Python Async SQL Engines"
+authors = ["Carlos Rian <crian.rian@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+[tool.poetry.dev-dependencies]
+black = "^22.8.0"
+isort = "^5.10.1"
+psycopg2-binary = "^2.9.4"
+asyncpg = "^0.26.0"
+maturin = "^0.13.6"

@@ -1558,6 +1558,7 @@ dependencies = [
 name = "pysqlx-core"
 version = "0.1.6"
 dependencies = [
+ "bigdecimal",
  "convert",
  "database",
  "pyo3",

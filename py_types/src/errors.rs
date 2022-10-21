@@ -2,6 +2,7 @@ use std::fmt::Display;
 
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
+use quaint::error::Error as QuaintError;
 use serde::Deserialize;
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
@@ -83,5 +84,17 @@ impl PySQLXError {
             self.message.clone(),
             self.error.to_string(),
         ))
+    }
+}
+
+pub fn py_error(err: QuaintError, typ: DBError) -> PySQLXError {
+    if err.original_code().is_none() || err.original_message().is_none() {
+        PySQLXError::py_new(String::from("0"), String::from(err.to_string()), typ)
+    } else {
+        PySQLXError::py_new(
+            String::from(err.original_code().unwrap_or_default()),
+            String::from(err.original_message().unwrap_or_default()),
+            typ,
+        )
     }
 }

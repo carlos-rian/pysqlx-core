@@ -3,7 +3,7 @@ use quaint::{connector::ResultSet, prelude::ResultRow};
 use std::collections::HashMap;
 
 use crate::columns::get_column_types;
-use py_types::{PyColumnTypes, PyRow, PySQLXResult, PyValue};
+use py_types::{PyColumnTypes, PyRow, PyRows, PySQLXResult, PyValue};
 
 pub fn convert_result_set(result_set: ResultSet) -> PySQLXResult {
     let mut py_result = PySQLXResult::default();
@@ -15,6 +15,16 @@ pub fn convert_result_set(result_set: ResultSet) -> PySQLXResult {
         py_result.push(convert_row(&columns, row));
     }
 
+    py_result
+}
+
+pub fn convert_result_set_as_list(result_set: ResultSet) -> PyRows {
+    let mut py_result: PyRows = Vec::new();
+    let columns: Vec<String> = result_set.columns().iter().map(|c| c.to_string()).collect();
+
+    for row in result_set.into_iter() {
+        py_result.push(convert_row(&columns, row));
+    }
     py_result
 }
 

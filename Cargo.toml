@@ -20,3 +20,4 @@ pyo3-asyncio = { version = "0.17", features = ["tokio-runtime"] }
 py_types = { path = "py_types", package = "types"}
 convert = { path = "convert"}
 database = { path = "database"}
+bigdecimal = "0.3"
