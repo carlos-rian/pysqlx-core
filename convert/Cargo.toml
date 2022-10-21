@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-py_types = { path = "../py_types", package = "types" }
+py_types = { path = "../py_types"}
 
 [dependencies.quaint]
 git = "https://github.com/prisma/quaint"

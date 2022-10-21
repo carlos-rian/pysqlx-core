@@ -248,8 +248,8 @@ dependencies = [
 name = "convert"
 version = "0.1.0"
 dependencies = [
+ "py_types",
  "quaint",
- "types",
 ]
 
 [[package]]
@@ -371,12 +371,12 @@ version = "0.1.0"
 dependencies = [
  "convert",
  "openssl",
+ "py_types",
  "pyo3",
  "pyo3-asyncio",
  "quaint",
  "serde",
  "tokio",
- "types",
  "uuid",
 ]
 
@@ -1482,6 +1482,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "py_types"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "pyo3",
+ "quaint",
+ "serde",
+]
+
+[[package]]
 name = "pyo3"
 version = "0.17.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1560,9 +1570,9 @@ version = "0.1.6"
 dependencies = [
  "convert",
  "database",
+ "py_types",
  "pyo3",
  "pyo3-asyncio",
- "types",
 ]
 
 [[package]]
@@ -2220,16 +2230,6 @@ name = "typenum"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dcf81ac59edc17cc8697ff311e8f5ef2d99fcbd9817b34cec66f90b6c3dfd987"
-
-[[package]]
-name = "types"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "pyo3",
- "quaint",
- "serde",
-]
 
 [[package]]
 name = "unicode-bidi"

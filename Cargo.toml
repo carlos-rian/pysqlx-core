@@ -17,6 +17,6 @@ pyo3 = { version = "0.17", features = ["extension-module"] }
 pyo3-asyncio = { version = "0.17", features = ["tokio-runtime"] }
 
 # my packages
-py_types = { path = "py_types", package = "types"}
+py_types = { path = "py_types"}
 convert = { path = "convert"}
 database = { path = "database"}
