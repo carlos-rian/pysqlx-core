@@ -11,6 +11,7 @@ pyo3 = { version = "0.17", features = ["extension-module"] }
 pyo3-asyncio = { version = "0.17", features = ["tokio-runtime"] }
 tokio = { version = "1.17.0", features = ["full"] }
 openssl = { version = "0.10", features = ["vendored"] }
+serde = { version = "1.0", features = ["derive"] }
 
 py_types = { path = "../py_types", package = "types"}
 convert = { path = "../convert"}

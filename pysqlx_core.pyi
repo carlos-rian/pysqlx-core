@@ -76,3 +76,7 @@ class Connection:
 async def new(uri: str) -> 'Connection':
     """Creates a new connection to the database. Returns a `Connection` object."""
     raise PySQLXError()
+
+async def connection(uri: str) -> 'Connection':
+    """Creates a new connection to the database. Returns a `Connection` object."""
+    raise PySQLXError()

@@ -2,7 +2,10 @@ use std::fmt::Display;
 
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
+use serde::Deserialize;
 
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+#[serde(untagged)]
 pub enum DBError {
     QueryError,
     ExecuteError,
@@ -42,6 +45,7 @@ impl Display for DBError {
 }
 
 #[pyclass(name = "PySQLXError", extends = PyTypeError)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct PySQLXError {
     pub code: String,
     pub message: String,

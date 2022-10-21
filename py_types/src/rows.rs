@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
+use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Display;
 
@@ -10,19 +11,13 @@ pub type PyRows = Vec<PyRow>;
 pub type PyColumnTypes = HashMap<String, String>;
 
 #[pyclass]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct PySQLXResult {
     pub rows: PyRows,
     pub column_types: PyColumnTypes,
 }
 
 impl PySQLXResult {
-    pub fn new() -> Self {
-        let rows: PyRows = Vec::new();
-        let column_types: PyColumnTypes = HashMap::new();
-        Self { rows, column_types }
-    }
-
     pub fn push(&mut self, row: PyRow) {
         self.rows.push(row);
     }
@@ -46,6 +41,14 @@ impl Display for PySQLXResult {
             "PySQLXResult(rows: [...], column_types: {:#?})",
             self.column_types
         )
+    }
+}
+
+impl Default for PySQLXResult {
+    fn default() -> Self {
+        let rows: PyRows = Vec::new();
+        let column_types: PyColumnTypes = HashMap::new();
+        Self { rows, column_types }
     }
 }
 

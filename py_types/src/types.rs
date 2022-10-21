@@ -2,11 +2,13 @@ use chrono::SecondsFormat;
 use pyo3::types::PyBytes;
 use pyo3::{PyObject, Python, ToPyObject};
 use quaint::Value;
+use serde::Deserialize;
 
 // this type is a placeholder for the actual type
 type PyValueList = Vec<PyValue>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+#[serde(untagged)]
 pub enum PyValue {
     // true, false
     Boolean(bool),

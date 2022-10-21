@@ -6,7 +6,7 @@ use quaint::prelude::*;
 use quaint::single::Quaint;
 
 #[pyclass]
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct Connection {
     conn: Quaint,
 }
@@ -90,4 +90,12 @@ impl Connection {
     pub fn requires_isolation_first(&self) -> bool {
         self.conn.requires_isolation_first()
     }
+}
+
+pub async fn connection(uri: String) -> Result<String, PySQLXError> {
+    let _conn = match Quaint::new(uri.as_str()).await {
+        Ok(_r) => println!("Connected"),
+        Err(e) => print!("Error: {}", e),
+    };
+    Ok("ok".to_string())
 }
