@@ -66,7 +66,7 @@ impl Connection {
         let slf = self.clone();
         pyo3_asyncio::tokio::future_into_py(py, async move {
             match slf._execute(sql.as_str()).await {
-                Ok(r) => Ok(r),
+                Ok(r) => Python::with_gil(|py| Ok(r.to_object(py))),
                 Err(e) => Err(e.to_pyerr()),
             }
         })
