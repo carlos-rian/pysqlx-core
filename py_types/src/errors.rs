@@ -11,6 +11,7 @@ pub enum DBError {
     QueryError,
     ExecuteError,
     ConnectionError,
+    IsoLevelError,
 }
 
 impl ToPyObject for DBError {
@@ -26,6 +27,7 @@ impl<'a> FromPyObject<'a> for DBError {
             "QueryError" => Ok(DBError::QueryError),
             "ExecuteError" => Ok(DBError::ExecuteError),
             "ConnectionError" => Ok(DBError::ConnectionError),
+            "IsoLevelError" => Ok(DBError::IsoLevelError),
             _ => Err(PyTypeError::new_err(format!(
                 "Cannot convert {} to DBError",
                 s
@@ -40,6 +42,7 @@ impl Display for DBError {
             DBError::QueryError => "QueryError".to_string(),
             DBError::ExecuteError => "ExecuteError".to_string(),
             DBError::ConnectionError => "ConnectionError".to_string(),
+            DBError::IsoLevelError => "IsoLevelError".to_string(),
         };
         write!(f, "{}", v)
     }
@@ -78,6 +81,13 @@ impl PySQLXError {
 }
 
 impl PySQLXError {
+    pub fn new(code: String, message: String, error: DBError) -> Self {
+        Self {
+            code,
+            message,
+            error,
+        }
+    }
     pub fn to_pyerr(&self) -> PyErr {
         PyErr::new::<PySQLXError, _>((
             self.code.clone(),
