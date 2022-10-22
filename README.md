@@ -1,5 +1,6 @@
 # pysqlx-core
 
+pysqlx-core is an extremely fast Python library for communicating with various SQL databases.
 
 This package provides the core functionality for PySQLX-Engine.
 

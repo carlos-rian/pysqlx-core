@@ -44,6 +44,8 @@ classifiers = [
 dynamic = ["version", "license", "readme", "description"]
 keywords = ["async", "database", "sql", "faster", "pysqlx"]
 
+description = "A fast and async SQL database wrapper for Python, with support for MySQL, PostgreSQL, SQLite and MS SQL Server."
+
 [project.urls]
 Homepage = "https://github.com/carlos-rian/pysqlx-core"
 Source = "https://github.com/carlos-rian/pysqlx-core"
