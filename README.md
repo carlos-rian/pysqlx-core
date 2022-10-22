@@ -41,7 +41,7 @@ async def main(sql):
     #return the db types to Pydantic BaseModel
     types = result.get_model() # Dict[str, str] 
 
-    # Select all rows, return with List[Dict[str, Any]]
+    # Select all rows, return how List[Dict[str, Any]]
     rows = await db.query_as_list(sql="SELECT * FROM test;")
 
     # close? no need 👌-> auto-close when finished programmer or go out of context..
