@@ -1566,7 +1566,7 @@ dependencies = [
 
 [[package]]
 name = "pysqlx-core"
-version = "0.1.8-alpha"
+version = "0.1.8"
 dependencies = [
  "convert",
  "database",
