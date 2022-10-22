@@ -22,8 +22,8 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Information Technology",
     "Intended Audience :: System Administrators",
+    "Intended Audience :: Other Audience",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
     "Operating System :: MacOS",
@@ -32,8 +32,15 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Application Frameworks",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Utilities",
     "Topic :: Software Development",
+    "Topic :: Communications :: Database",
     "Typing :: Typed",
+    "Framework :: AsyncIO",
+    "Framework :: AnyIO",
+    "Framework :: FastAPI",
+    "Framework :: Flask",
+    "Framework :: IPython",
 ]
 
 dynamic = ["version", "license", "readme", "description"]
