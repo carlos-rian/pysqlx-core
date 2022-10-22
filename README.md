@@ -5,7 +5,7 @@ This package provides the core functionality for PySQLX-Engine.
 
 The package is currently a work in progress and subject to significant change.
 
-__pysqlx-core__will be a separate package, required by `pysqlx-engine`.
+__pysqlx-core__ will be a separate package, required by `pysqlx-engine`.
 
 This core is not so friendly, but maybe you want to use it, feel free to suggest improvements.
 
