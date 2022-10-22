@@ -36,7 +36,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 
-dynamic = ["version", "license"]
+dynamic = ["version", "license", "readme", "description"]
 keywords = ["async", "database", "sql", "faster", "pysqlx"]
 
 [project.urls]
