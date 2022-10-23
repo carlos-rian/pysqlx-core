@@ -12,11 +12,17 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:          
-      - name: Install depends
+      - name: install depends
         run: |
           sudo apt-get install pkg-config libudev-dev libssl-dev clang
           echo $PKG_CONFIG_ALLOW_CROSS
-      
+
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: "pip"
+          
       - name: check package version
         run: |
           pip install --upgrade httpx toml
@@ -49,22 +55,30 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v3
-      - id: cache-rust
-        name: cache rust
-        uses: Swatinem/rust-cache@v2
+    
+      - name: set up python
+        uses: actions/setup-python@v4
         with:
-          key: v3
+          python-version: '3.10'
+          cache: "pip"
 
       - name: check package version
         run: |
           pip install --upgrade httpx toml
           python .github/check_version.py
 
+      - id: cache-rust
+        name: cache rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: v3
+
       - uses: messense/maturin-action@v1
         with:
           command: build
           args: --release -o dist --find-interpreter
-      - name: Upload wheels
+
+      - name: upload wheels
         uses: actions/upload-artifact@v3
         with:
           name: wheels
@@ -74,6 +88,17 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
+      
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: "pip"
+        
+      - name: check package version
+        run: |
+          pip install --upgrade httpx toml
+          python .github/check_version.py
 
       - id: cache-rust
         name: cache rust
@@ -81,16 +106,12 @@ jobs:
         with:
           key: v3
 
-      - name: check package version
-        run: |
-          pip install --upgrade httpx toml
-          python .github/check_version.py
-
       - uses: messense/maturin-action@v1
         with:
           command: build
           args: --release -o dist --universal2 --find-interpreter
-      - name: Upload wheels
+      
+      - name: ypload wheels
         uses: actions/upload-artifact@v3
         with:
           name: wheels
@@ -112,15 +133,15 @@ jobs:
           pip install --upgrade httpx toml
           python .github/check_version.py
       
-      - name: Install Twine
+      - name: install twine
         run: pip install -U twine
 
-      - name: Download articart
+      - name: download articart
         uses: actions/download-artifact@v2
         with:
           name: wheels
 
-      - name: Twine check
+      - name: twine check
         run: twine check *
 
       - name: upload to pypi
