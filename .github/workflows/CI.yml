@@ -131,6 +131,9 @@ jobs:
         run: |
           pip install --upgrade httpx toml
           python .github/check_version.py
+          
+      - name: update cargo.lock
+        run: cargo update
       
       - name: install twine
         run: pip install -U twine
