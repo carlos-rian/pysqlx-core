@@ -104,12 +104,13 @@ impl<'a> ToPyObject for PyValue {
 
 #[cfg(test)]
 mod tests {
+    use std::borrow::Cow;
+
     use super::*;
     use chrono::Utc;
-    use quaint::ast::ParameterizedValue;
-    use quaint::prelude::Queryable;
     use quaint::{connector::Queryable, single::Quaint};
     use serde_json::json;
+    use uuid::Uuid;
 
     #[test]
     fn test_pyvalue_from_value() {
@@ -117,7 +118,7 @@ mod tests {
         let pyvalue = PyValue::from(value);
         assert_eq!(pyvalue, PyValue::Boolean(true));
 
-        let value = Value::Enum(Some("red".to_string()));
+        let value = Value::Enum(Some(Cow::from("red".to_string())));
         let pyvalue = PyValue::from(value);
         assert_eq!(pyvalue, PyValue::Enum("red".to_string()));
 
@@ -137,7 +138,7 @@ mod tests {
         let pyvalue = PyValue::from(value);
         assert_eq!(pyvalue, PyValue::Json("{\"name\":\"foo\"}".to_string()));
 
-        let value = Value::Xml(Some("<body>foo</body>".to_string()));
+        let value = Value::Xml(Some(Cow::from("<body>foo</body>".to_string())));
         let pyvalue = PyValue::from(value);
         assert_eq!(pyvalue, PyValue::Xml("<body>foo</body>".to_string()));
 
