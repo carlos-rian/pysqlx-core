@@ -12,6 +12,8 @@ jobs:
   linux:
     runs-on: ubuntu-latest
     steps:          
+      - uses: actions/checkout@v3
+      
       - name: install depends
         run: |
           sudo apt-get install pkg-config libudev-dev libssl-dev clang
@@ -27,7 +29,6 @@ jobs:
           pip install --upgrade httpx toml
           python .github/check_version.py
 
-      - uses: actions/checkout@v3
       
       - id: cache-rust
         name: cache rust
