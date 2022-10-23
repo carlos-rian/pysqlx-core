@@ -1,35 +1,59 @@
-[project]
-name = "pysqlx-core"
-requires-python = ">=3.7"
-classifiers = [
-    "Programming Language :: Rust",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
-]
-
-[tool.poetry]
-name = "pysqlx-core"
-version = "0.1.0"
-description = ""
-authors = ["carlos-rian <crian.rian@gmail.com>"]
-
-[tool.poetry.dependencies]
-python = "^3.8"
-maturin = "^0.13.3"
-isort = {version = "^5.10.1", extras = ["colors"]}
-
-[tool.poetry.dev-dependencies]
-ipython = "^8.5.0"
-black = "^22.8.0"
-isort = "^5.10.1"
-
-[tool.maturin]
-bindings = "pyo3"
-python-source = "pysqlx_core"
-
 [build-system]
 requires = ["maturin>=0.13,<0.14"]
 build-backend = "maturin"
+
+[project]
+name = "pysqlx-core"
+requires-python = ">=3.7"
+authors = [{name = 'Carlos Rian', email = 'crian.rian@gmail.com'}]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Other Audience",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Topic :: Database",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development",
+    "Typing :: Typed",
+    "Framework :: AsyncIO",
+    "Framework :: AnyIO",
+    "Framework :: FastAPI",
+    "Framework :: Flask",
+    "Framework :: IPython",
+]
+
+dynamic = ["version", "license", "readme", "description"]
+keywords = ["async", "database", "sql", "faster", "pysqlx"]
+
+description = "A fast and async SQL database wrapper for Python, with support for MySQL, PostgreSQL, SQLite and MS SQL Server."
+
+[project.urls]
+Homepage = "https://github.com/carlos-rian/pysqlx-core"
+Source = "https://github.com/carlos-rian/pysqlx-core"
+
+
+[tool.maturin]
+bindings = "pyo3"
+
 
 [tool.black]
 color = true
@@ -45,3 +69,22 @@ include_trailing_comma = true
 force_grid_wrap = 0
 combine_as_imports = true
 color_output = true
+
+
+[tool.poetry]
+name = "pysqlx-engine"
+version = "0.1.6"
+description = "Python Async SQL Engines"
+authors = ["Carlos Rian <crian.rian@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+[tool.poetry.dev-dependencies]
+black = "^22.8.0"
+isort = "^5.10.1"
+psycopg2-binary = "^2.9.4"
+asyncpg = "^0.26.0"
+maturin = "^0.13.6"
+httpx = "^0.23.0"
+toml = "^0.10.2"

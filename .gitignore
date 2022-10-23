@@ -229,3 +229,9 @@ $RECYCLE.BIN/
 .history/
 
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Rust,Linux,macOS,Python,Windows,VisualStudioCode
+
+.local
+
+.vscode
+
+test.py
