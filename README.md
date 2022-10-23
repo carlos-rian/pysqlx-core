@@ -2,25 +2,58 @@
 
 pysqlx-core is an extremely fast Python library for communicating with various SQL databases.
 
-This package provides the core functionality for PySQLX-Engine.
+This package provides the core functionality for [PySQLX-Engine](https://carlos-rian.github.io/pysqlx-engine/).
 
 The package is currently a work in progress and subject to significant change.
 
-__pysqlx-core__ will be a separate package, required by `pysqlx-engine`.
+[__pysqlx-core__](https://pypi.org/project/pysqlx-core/) will be a separate package, required by [pysqlx-engine](https://carlos-rian.github.io/pysqlx-engine/)`.
+
+This package is written entirely in Rust and compiled as a Python library using PyO3 and PyO3-Asyncio.
 
 This core is not so friendly, but maybe you want to use it, feel free to suggest improvements.
 
+### Supported databases
 
-Example of usage:
+* [`SQLite`](https://www.sqlite.org/index.html)
+* [`PostgreSQL`](https://www.postgresql.org/)
+* [`MySQL`](https://www.mysql.com/)
+* [`Microsoft SQL Server`](https://www.microsoft.com/sql-server)
+
+### Supported Python versions
+
+* [`Python >= 3.7`](https://www.python.org/)
+
+### Supported operating systems
+
+* [`Linux`](https://pt.wikipedia.org/wiki/Linux)
+* [`MacOS`](https://pt.wikipedia.org/wiki/Macos)
+* [`Windows`](https://pt.wikipedia.org/wiki/Microsoft_Windows)
+
+
+### Example of installation:
+
+PIP
+
+```bash
+$ pip install pysqlx-engine
+```
+
+Poetry
+
+```bash
+$ poetry add pysqlx-engine
+```
+
+### Example of usage:
 
 ```python
 import pysqlx_core
 import asyncio
 
 async def main(sql):
+    # Create a connection 
     db = await pysqlx_core.new(uri="postgresql://postgres:postgrespw@localhost:49153")
     
-
     # Create a table
     await db.execute(sql="""
         CREATE TABLE IF NOT EXISTS test (
@@ -30,7 +63,7 @@ async def main(sql):
         """
     )
 
-    # Insert a row
+    # Insert a row and return quantity rows affected
     await db.execute(sql="INSERT INTO test (name) VALUES ('Carlos');")
 
     # Select all rows, return a class PySQLXResult
@@ -49,4 +82,3 @@ async def main(sql):
     
 asyncio.run(main())
 ```
-
