@@ -101,3 +101,94 @@ impl<'a> ToPyObject for PyValue {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::Utc;
+    use quaint::ast::ParameterizedValue;
+    use quaint::prelude::Queryable;
+    use quaint::{connector::Queryable, single::Quaint};
+    use serde_json::json;
+
+    #[test]
+    fn test_pyvalue_from_value() {
+        let value = Value::Boolean(Some(true));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Boolean(true));
+
+        let value = Value::Enum(Some("red".to_string()));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Enum("red".to_string()));
+
+        let value = Value::Int32(Some(1));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Int(1));
+
+        let value = Value::Int64(Some(1));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Int(1));
+
+        let value = Value::Array(Some(vec![Value::Int32(Some(1))]));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::List(vec![PyValue::Int(1)]));
+
+        let value = Value::Json(Some(json!({"name": "foo"})));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Json("{\"name\":\"foo\"}".to_string()));
+
+        let value = Value::Xml(Some("<body>foo</body>".to_string()));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Xml("<body>foo</body>".to_string()));
+
+        let value = Value::Uuid(Some("00000000-0000-0000-0000-000000000000".to_string()));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(
+            pyvalue,
+            PyValue::Uuid("00000000-0000-0000-0000-000000000000".to_string())
+        );
+
+        let value = Value::Time(Some("00:00:00".to_string()));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Time("00:00:00".to_string()));
+
+        let value = Value::Date(Some("0000-00-00".to_string()));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Date("0000-00-00".to_string()));
+
+        let value = Value::DateTime(Some(Utc::now()));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(
+            pyvalue,
+            PyValue::DateTime(Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true))
+        );
+
+        let value = Value::Float(Some(1.0));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Float(1.0));
+
+        let value = Value::Double(Some(1.0));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Float(1.0));
+
+        let value = Value::Bytes(Some(vec![1, 2, 3]));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Bytes(vec![1, 2, 3]));
+
+        let value = Value::Text(Some("foo".to_string()));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::String("foo".to_string()));
+
+        let value = Value::Char(Some('a'));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::String("a".to_string()));
+
+        let value = Value::Numeric(Some("1".to_string()));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::String("1".to_string()));
+
+        let value = Value::Text(None);
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::Null);
+    }
+}

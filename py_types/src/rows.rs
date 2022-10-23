@@ -56,7 +56,7 @@ impl Default for PySQLXResult {
 
 #[pymethods]
 impl PySQLXResult {
-    pub fn get_model(&self, py: Python) -> PyObject {
+    pub fn get_types(&self, py: Python) -> PyObject {
         self.types().to_object(py)
     }
 

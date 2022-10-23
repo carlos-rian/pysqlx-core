@@ -37,3 +37,24 @@ pub fn get_column_types(columns: &Vec<String>, row: &ResultSet) -> PyColumnTypes
     }
     data
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quaint::ast::ParameterizedValue;
+    use quaint::prelude::Queryable;
+    use quaint::{connector::Queryable, single::Quaint};
+
+    #[test]
+    fn test_get_column_types() {
+        let url = "sqlite://";
+        let quaint = Quaint::new(url).unwrap();
+        let result = quaint
+            .query_raw("SELECT 1 as id, 'hello' as name", &[])
+            .unwrap();
+        let columns = vec!["id".to_string(), "name".to_string()];
+        let types = get_column_types(&columns, &result);
+        assert_eq!(types.get("id").unwrap(), "int");
+        assert_eq!(types.get("name").unwrap(), "string");
+    }
+}
