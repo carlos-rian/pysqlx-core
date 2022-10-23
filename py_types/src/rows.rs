@@ -39,7 +39,8 @@ impl Display for PySQLXResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "PySQLXResult(rows: [...], column_types: {:#?})",
+            "PySQLXResult(rows: [{:#?},...], column_types: {:#?})",
+            self.rows().get(0).unwrap_or(&PyRow::new()),
             self.column_types
         )
     }
@@ -81,5 +82,41 @@ impl PySQLXResult {
 
     pub fn __repr__(&self) -> String {
         self.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_py_sqlx_result() {
+        use pyo3::types::PyDict;
+        use std::collections::HashMap;
+
+        let mut result = PySQLXResult::default();
+        let mut row = HashMap::new();
+        row.insert("id".to_string(), PyValue::Int(1));
+        row.insert("name".to_string(), PyValue::String("John".to_string()));
+        result.push(row);
+        let mut row = HashMap::new();
+        row.insert("id".to_string(), PyValue::Int(2));
+        row.insert("name".to_string(), PyValue::String("Jane".to_string()));
+        result.push(row);
+        let mut row = HashMap::new();
+        row.insert("id".to_string(), PyValue::Int(3));
+        row.insert("name".to_string(), PyValue::String("Jack".to_string()));
+        result.push(row);
+        let mut column_types = HashMap::new();
+        column_types.insert("id".to_string(), "int".to_string());
+        column_types.insert("name".to_string(), "str".to_string());
+        result.set_column_types(column_types);
+
+        assert!(result.rows().len() == 3);
+        assert!(result.types().len() == 2);
+
+        assert!(result.__len__() == 3);
+        assert!(result.__str__() == "PySQLXResult(rows: [{\"id\": 1, \"name\": \"John\"},...], column_types: {\"id\": \"int\", \"name\": \"str\"})");
+        assert!(result.__repr__() == "PySQLXResult(rows: [{\"id\": 1, \"name\": \"John\"},...], column_types: {\"id\": \"int\", \"name\": \"str\"})");
     }
 }
