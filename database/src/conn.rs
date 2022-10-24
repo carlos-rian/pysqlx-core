@@ -158,8 +158,6 @@ mod tests {
         assert_eq!(res, 1);
 
         let res = conn._query_as_list("SELECT * FROM test").await.unwrap();
-        assert_eq!(res.len(), 1);
-        assert_eq!(res[0].len(), 1);
         assert_eq!(res[0].get("id").unwrap(), &PyValue::Int(1));
     }
 }
