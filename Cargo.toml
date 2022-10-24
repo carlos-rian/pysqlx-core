@@ -33,4 +33,4 @@ convert = { path = "convert"}
 database = { path = "database"}
 
 [workspace]
-members = ["."]
+members = ["convert/", "database/", "py_types/"]
