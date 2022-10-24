@@ -35,13 +35,13 @@ This core is not so friendly, but maybe you want to use it, feel free to suggest
 PIP
 
 ```bash
-$ pip install pysqlx-engine
+$ pip install pysqlx-core
 ```
 
 Poetry
 
 ```bash
-$ poetry add pysqlx-engine
+$ poetry add pysqlx-core
 ```
 
 ### Example of usage:
