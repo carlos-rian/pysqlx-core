@@ -107,10 +107,12 @@ impl Connection {
 
 #[cfg(test)]
 mod tests {
+    use py_types::PyValue;
+
     use super::*;
 
     #[tokio::test]
-    async fn test_connection() {
+    async fn test_connection_query() {
         let conn = Connection::new("file:///tmp/db.db".to_string())
             .await
             .unwrap();
@@ -118,5 +120,46 @@ mod tests {
         assert_eq!(res.rows().len(), 1);
         assert_eq!(res.types().len(), 1);
         assert_eq!(res.types().get("number").unwrap(), "int");
+    }
+    #[tokio::test]
+
+    async fn test_connection_execute() {
+        let conn = Connection::new("file:///tmp/db.db".to_string())
+            .await
+            .unwrap();
+        let res = conn
+            ._execute("CREATE TABLE IF NOT EXISTS test (id int)")
+            .await
+            .unwrap();
+        assert_eq!(res, 0);
+
+        let res = conn
+            ._execute("INSERT INTO test (id) VALUES (1)")
+            .await
+            .unwrap();
+        assert_eq!(res, 1);
+    }
+
+    #[tokio::test]
+    async fn test_query_as_list() {
+        let conn = Connection::new("file:///tmp/db.db".to_string())
+            .await
+            .unwrap();
+        let res = conn
+            ._execute("CREATE TABLE IF NOT EXISTS test (id int)")
+            .await
+            .unwrap();
+        assert_eq!(res, 0);
+
+        let res = conn
+            ._execute("INSERT INTO test (id) VALUES (1)")
+            .await
+            .unwrap();
+        assert_eq!(res, 1);
+
+        let res = conn._query_as_list("SELECT * FROM test").await.unwrap();
+        assert_eq!(res.len(), 1);
+        assert_eq!(res[0].len(), 1);
+        assert_eq!(res[0].get("id").unwrap(), &PyValue::Int(1));
     }
 }
