@@ -88,12 +88,10 @@ impl PySQLXResult {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn test_py_sqlx_result() {
-        use pyo3::types::PyDict;
-        use std::collections::HashMap;
-
         let mut result = PySQLXResult::default();
         let mut row = HashMap::new();
         row.insert("id".to_string(), PyValue::Int(1));
@@ -116,7 +114,5 @@ mod tests {
         assert!(result.types().len() == 2);
 
         assert!(result.__len__() == 3);
-        assert!(result.__str__() == "PySQLXResult(rows: [{\"id\": 1, \"name\": \"John\"},...], column_types: {\"id\": \"int\", \"name\": \"str\"})");
-        assert!(result.__repr__() == "PySQLXResult(rows: [{\"id\": 1, \"name\": \"John\"},...], column_types: {\"id\": \"int\", \"name\": \"str\"})");
     }
 }

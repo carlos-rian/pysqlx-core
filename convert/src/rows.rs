@@ -35,3 +35,59 @@ fn convert_row(columns: &Vec<String>, row: ResultRow) -> PyRow {
     }
     data
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quaint::prelude::Queryable;
+    use quaint::single::Quaint;
+
+    #[tokio::test]
+    async fn test_get_column_types() {
+        let url = "file:memory:";
+        let quaint = Quaint::new(url).await.unwrap();
+        let result = quaint
+            .query_raw("SELECT 1 as id, 'hello' as name", &[])
+            .await
+            .unwrap();
+        let py_result = convert_result_set(result);
+        assert_eq!(py_result.types().get("id").unwrap(), "int");
+        assert_eq!(py_result.types().get("name").unwrap(), "string");
+    }
+
+    #[tokio::test]
+    async fn test_get_py_sqlx_result() {
+        let url = "file:memory:";
+        let quaint = Quaint::new(url).await.unwrap();
+        let result = quaint
+            .query_raw("SELECT 1 as id, 'hello' as name", &[])
+            .await
+            .unwrap();
+        let py_result = convert_result_set(result);
+        assert_eq!(py_result.__len__() as usize, 1);
+        let row = py_result.rows();
+        assert_eq!(row[0].get("id").unwrap(), &PyValue::Int(1));
+        assert_eq!(
+            row[0].get("name").unwrap(),
+            &PyValue::String("hello".to_string())
+        );
+        assert_eq!(row.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_get_raw_as_list() {
+        let url = "file:memory:";
+        let quaint = Quaint::new(url).await.unwrap();
+        let result = quaint
+            .query_raw("SELECT 1 as id, 'hello' as name", &[])
+            .await
+            .unwrap();
+        let py_result = convert_result_set_as_list(result);
+        assert_eq!(py_result.len(), 1);
+        assert_eq!(py_result[0].get("id").unwrap(), &PyValue::Int(1));
+        assert_eq!(
+            py_result[0].get("name").unwrap(),
+            &PyValue::String("hello".to_string())
+        );
+    }
+}

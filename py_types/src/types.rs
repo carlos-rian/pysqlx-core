@@ -104,13 +104,14 @@ impl<'a> ToPyObject for PyValue {
 
 #[cfg(test)]
 mod tests {
-    use std::borrow::Cow;
+    use std::{borrow::Cow, str::FromStr};
 
     use super::*;
-    use chrono::Utc;
-    use quaint::{connector::Queryable, single::Quaint};
+    use bigdecimal::BigDecimal;
+    use chrono::{NaiveDate, NaiveTime, Utc};
+    use quaint::Value;
     use serde_json::json;
-    use uuid::Uuid;
+    use uuid::{uuid, Uuid};
 
     #[test]
     fn test_pyvalue_from_value() {
@@ -136,32 +137,34 @@ mod tests {
 
         let value = Value::Json(Some(json!({"name": "foo"})));
         let pyvalue = PyValue::from(value);
-        assert_eq!(pyvalue, PyValue::Json("{\"name\":\"foo\"}".to_string()));
+        assert_eq!(pyvalue, PyValue::Json(r#"{"name":"foo"}"#.to_string()));
 
         let value = Value::Xml(Some(Cow::from("<body>foo</body>".to_string())));
         let pyvalue = PyValue::from(value);
         assert_eq!(pyvalue, PyValue::Xml("<body>foo</body>".to_string()));
 
-        let value = Value::Uuid(Some("00000000-0000-0000-0000-000000000000".to_string()));
+        let id: Uuid = uuid!("00000000-0000-0000-0000-000000000000");
+        let value = Value::Uuid(Some(id));
         let pyvalue = PyValue::from(value);
         assert_eq!(
             pyvalue,
             PyValue::Uuid("00000000-0000-0000-0000-000000000000".to_string())
         );
 
-        let value = Value::Time(Some("00:00:00".to_string()));
+        let value = Value::Time(Some(NaiveTime::from_str("12:01:02").unwrap()));
         let pyvalue = PyValue::from(value);
-        assert_eq!(pyvalue, PyValue::Time("00:00:00".to_string()));
+        assert_eq!(pyvalue, PyValue::Time("12:01:02".to_string()));
 
-        let value = Value::Date(Some("0000-00-00".to_string()));
+        let value = Value::Date(Some(NaiveDate::from_str("2022-01-01").unwrap()));
         let pyvalue = PyValue::from(value);
-        assert_eq!(pyvalue, PyValue::Date("0000-00-00".to_string()));
+        assert_eq!(pyvalue, PyValue::Date("2022-01-01".to_string()));
 
-        let value = Value::DateTime(Some(Utc::now()));
+        let v = Utc::now();
+        let value = Value::DateTime(Some(v));
         let pyvalue = PyValue::from(value);
         assert_eq!(
             pyvalue,
-            PyValue::DateTime(Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true))
+            PyValue::DateTime(v.to_rfc3339_opts(SecondsFormat::Millis, true))
         );
 
         let value = Value::Float(Some(1.0));
@@ -172,11 +175,15 @@ mod tests {
         let pyvalue = PyValue::from(value);
         assert_eq!(pyvalue, PyValue::Float(1.0));
 
-        let value = Value::Bytes(Some(vec![1, 2, 3]));
+        let v: Cow<'_, [u8]> = Cow::from(vec![1, 2, 3]);
+
+        let value = Value::Bytes(Some(v));
         let pyvalue = PyValue::from(value);
         assert_eq!(pyvalue, PyValue::Bytes(vec![1, 2, 3]));
 
-        let value = Value::Text(Some("foo".to_string()));
+        let v: Cow<'_, str> = Cow::from("foo");
+
+        let value = Value::Text(Some(v));
         let pyvalue = PyValue::from(value);
         assert_eq!(pyvalue, PyValue::String("foo".to_string()));
 
@@ -184,11 +191,15 @@ mod tests {
         let pyvalue = PyValue::from(value);
         assert_eq!(pyvalue, PyValue::String("a".to_string()));
 
-        let value = Value::Numeric(Some("1".to_string()));
-        let pyvalue = PyValue::from(value);
-        assert_eq!(pyvalue, PyValue::String("1".to_string()));
+        let v = BigDecimal::from_str("1.0").unwrap();
 
-        let value = Value::Text(None);
+        let value = Value::Numeric(Some(v));
+        let pyvalue = PyValue::from(value);
+        assert_eq!(pyvalue, PyValue::String("1.0".to_string()));
+
+        let v: Option<Cow<'_, str>> = None;
+
+        let value = Value::Text(v);
         let pyvalue = PyValue::from(value);
         assert_eq!(pyvalue, PyValue::Null);
     }

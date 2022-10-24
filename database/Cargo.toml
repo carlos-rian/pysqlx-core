@@ -33,3 +33,6 @@ features = [
     #"pooled",
     "fmt-sql"
 ]
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["macros"] }
