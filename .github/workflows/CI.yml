@@ -1,11 +1,12 @@
 name: CI
 
 on:
+  pull_request:
+    branches:
+      - '*'
   push:
     branches:
-      - "*"
-  pull_request:
-    - "release*"
+      - 'release*'
 
 
 env:
