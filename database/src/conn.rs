@@ -111,7 +111,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_connection() {
-        let conn = Connection::new("file:memory:".to_string()).await.unwrap();
+        let conn = Connection::new("file:///tmp/db.db".to_string())
+            .await
+            .unwrap();
         let res = conn._query("SELECT 1 as number").await.unwrap();
         assert_eq!(res.rows().len(), 1);
         assert_eq!(res.types().len(), 1);

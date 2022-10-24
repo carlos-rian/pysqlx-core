@@ -44,7 +44,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_column_types() {
-        let url = "file:memory:";
+        let url = "file:///tmp/db.db";
         let quaint = Quaint::new(url).await.unwrap();
         let result = quaint
             .query_raw("SELECT 1 as id, 'hello' as name", &[])
@@ -57,7 +57,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_py_sqlx_result() {
-        let url = "file:memory:";
+        let url = "file:///tmp/db.db";
         let quaint = Quaint::new(url).await.unwrap();
         let result = quaint
             .query_raw("SELECT 1 as id, 'hello' as name", &[])
@@ -76,7 +76,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_raw_as_list() {
-        let url = "file:memory:";
+        let url = "file:///tmp/db.db";
         let quaint = Quaint::new(url).await.unwrap();
         let result = quaint
             .query_raw("SELECT 1 as id, 'hello' as name", &[])
