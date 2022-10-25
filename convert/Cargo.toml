@@ -16,3 +16,12 @@ features = [
     "chrono",
     "bigdecimal"
 ]
+
+[dev-dependencies]
+tokio = { version = "1.0", features = ["macros"] }
+
+[dev-dependencies.quaint]
+git = "https://github.com/prisma/quaint"
+features = [
+    "sqlite",
+]

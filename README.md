@@ -1,12 +1,17 @@
-# pysqlx-core
+# __pysqlx-core__
+
+[![cargo ci](https://github.com/carlos-rian/pysqlx-core/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/carlos-rian/pysqlx-core/actions?query=event%3Apush+branch%3Amain+workflow%3Aci)
+[![pypi](https://img.shields.io/pypi/v/pysqlx-core.svg)](https://pypi.python.org/pypi/pysqlx-core)
+[![versions](https://img.shields.io/pypi/pyversions/pysqlx-core.svg)](https://github.com/carlos-rian/pysqlx-core)
+[![license](https://img.shields.io/github/license/carlos-rian/pysqlx-core.svg)](https://github.com/carlos-rian/pysqlx-core/blob/main/LICENSE)
 
 pysqlx-core is an extremely fast Python library for communicating with various SQL databases.
 
-This package provides the core functionality for [PySQLX-Engine](https://carlos-rian.github.io/pysqlx-engine/).
+This package provides the core functionality for [__PySQLX-Engine__](https://carlos-rian.github.io/pysqlx-engine/).
 
 The package is currently a work in progress and subject to significant change.
 
-[__pysqlx-core__](https://pypi.org/project/pysqlx-core/) will be a separate package, required by [pysqlx-engine](https://carlos-rian.github.io/pysqlx-engine/)`.
+[__pysqlx-core__](https://pypi.org/project/pysqlx-core/) will be a separate package, required by [__pysqlx-engine__](https://carlos-rian.github.io/pysqlx-engine/).
 
 This package is written entirely in Rust and compiled as a Python library using PyO3 and PyO3-Asyncio.
 
@@ -14,31 +19,31 @@ This core is not so friendly, but maybe you want to use it, feel free to suggest
 
 ### Supported databases
 
-* [`SQLite`](https://www.sqlite.org/index.html)
-* [`PostgreSQL`](https://www.postgresql.org/)
-* [`MySQL`](https://www.mysql.com/)
-* [`Microsoft SQL Server`](https://www.microsoft.com/sql-server)
+* [__`SQLite`__](https://www.sqlite.org/index.html)
+* [__`PostgreSQL`__](https://www.postgresql.org/)
+* [__`MySQL`__](https://www.mysql.com/)
+* [__`Microsoft SQL Server`__](https://www.microsoft.com/sql-server)
 
 ### Supported Python versions
 
-* [`Python >= 3.7`](https://www.python.org/)
+* [__`Python >= 3.7`__](https://www.python.org/)
 
 ### Supported operating systems
 
-* [`Linux`](https://pt.wikipedia.org/wiki/Linux)
-* [`MacOS`](https://pt.wikipedia.org/wiki/Macos)
-* [`Windows`](https://pt.wikipedia.org/wiki/Microsoft_Windows)
+* [__`Linux`__](https://pt.wikipedia.org/wiki/Linux)
+* [__`MacOS`__](https://pt.wikipedia.org/wiki/Macos)
+* [__`Windows`__](https://pt.wikipedia.org/wiki/Microsoft_Windows)
 
 
 ### Example of installation:
 
-PIP
+__PIP__
 
 ```bash
 $ pip install pysqlx-core
 ```
 
-Poetry
+__Poetry__
 
 ```bash
 $ poetry add pysqlx-core

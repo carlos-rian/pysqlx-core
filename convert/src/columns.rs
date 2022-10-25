@@ -37,3 +37,24 @@ pub fn get_column_types(columns: &Vec<String>, row: &ResultSet) -> PyColumnTypes
     }
     data
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use quaint::prelude::Queryable;
+    use quaint::single::Quaint;
+
+    #[tokio::test]
+    async fn test_get_column_types() {
+        let url = "file:///tmp/db.db";
+        let quaint = Quaint::new(url).await.unwrap();
+        let result = quaint
+            .query_raw("SELECT 1 as id, 'hello' as name", &[])
+            .await
+            .unwrap();
+        let columns = vec!["id".to_string(), "name".to_string()];
+        let types = get_column_types(&columns, &result);
+        assert_eq!(types.get("id").unwrap(), "int");
+        assert_eq!(types.get("name").unwrap(), "string");
+    }
+}

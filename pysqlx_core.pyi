@@ -38,7 +38,7 @@ class PySQLXResult:
     PySQLXResult is a class that represents the result of a query.
     It is returned by the `query` method of the `Connection` class.
     """
-    def get_model(self) -> "Dict[str, str]":
+    def get_types(self) -> "Dict[str, str]":
         """Returns a dictionary of column names and their types used to generate Pydantic BaseModel."""
         raise PySQLXError()
     

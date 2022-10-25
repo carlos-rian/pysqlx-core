@@ -18,3 +18,14 @@ features = [
     "chrono",
     "bigdecimal"
 ]
+
+[dev-dependencies]
+serde_json = "1.0"
+uuid = { version = "1.2.1", features = ["serde", "v4"] }
+bigdecimal = "0.3.0"
+
+[dev-dependencies.quaint]
+git = "https://github.com/prisma/quaint"
+features = [
+    "sqlite",
+]

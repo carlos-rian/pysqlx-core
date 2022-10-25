@@ -67,16 +67,27 @@ impl PySQLXError {
         }
     }
 
-    pub fn __str__(&self, py: Python) -> PyObject {
+    pub fn __str__(&self) -> String {
         format!(
             "PySQLXError(code='{}', message='{}', error='{}')",
             self.code, self.message, self.error
         )
-        .into_py(py)
     }
 
-    pub fn __repr__(&self, py: Python) -> PyObject {
-        self.__str__(py)
+    pub fn __repr__(&self) -> String {
+        self.__str__()
+    }
+
+    pub fn code(&self) -> String {
+        self.code.clone()
+    }
+
+    pub fn message(&self) -> String {
+        self.message.clone()
+    }
+
+    pub fn error(&self) -> String {
+        self.error.to_string()
     }
 }
 
@@ -106,5 +117,22 @@ pub fn py_error(err: QuaintError, typ: DBError) -> PySQLXError {
             String::from(err.original_message().unwrap_or_default()),
             typ,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_py_sqlx_error() {
+        let err = PySQLXError::py_new(
+            String::from("0"),
+            String::from("test"),
+            DBError::ConnectionError,
+        );
+        assert_eq!(err.code(), "0");
+        assert_eq!(err.message(), "test");
+        assert_eq!(err.error(), "ConnectionError");
     }
 }

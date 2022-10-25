@@ -31,3 +31,6 @@ pyo3-asyncio = { version = "0.17", features = ["tokio-runtime"] }
 py_types = { path = "py_types"}
 convert = { path = "convert"}
 database = { path = "database"}
+
+[workspace]
+members = ["convert/", "database/", "py_types/"]

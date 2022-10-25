@@ -250,6 +250,7 @@ version = "0.1.0"
 dependencies = [
  "py_types",
  "quaint",
+ "tokio",
 ]
 
 [[package]]
@@ -1485,10 +1486,13 @@ dependencies = [
 name = "py_types"
 version = "0.1.0"
 dependencies = [
+ "bigdecimal",
  "chrono",
  "pyo3",
  "quaint",
  "serde",
+ "serde_json",
+ "uuid",
 ]
 
 [[package]]
@@ -2277,9 +2281,13 @@ dependencies = [
 
 [[package]]
 name = "uuid"
-version = "1.1.2"
+version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd6469f4314d5f1ffec476e05f17cc9a78bc7a27a6a857842170bdf8d6f98d2f"
+checksum = "feb41e78f93363bb2df8b0e86a2ca30eed7806ea16ea0c790d757cf93f79be83"
+dependencies = [
+ "getrandom 0.2.7",
+ "serde",
+]
 
 [[package]]
 name = "valuable"
