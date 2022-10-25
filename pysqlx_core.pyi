@@ -67,6 +67,10 @@ class PySQLXResult:
     def get_first(self) -> "Dict[str, Any]":
         """Returns the first row of the query result as a dictionary."""
         raise PySQLXError()
+    
+    def __len__(self) -> int:
+        """Returns the number of rows in the query result."""
+        ...
 
 class Connection:
     """
