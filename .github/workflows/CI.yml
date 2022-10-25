@@ -21,6 +21,9 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+      
+      - name: run test
+        run: cargo test -p database -p convert -p py_types
 
   linux:
     if: github.ref == 'refs/heads/main'
