@@ -42,9 +42,11 @@ class PySQLXError(Exception):
     def error(self) -> str: 
         """
         Returns the type of the error
-        * RawQuery
-        * ConnectionError
-        * ConversionError
+            * QueryError
+            * ExecuteError
+            * ConnectionError
+            * IsoLevelError
+            * StartTransactionError
 
         """
         ...
