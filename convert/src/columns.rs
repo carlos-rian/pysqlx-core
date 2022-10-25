@@ -55,6 +55,6 @@ mod tests {
         let columns = vec!["id".to_string(), "name".to_string()];
         let types = get_column_types(&columns, &result);
         assert_eq!(types.get("id").unwrap(), "int");
-        assert_eq!(types.get("name").unwrap(), "string");
+        assert_eq!(types.get("name").unwrap(), "str");
     }
 }

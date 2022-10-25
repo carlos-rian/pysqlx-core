@@ -52,7 +52,7 @@ mod tests {
             .unwrap();
         let py_result = convert_result_set(result);
         assert_eq!(py_result.types().get("id").unwrap(), "int");
-        assert_eq!(py_result.types().get("name").unwrap(), "string");
+        assert_eq!(py_result.types().get("name").unwrap(), "str");
     }
 
     #[tokio::test]
