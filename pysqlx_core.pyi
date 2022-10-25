@@ -127,7 +127,7 @@ class Connection:
         """Returns a list of dictionaries representing the rows of the query result."""
         raise PySQLXError()
     
-    async def raw_cmd(self, sql: str) -> "str": 
+    async def raw_cmd(self, sql: str) -> "None": 
         """Run a command in the database, for queries that can't be run using prepared statements."""
         raise PySQLXError()
 
