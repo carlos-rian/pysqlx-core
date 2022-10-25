@@ -8,8 +8,8 @@ fn get_type(value: &Value) -> String {
     match value {
         Value::Boolean(_) => "bool".to_string(),
         Value::Enum(_) => "str".to_string(),
-        Value::Text(_) => "string".to_string(),
-        Value::Char(_) => "string".to_string(),
+        Value::Text(_) => "str".to_string(),
+        Value::Char(_) => "str".to_string(),
         Value::Int32(_) => "int".to_string(),
         Value::Int64(_) => "int".to_string(),
         Value::Array(_) => "list".to_string(),
