@@ -9,7 +9,7 @@ on:
       - '*'
     paths:
       - '.github/*'
-      - '*.rs'
+      - '**.rs'
       - 'pyproject.toml'
       - 'Cargo.toml'
       - '*.pyi'
