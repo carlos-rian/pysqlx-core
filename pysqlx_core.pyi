@@ -18,7 +18,15 @@ class PySQLXError(Exception):
     ### Base class for all exceptions raised by pysqlx.
      
     `code`: str - mapped to the error code
-    `error`: str - description of the error
+    `message`: str - information about the error
+    `error`: str - type of error
+
+    error types:
+        * QueryError
+        * ExecuteError
+        * ConnectionError
+        * IsoLevelError
+        * StartTransactionError
     """
     code: str
     message: str
