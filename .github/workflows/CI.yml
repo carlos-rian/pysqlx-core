@@ -18,10 +18,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - id: cache-rust
+        name: cache rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: v3
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      
+    
       - name: run test
         run: cargo test -p database -p convert -p py_types
 
