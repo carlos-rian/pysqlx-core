@@ -1,6 +1,6 @@
 # __pysqlx-core__
 
-[![cargo ci](https://github.com/carlos-rian/pysqlx-core/actions/workflows/CI.yml/badge.svg?event=push)](https://github.com/carlos-rian/pysqlx-core/actions?query=event%3Apush+branch%3Amain+workflow%3Aci)
+[![cargo ci](https://github.com/carlos-rian/pysqlx-core/actions/workflows/ci.yml/badge.svg?event=push)](https://github.com/carlos-rian/pysqlx-core/actions?query=event%3Apush+branch%3Amain+workflow%3Aci)
 [![pypi](https://img.shields.io/pypi/v/pysqlx-core.svg)](https://pypi.python.org/pypi/pysqlx-core)
 [![versions](https://img.shields.io/pypi/pyversions/pysqlx-core.svg)](https://github.com/carlos-rian/pysqlx-core)
 [![license](https://img.shields.io/github/license/carlos-rian/pysqlx-core.svg)](https://github.com/carlos-rian/pysqlx-core/blob/main/LICENSE)
