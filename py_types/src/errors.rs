@@ -12,6 +12,7 @@ pub enum DBError {
     ExecuteError,
     ConnectionError,
     IsoLevelError,
+    StartTransactionError,
 }
 
 impl ToPyObject for DBError {
@@ -28,6 +29,7 @@ impl<'a> FromPyObject<'a> for DBError {
             "ExecuteError" => Ok(DBError::ExecuteError),
             "ConnectionError" => Ok(DBError::ConnectionError),
             "IsoLevelError" => Ok(DBError::IsoLevelError),
+            "StartTransactionError" => Ok(DBError::StartTransactionError),
             _ => Err(PyTypeError::new_err(format!(
                 "Cannot convert {} to DBError",
                 s
@@ -43,6 +45,7 @@ impl Display for DBError {
             DBError::ExecuteError => "ExecuteError".to_string(),
             DBError::ConnectionError => "ConnectionError".to_string(),
             DBError::IsoLevelError => "IsoLevelError".to_string(),
+            DBError::StartTransactionError => "StartTransactionError".to_string(),
         };
         write!(f, "{}", v)
     }
