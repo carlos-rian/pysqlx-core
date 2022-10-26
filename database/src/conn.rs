@@ -1,5 +1,6 @@
 use convert::convert_result_set;
 use convert::convert_result_set_as_list;
+use py_types::PyRow;
 use py_types::PyRows;
 use py_types::{py_error, DBError, PySQLXError, PySQLXResult};
 use pyo3::prelude::*;
@@ -34,6 +35,19 @@ impl Connection {
     async fn _query_as_list(&self, sql: &str) -> Result<PyRows, PySQLXError> {
         match self.conn.query_raw(sql, &[]).await {
             Ok(r) => Ok(convert_result_set_as_list(r)),
+            Err(e) => Err(py_error(e, DBError::QueryError)),
+        }
+    }
+    // Execute a query given as SQL, interpolating the given parameters. return a dict of rows
+    async fn _query_first_as_dict(&self, sql: &str) -> Result<PyRow, PySQLXError> {
+        match self.conn.query_raw(sql, &[]).await {
+            Ok(r) => {
+                let rows = convert_result_set_as_list(r);
+                match rows.get(0) {
+                    Some(r) => Ok(r.clone()),
+                    None => Ok(PyRow::new()),
+                }
+            }
             Err(e) => Err(py_error(e, DBError::QueryError)),
         }
     }
@@ -124,6 +138,20 @@ impl Connection {
             Python::with_gil(|py| {
                 let pyrows = rows.to_object(py);
                 Ok(pyrows)
+            })
+        })
+    }
+
+    pub fn query_first_as_dict<'a>(&mut self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
+        let slf = self.clone();
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let row = match slf._query_first_as_dict(sql.as_str()).await {
+                Ok(r) => r,
+                Err(e) => return Err(e.to_pyerr()),
+            };
+            Python::with_gil(|py| {
+                let pyrow = row.to_object(py);
+                Ok(pyrow)
             })
         })
     }
@@ -255,6 +283,59 @@ mod tests {
             .await
             .unwrap();
         let res = conn._query_as_list("SELECT * FROM InvalidTable").await;
+        assert!(res.is_err())
+    }
+
+    #[tokio::test]
+    async fn test_query_first_as_dict_success() {
+        let conn = Connection::new("file:///tmp/db.db".to_string())
+            .await
+            .unwrap();
+        let res = conn
+            ._execute("CREATE TABLE IF NOT EXISTS test (id int)")
+            .await
+            .unwrap();
+        assert_eq!(res, 0);
+
+        let res = conn
+            ._execute("INSERT INTO test (id) VALUES (1)")
+            .await
+            .unwrap();
+        assert_eq!(res, 1);
+
+        let res = conn
+            ._query_first_as_dict("SELECT * FROM test")
+            .await
+            .unwrap();
+        assert_eq!(res.get("id").unwrap(), &PyValue::Int(1));
+    }
+
+    #[tokio::test]
+    async fn test_query_first_as_dict_success_empty() {
+        let conn = Connection::new("file:///tmp/db.db".to_string())
+            .await
+            .unwrap();
+        let res = conn
+            ._execute("CREATE TABLE IF NOT EXISTS test (id int)")
+            .await
+            .unwrap();
+        assert_eq!(res, 0);
+
+        let res = conn
+            ._query_first_as_dict("SELECT * FROM test WHERE id = 0")
+            .await
+            .unwrap();
+        assert_eq!(res.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_query_first_as_dict_error() {
+        let conn = Connection::new("file:///tmp/db.db".to_string())
+            .await
+            .unwrap();
+        let res = conn
+            ._query_first_as_dict("SELECT * FROM InvalidTable")
+            .await;
         assert!(res.is_err())
     }
 
