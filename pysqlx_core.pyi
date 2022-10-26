@@ -1,17 +1,10 @@
 from typing import Any, Dict, List, Union
-from enum import Enum
+from typing_extensions import Literal
 
 __all__ = ("__version__", "new", "Connection", 'PySQLXError', "PySQLXResult")
 __version__: str
 
-class IsolationLevel(Enum):
-    """Isolation levels for transactions."""
-
-    ReadUncommitted = "ReadUncommitted"
-    ReadCommitted = "ReadCommitted"
-    RepeatableRead = "RepeatableRead"
-    Snapshot = "Snapshot"
-    Serializable = "Serializable"
+IsolationLevel = Literal["ReadUncommitted", "ReadCommitted", "RepeatableRead", "Snapshot", "Serializable"]
 
 class PySQLXError(Exception):
     """

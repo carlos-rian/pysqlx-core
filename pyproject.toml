@@ -41,6 +41,7 @@ classifiers = [
     "Framework :: IPython",
 ]
 
+dependencies = ['typing_extensions; python_version < "3.11.0"']
 dynamic = ["version", "license", "readme", "description"]
 keywords = ["async", "database", "sql", "faster", "pysqlx"]
 
