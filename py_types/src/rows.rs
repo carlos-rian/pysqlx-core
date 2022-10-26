@@ -39,8 +39,7 @@ impl Display for PySQLXResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "PySQLXResult(rows: [{:#?},...], column_types: {:#?})",
-            self.rows().get(0).unwrap_or(&PyRow::new()),
+            "PySQLXResult(rows: [...], column_types: {:?})",
             self.column_types
         )
     }
