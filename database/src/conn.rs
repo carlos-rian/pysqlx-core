@@ -19,7 +19,7 @@ impl Connection {
     pub async fn new(uri: String) -> Result<Self, PySQLXError> {
         let conn = match Quaint::new(uri.as_str()).await {
             Ok(r) => r,
-            Err(e) => return Err(py_error(e, DBError::ConnectionError)),
+            Err(e) => return Err(py_error(e, DBError::ConnectError)),
         };
         Ok(Self { conn })
     }
@@ -62,7 +62,7 @@ impl Connection {
     async fn _raw_cmd(&self, sql: &str) -> Result<(), PySQLXError> {
         match self.conn.raw_cmd(sql).await {
             Ok(_) => Ok(()),
-            Err(e) => Err(py_error(e, DBError::ExecuteError)),
+            Err(e) => Err(py_error(e, DBError::RawCmdError)),
         }
     }
     // return the isolation level
@@ -75,7 +75,7 @@ impl Connection {
             "SERIALIZABLE" => Ok(IsolationLevel::Serializable),
             _ => {
                 return Err(PySQLXError::new(
-                    "10IVAL".to_string(),
+                    "PY001IL".to_string(),
                     "invalid isolation level".to_string(),
                     DBError::IsoLevelError,
                 ))

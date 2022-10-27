@@ -10,7 +10,8 @@ use serde::Deserialize;
 pub enum DBError {
     QueryError,
     ExecuteError,
-    ConnectionError,
+    RawCmdError,
+    ConnectError,
     IsoLevelError,
     StartTransactionError,
 }
@@ -27,7 +28,8 @@ impl<'a> FromPyObject<'a> for DBError {
         match s.as_str() {
             "QueryError" => Ok(DBError::QueryError),
             "ExecuteError" => Ok(DBError::ExecuteError),
-            "ConnectionError" => Ok(DBError::ConnectionError),
+            "RawCmdError" => Ok(DBError::RawCmdError),
+            "ConnectError" => Ok(DBError::ConnectError),
             "IsoLevelError" => Ok(DBError::IsoLevelError),
             "StartTransactionError" => Ok(DBError::StartTransactionError),
             _ => Err(PyTypeError::new_err(format!(
@@ -43,7 +45,8 @@ impl Display for DBError {
         let v = match self {
             DBError::QueryError => "QueryError".to_string(),
             DBError::ExecuteError => "ExecuteError".to_string(),
-            DBError::ConnectionError => "ConnectionError".to_string(),
+            DBError::RawCmdError => "RawCmdError".to_string(),
+            DBError::ConnectError => "ConnectError".to_string(),
             DBError::IsoLevelError => "IsoLevelError".to_string(),
             DBError::StartTransactionError => "StartTransactionError".to_string(),
         };
@@ -132,10 +135,10 @@ mod tests {
         let err = PySQLXError::py_new(
             String::from("0"),
             String::from("test"),
-            DBError::ConnectionError,
+            DBError::ConnectError,
         );
         assert_eq!(err.code(), "0");
         assert_eq!(err.message(), "test");
-        assert_eq!(err.error(), "ConnectionError");
+        assert_eq!(err.error(), "ConnectError");
     }
 }
