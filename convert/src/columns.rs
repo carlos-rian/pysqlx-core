@@ -12,7 +12,16 @@ fn get_type(value: &Value) -> String {
         Value::Char(_) => "str".to_string(),
         Value::Int32(_) => "int".to_string(),
         Value::Int64(_) => "int".to_string(),
-        Value::Array(_) => "list".to_string(),
+        Value::Array(v) => match v {
+            Some(v) => {
+                if v.is_empty() {
+                    "list".to_string()
+                } else {
+                    format!("list_{}", get_type(&v[0]))
+                }
+            }
+            None => "list".to_string(),
+        },
         Value::Json(_) => "json".to_string(),
         Value::Xml(_) => "str".to_string(),
         Value::Uuid(_) => "uuid".to_string(),
