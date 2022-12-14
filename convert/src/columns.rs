@@ -15,12 +15,12 @@ fn get_type(value: &Value) -> String {
         Value::Array(v) => match v {
             Some(v) => {
                 if v.is_empty() {
-                    "list".to_string()
+                    "array".to_string()
                 } else {
-                    format!("list_{}", get_type(&v[0]))
+                    format!("array_{}", get_type(&v[0]))
                 }
             }
-            None => "list".to_string(),
+            None => "array".to_string(),
         },
         Value::Json(_) => "json".to_string(),
         Value::Xml(_) => "str".to_string(),
