@@ -1,5 +1,5 @@
 use chrono::SecondsFormat;
-use pyo3::types::PyBytes;
+use pyo3::types::{PyBytes, PyTuple};
 use pyo3::{PyObject, Python, ToPyObject};
 use quaint::Value;
 use serde::Deserialize;
@@ -87,7 +87,9 @@ impl<'a> ToPyObject for PyValue {
                 for item in l {
                     list.push(item.to_object(py));
                 }
-                list.to_object(py)
+                // convert to tuple python.
+                PyTuple::new(py, &list).to_object(py)
+                //list.to_object(py)
             }
             PyValue::Json(s) => s.to_object(py),
             PyValue::Xml(s) => s.to_object(py),
