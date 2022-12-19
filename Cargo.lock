@@ -1613,7 +1613,7 @@ dependencies = [
 [[package]]
 name = "quaint"
 version = "0.2.0-alpha.13"
-source = "git+https://github.com/prisma/quaint#e9f2b34a5c453a1dcccedbb30d4a25daf40a7046"
+source = "git+https://github.com/prisma/quaint#6df49f14efe99696e577ffb9902c83b09bec8de2"
 dependencies = [
  "async-trait",
  "base64 0.12.3",
@@ -2064,9 +2064,9 @@ dependencies = [
 
 [[package]]
 name = "tiberius"
-version = "0.11.0"
+version = "0.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f9232bb2d5c2e28c922c1247c9e8cf0bec361ae1865300308387ced5d0a922d"
+checksum = "348c8abe373536f3b08b75794b8d0588ecaad3ab7e5618b25eee2b6bfb8e89e8"
 dependencies = [
  "async-native-tls",
  "async-trait",
