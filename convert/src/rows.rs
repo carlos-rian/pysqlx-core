@@ -31,7 +31,11 @@ pub fn convert_result_set_as_list(result_set: ResultSet) -> PyRows {
 fn convert_row(columns: &Vec<String>, row: ResultRow) -> PyRow {
     let mut data: PyRow = HashMap::new();
     for (index, value) in row.into_iter().enumerate() {
-        data.insert(columns[index].clone(), PyValue::from(value));
+        let mut column: String = columns[index].clone();
+        if column.len() == 0 {
+            column = format!("generate_col_{}", index);
+        };
+        data.insert(column, PyValue::from(value));
     }
     data
 }
