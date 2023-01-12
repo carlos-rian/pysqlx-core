@@ -221,6 +221,20 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_col_withoutname_query_success() {
+        let conn = Connection::new("sqlserver://localhost:4444;user=sa;password=Build!Test321;encrypt=true;trustServerCertificate=true".to_string())
+            .await
+            .unwrap();
+        let res = conn._query("SELECT 1, 2").await.unwrap();
+        let res2 = conn._query("SELECT 1 as x, 2 as x").await.unwrap();
+
+        println!("{:?}", resp2);
+        assert_eq!(res.rows().len(), 1);
+        assert_eq!(res.types().len(), 1);
+        assert_eq!(res.types().get("number").unwrap(), "int");
+    }
+
+    #[tokio::test]
     async fn test_connection_query_error() {
         let conn = Connection::new("file:///tmp/db.db".to_string())
             .await
