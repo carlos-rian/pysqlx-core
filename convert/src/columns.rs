@@ -35,12 +35,22 @@ fn get_type(value: &Value) -> String {
     }
 }
 
+pub fn check_column_name(column: &String, index: usize) -> String {
+    if column.len() == 0 || column == "" || column == "?column?"{
+        format!("generate_col_{}", index)
+    } else {
+        column.clone()
+    } 
+}
+
 pub fn get_column_types(columns: &Vec<String>, row: &ResultSet) -> PyColumnTypes {
     let mut data: PyColumnTypes = HashMap::new();
     if let Some(first) = row.first() {
-        for column in columns {
+        for (index, column) in columns.into_iter().enumerate() {
+            let new_column = check_column_name(column, index);
+
             if let Some(value) = first.get(column.as_str()) {
-                data.insert(column.clone(), get_type(value));
+                data.insert(new_column, get_type(value));
             }
         }
     }
