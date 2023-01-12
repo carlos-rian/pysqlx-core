@@ -2,7 +2,7 @@ use quaint::{connector::ResultSet, prelude::ResultRow};
 
 use std::collections::HashMap;
 
-use crate::columns::get_column_types;
+use crate::columns::{check_column_name, get_column_types};
 use py_types::{PyColumnTypes, PyRow, PyRows, PySQLXResult, PyValue};
 
 pub fn convert_result_set(result_set: ResultSet) -> PySQLXResult {
@@ -31,11 +31,11 @@ pub fn convert_result_set_as_list(result_set: ResultSet) -> PyRows {
 fn convert_row(columns: &Vec<String>, row: ResultRow) -> PyRow {
     let mut data: PyRow = HashMap::new();
     for (index, value) in row.into_iter().enumerate() {
-        let mut column: String = columns[index].clone();
-        if column.len() == 0 {
-            column = format!("generate_col_{}", index);
-        };
-        data.insert(column, PyValue::from(value));
+        let column = columns[index].clone();
+
+        let new_column = check_column_name(&column, index);
+
+        data.insert(new_column, PyValue::from(value));
     }
     data
 }
