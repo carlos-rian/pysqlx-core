@@ -30,11 +30,17 @@ pub fn convert_result_set_as_list(result_set: ResultSet) -> PyRows {
 
 fn convert_row(columns: &Vec<String>, row: ResultRow) -> PyRow {
     let mut data: PyRow = HashMap::new();
+    let mut count: i32 = 1;
+
     for (index, value) in row.into_iter().enumerate() {
         let column = columns[index].clone();
 
-        let new_column = check_column_name(&column, index);
+        let mut new_column = check_column_name(&column, index);
 
+        if data.contains_key(new_column.as_str()) {
+            new_column = format!("{}_{}", new_column, count);
+            count += 1;
+        }
         data.insert(new_column, PyValue::from(value));
     }
     data
