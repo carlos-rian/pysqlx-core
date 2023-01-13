@@ -51,11 +51,17 @@ pub fn check_column_name(column: &String, index: usize) -> String {
 
 pub fn get_column_types(columns: &Vec<String>, row: &ResultSet) -> PyColumnTypes {
     let mut data: PyColumnTypes = HashMap::new();
+    let mut count: i32 = 1;
+
     if let Some(first) = row.first() {
         for (index, column) in columns.into_iter().enumerate() {
-            let new_column = check_column_name(column, index);
+            let mut new_column = check_column_name(column, index);
 
             if let Some(value) = first.get(column.as_str()) {
+                if data.contains_key(new_column.as_str()) {
+                    new_column = format!("{}_{}", new_column, count);
+                    count += 1;
+                }
                 data.insert(new_column, get_type(value));
             }
         }
