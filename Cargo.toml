@@ -35,3 +35,16 @@ database = { path = "database"}
 
 [workspace]
 members = ["convert/", "database/", "py_types/"]
+
+
+[profile.release]
+incremental = true
+
+[profile.dev]
+opt-level = 0
+incremental = true
+lto = false
+debug = true
+overflow-checks = false
+codegen-units = 256
+rpath = false

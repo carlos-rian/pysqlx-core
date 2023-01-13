@@ -35,12 +35,18 @@ fn get_type(value: &Value) -> String {
     }
 }
 
+fn check_column_is_number(column: &String) -> bool {
+    column.parse::<i64>().is_ok() || column.parse::<f64>().is_ok()
+}
+
 pub fn check_column_name(column: &String, index: usize) -> String {
-    if column.len() == 0 || column == "" || column == "?column?"{
-        format!("generate_col_{}", index)
+    if column.len() == 0 || column == "" || column == "?column?" {
+        format!("col_{}", index)
+    } else if check_column_is_number(column) {
+        format!("col_{}", column.replace("-", "_").replace(".", "_")).replace("__", "_")
     } else {
         column.clone()
-    } 
+    }
 }
 
 pub fn get_column_types(columns: &Vec<String>, row: &ResultSet) -> PyColumnTypes {
