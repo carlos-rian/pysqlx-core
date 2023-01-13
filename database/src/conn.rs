@@ -220,19 +220,45 @@ mod tests {
         assert_eq!(res.types().get("number").unwrap(), "int");
     }
 
-    //#[tokio::test]
-    //async fn test_col_withoutname_query_success() {
-    //    let conn = Connection::new("sqlserver://localhost:4444;user=sa;password=Build!Test321;encrypt=true;trustServerCertificate=true".to_string())
-    //        .await
-    //        .unwrap();
-    //    let res = conn._query("SELECT 1, 2").await.unwrap();
-    //    let res2 = conn._query("SELECT 1 as x, 2 as x").await.unwrap();
-    //
-    //    println!("{:?}", resp2);
-    //    assert_eq!(res.rows().len(), 1);
-    //    assert_eq!(res.types().len(), 1);
-    //    assert_eq!(res.types().get("number").unwrap(), "int");
-    //}
+    #[tokio::test]
+    async fn test_col_without_name_query_success() {
+        let conn = Connection::new("file:///tmp/db.db".to_string())
+            .await
+            .unwrap();
+
+        let res = conn._query("SELECT 1, 2").await.unwrap();
+
+        assert_eq!(
+            res.rows().get(0).unwrap().get("col_1").unwrap().clone(),
+            PyValue::Int(1)
+        );
+        assert_eq!(
+            res.rows().get(0).unwrap().get("col_2").unwrap().clone(),
+            PyValue::Int(2)
+        );
+
+        assert_eq!(res.types().get("col_1").unwrap(), "int");
+        assert_eq!(res.types().get("col_2").unwrap(), "int");
+
+        let res = conn._query("SELECT -1.3, -453.32").await.unwrap();
+
+        assert_eq!(
+            res.rows().get(0).unwrap().get("col_1_3").unwrap().clone(),
+            PyValue::Float(-1.3)
+        );
+
+        assert_eq!(
+            res.rows()
+                .get(0)
+                .unwrap()
+                .get("col_453_32")
+                .unwrap()
+                .clone(),
+            PyValue::Float(-453.32)
+        );
+        assert_eq!(res.types().get("col_1_3").unwrap(), "float");
+        assert_eq!(res.types().get("col_453_32").unwrap(), "float");
+    }
 
     #[tokio::test]
     async fn test_connection_query_error() {
