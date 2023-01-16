@@ -26,7 +26,7 @@ python-source = "pysqlx_core"
 [dependencies]
 pyo3 = { version = "0.17", features = ["extension-module"] }
 pyo3-asyncio = { version = "0.17", features = ["tokio-runtime"] }
-env_logger = "0.10"
+#env_logger = "0.10"
 
 # my packages
 py_types = { path = "py_types"}
@@ -38,7 +38,17 @@ members = ["convert/", "database/", "py_types/"]
 
 
 [profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
 incremental = true
+panic = "abort"
+
+debug = false
+debug-assertions = false
+overflow-checks = false
+rpath = false
+
 
 [profile.dev]
 opt-level = 0
