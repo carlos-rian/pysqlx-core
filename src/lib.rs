@@ -1,6 +1,4 @@
 use database::Connection;
-//use env_logger;
-//use std::io::Write;
 use py_types::{PySQLXError, PySQLXResult};
 
 use pyo3::prelude::*;
@@ -28,10 +26,6 @@ fn new(py: Python, uri: String) -> PyResult<&PyAny> {
 
 #[pymodule]
 fn pysqlx_core(_py: Python, m: &PyModule) -> PyResult<()> {
-    //env_logger::builder()
-    //    .format(|buf, record| writeln!(buf, "{}: {}", record.level(), record.args()))
-    //    .init();
-
     m.add("__version__", get_version())?;
     m.add_function(wrap_pyfunction!(new, m)?)?;
     m.add_class::<Connection>()?;
