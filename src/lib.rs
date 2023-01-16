@@ -1,7 +1,7 @@
 use database::Connection;
 //use env_logger;
+//use std::io::Write;
 use py_types::{PySQLXError, PySQLXResult};
-use std::io::Write;
 
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
