@@ -182,3 +182,20 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: create celease
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ env.PY_SQLX_VERSION }}
+          body: |
+            Changes in this Release
+            - Remove env_log
+            - Change the Cargo.toml, add release profile.
+            - Try to decrease the binary    
+            - Last commit message: ${{ github.event.head_commit.message }}
+          draft: false
+          prerelease: false
