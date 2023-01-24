@@ -17,8 +17,7 @@ def get_version():
 
 
 version: str = get_version()
-v = toml.loads(text)["package"]["version"]
-file_version = v.replace("-alpha", "a").replace("-beta", "b")
+file_version = toml.loads(text)["package"]["version"]
 
 print("Package version:", version)
 
@@ -32,9 +31,11 @@ print("Package new version:", new_version)
 
 new_text = text.replace(f'version = "{file_version}"', f'version = "{new_version}"')
 
+if new_version not in new_text:
+    raise Exception("Could not update version, check the Cargo.toml file.")
+
 with open("Cargo.toml", mode="w") as file:
     file.write(new_text)
-
 
 env_file = os.getenv('GITHUB_ENV')
 

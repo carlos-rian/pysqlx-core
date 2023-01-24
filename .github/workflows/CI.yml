@@ -4,17 +4,11 @@ on:
   pull_request:
     branches:
       - "main"
+      - "release/*"
   push:
     branches:
       - "main"
-    #paths:
-    #  - ".github/CI.yml"
-    #  - "**.rs"
-    #  - "pyproject.toml"
-    #  - "Cargo.toml"
-    #  - "**.pyi"
-    #  - "README.md"
-
+      - "release/*"
 env:
   PKG_CONFIG_ALLOW_CROSS: 1
 
@@ -37,121 +31,119 @@ jobs:
       - name: run test
         run: cargo test -p database -p convert -p py_types
 
-  linux:
-    if: github.ref == 'refs/heads/main'
+  build:
+    name: build on ${{ matrix.platform || matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
     needs: [rust-test]
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu, macos, windows]
+        target: [x86_64, aarch64]
+        manylinux: [auto]
+        include:
+          - os: ubuntu
+            platform: linux
+          - os: windows
+            ls: dir
+            interpreter: 3.7 3.8 3.9 3.10 3.11
+          - os: windows
+            ls: dir
+            target: i686
+            python-architecture: x86
+            interpreter: 3.7 3.8 3.9 3.10 3.11
+          - os: macos
+            target: aarch64
+            interpreter: 3.7 3.8 3.9 3.10 3.11
+          - os: ubuntu
+            platform: linux
+            target: i686
+          # GCC 4.8.5 in manylinux2014 container doesn't support c11 atomic
+          # we use manylinux_2_24 container for aarch64 and armv7 targets instead,
+          - os: ubuntu
+            platform: linux
+            target: aarch64
+            container: messense/manylinux_2_24-cross:aarch64
+          - os: ubuntu
+            platform: linux
+            target: armv7
+            container: messense/manylinux_2_24-cross:armv7
+            interpreter: 3.7 3.8 3.9 3.10 3.11
+          # musllinux
+          - os: ubuntu
+            platform: linux
+            target: x86_64
+            manylinux: musllinux_1_1
+          - os: ubuntu
+            platform: linux
+            target: aarch64
+            manylinux: musllinux_1_1
+          - os: ubuntu
+            platform: linux
+            target: ppc64le
+            container: messense/manylinux_2_24-cross:ppc64le
+            interpreter: 3.7 3.8 3.9 3.10 3.11
+          - os: ubuntu
+            platform: linux
+            target: s390x
+            container: messense/manylinux_2_24-cross:s390x
+            interpreter: 3.7 3.8 3.9 3.10 3.11
+        exclude:
+          # Windows on arm64 only supports Python 3.11+
+          - os: windows
+            target: aarch64
+
+    runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v3
-
-      - name: install depends
-        run: |
-          sudo apt-get install pkg-config libudev-dev libssl-dev clang
-          echo $PKG_CONFIG_ALLOW_CROSS
 
       - name: set up python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
+          architecture: ${{ matrix.python-architecture || 'x64' }}
 
-      - name: check package version
+      - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions httpx toml
+
+      - name: production - check package version
+        if: github.ref == 'refs/heads/main'
         run: |
-          pip install --upgrade httpx toml
-          python .github/check_version.py
+          python .github/prod.py
 
-      - id: cache-rust
-        name: cache rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: v3
+      - name: release - check package version
+        if: contains(github.ref, 'release')
+        run: |
+          python .github/release.py
 
-      - uses: messense/maturin-action@v1
+      - name: build sdist
+        if: ${{ matrix.os == 'ubuntu' && matrix.target == 'x86_64' && matrix.manylinux == 'auto' }}
+        uses: messense/maturin-action@v1
         with:
-          manylinux: auto
-          command: build
-          args: --release --sdist -o dist --find-interpreter
+          command: sdist
+          args: --out dist
           rust-toolchain: stable
 
-          #maturin build --release --target aarch64-unknown-linux-gnu --zig
-
-      - name: Upload wheels
-        uses: actions/upload-artifact@v3
+      - name: build wheels
+        uses: messense/maturin-action@v1
         with:
-          name: wheels
-          path: dist
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux || 'auto' }}
+          container: ${{ matrix.container }}
+          args: --release --out dist --interpreter ${{ matrix.interpreter || '3.7 3.8 3.9 3.10 3.11 pypy3.7 pypy3.8 pypy3.9' }}
+          rust-toolchain: stable
 
-  windows:
-    if: github.ref == 'refs/heads/main'
-    needs: [rust-test]
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v3
+      - run: ${{ matrix.ls || 'ls -lh' }} dist/
 
-      - name: set up python
-        uses: actions/setup-python@v4
+      - run: twine check --strict dist/*
+
+      - uses: actions/upload-artifact@v3
         with:
-          python-version: "3.10"
-
-      - name: check package version
-        run: |
-          pip install --upgrade httpx toml
-          python .github/check_version.py
-
-      - id: cache-rust
-        name: cache rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: v3
-
-      - uses: messense/maturin-action@v1
-        with:
-          command: build
-          args: --release -o dist --find-interpreter
-
-      - name: upload wheels
-        uses: actions/upload-artifact@v3
-        with:
-          name: wheels
-          path: dist
-
-  macos:
-    if: github.ref == 'refs/heads/main'
-    needs: [rust-test]
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: set up python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.10"
-
-      - name: check package version
-        run: |
-          pip install --upgrade httpx toml
-          python .github/check_version.py
-
-      - id: cache-rust
-        name: cache rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: v3
-
-      - uses: messense/maturin-action@v1
-        with:
-          command: build
-          args: --release -o dist --universal2 --find-interpreter
-
-      - name: upload wheels
-        uses: actions/upload-artifact@v3
-        with:
-          name: wheels
+          name: pypi_files
           path: dist
 
   release:
     name: Release
-    if: github.ref == 'refs/heads/main'
-    needs: [macos, windows, linux, rust-test]
+    if: contains(github.ref, 'main') || contains(github.ref, 'release')
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -161,21 +153,26 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: check package version
-        run: |
-          pip install --upgrade httpx toml
-          python .github/check_version.py
+      - name: install deps
+        run: pip install -U twine httpx toml
 
-      - name: install twine
-        run: pip install -U twine
+      - name: production - check package version
+        if: github.ref == 'refs/heads/main'
+        run: |
+          python .github/prod.py
+
+      - name: release - check package version
+        if: contains(github.ref, 'release')
+        run: |
+          python .github/release.py
 
       - name: download articart
         uses: actions/download-artifact@v2
         with:
-          name: wheels
+          name: pypi_files
           path: dist
 
-      - run: twine check dist/*
+      - run: twine check --strict dist/*
 
       - name: upload to pypi
         run: twine upload dist/*
@@ -183,7 +180,7 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
 
-      - name: create celease
+      - name: create release
         id: create_release
         uses: actions/create-release@v1
         env:
@@ -193,9 +190,8 @@ jobs:
           release_name: ${{ env.PY_SQLX_VERSION }}
           body: |
             Changes in this Release
-            - Remove env_log
-            - Change the Cargo.toml, add release profile.
-            - Try to decrease the binary    
-            - Last commit message: ${{ github.event.head_commit.message }}
+            - Change ci to support many binary types
+            - Support to musllinux
+            - Support to aarch64
           draft: false
           prerelease: false
