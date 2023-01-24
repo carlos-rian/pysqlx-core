@@ -1,7 +1,7 @@
 import httpx
 import toml
 
-with open("pyproject.toml", mode="r") as file:
+with open("Cargo.toml", mode="r") as file:
     text: str = file.read()
 
 
@@ -26,10 +26,9 @@ def get_version():
     
     return current_version
 
-
-file_version = toml.loads(text)["tool"]["poetry"]["version"]
-
 version: str = get_version()
+file_version = toml.loads(text)["package"]["version"]
+
 print("Package version:", version)
 
 # MAJOR, MINOR, PATCH = version.replace("b", "").split(".")
@@ -42,7 +41,7 @@ else:
     PATCH = int(PATCH) + 1
     BETA = 0
 
-PATCH = "".join([str(PATCH), "b", str(BETA)])
+PATCH = "".join([str(PATCH), "-beta", str(BETA)])
 
 new_version: str = ".".join([MAJOR, MINOR, str(PATCH)])
 
@@ -50,5 +49,8 @@ print("Package new version:", new_version)
 
 new_text = text.replace(f'version = "{file_version}"', f'version = "{new_version}"')
 
-with open("pyproject.toml", mode="w") as file:
+if new_version not in new_text:
+    raise Exception("Could not update version, check the Cargo.toml file.")
+
+with open("Cargo.toml", mode="w") as file:
     file.write(new_text)
