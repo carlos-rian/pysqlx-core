@@ -102,7 +102,17 @@ jobs:
           python-version: "3.11"
           architecture: ${{ matrix.python-architecture || 'x64' }}
 
-      - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions
+      - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions httpx toml
+
+      - name: production - check package version
+        if: github.ref == 'refs/heads/main'
+        run: |
+          python .github/prod.py
+
+      - name: release - check package version
+        if: contains(github.ref, 'release')
+        run: |
+          python .github/release.py
 
       - name: build sdist
         if: ${{ matrix.os == 'ubuntu' && matrix.target == 'x86_64' && matrix.manylinux == 'auto' }}
@@ -132,7 +142,7 @@ jobs:
 
   release:
     name: Release
-    if: github.ref == 'refs/heads/main'
+    if: contains(github.ref, 'main') || contains(github.ref, 'release')
     needs: [build]
     runs-on: ubuntu-latest
     steps:
@@ -143,13 +153,18 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: check package version
-        run: |
-          pip install --upgrade httpx toml
-          python .github/check_version.py
+      - name: install deps
+        run: pip install -U twine httpx toml
 
-      - name: install twine
-        run: pip install -U twine
+      - name: production - check package version
+        if: github.ref == 'refs/heads/main'
+        run: |
+          python .github/prod.py
+
+      - name: release - check package version
+        if: contains(github.ref, 'release')
+        run: |
+          python .github/release.py
 
       - name: download articart
         uses: actions/download-artifact@v2
