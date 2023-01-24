@@ -72,9 +72,178 @@ jobs:
           args: --release --sdist -o dist --find-interpreter
           rust-toolchain: stable
 
-          #maturin build --release --target aarch64-unknown-linux-gnu --zig
+      - name: upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
 
-      - name: Upload wheels
+  # musllinux
+  linux-musl-x86_64:
+    if: github.ref == 'refs/heads/main'
+    needs: [rust-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install depends
+        run: |
+          sudo apt-get install pkg-config libudev-dev libssl-dev clang
+          echo $PKG_CONFIG_ALLOW_CROSS
+
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: check package version
+        run: |
+          pip install --upgrade httpx toml
+          python .github/check_version.py
+
+      - id: cache-rust
+        name: cache rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: v3
+
+      - uses: messense/maturin-action@v1
+        with:
+          manylinux: musllinux_1_1
+          target: x86_64
+          command: build
+          args: --release --sdist -o dist --find-interpreter
+          rust-toolchain: stable
+
+      - name: upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
+
+  linux-musl-aarch64:
+    if: github.ref == 'refs/heads/main'
+    needs: [rust-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install depends
+        run: |
+          sudo apt-get install pkg-config libudev-dev libssl-dev clang
+          echo $PKG_CONFIG_ALLOW_CROSS
+
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: check package version
+        run: |
+          pip install --upgrade httpx toml
+          python .github/check_version.py
+
+      - id: cache-rust
+        name: cache rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: v3
+
+      - uses: messense/maturin-action@v1
+        with:
+          manylinux: musllinux_1_1
+          target: aarch64
+          command: build
+          args: --release --sdist -o dist --find-interpreter
+          rust-toolchain: stable
+
+      - name: upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
+
+  linux-musl-ppc64le:
+    if: github.ref == 'refs/heads/main'
+    needs: [rust-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install depends
+        run: |
+          sudo apt-get install pkg-config libudev-dev libssl-dev clang
+          echo $PKG_CONFIG_ALLOW_CROSS
+
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: check package version
+        run: |
+          pip install --upgrade httpx toml
+          python .github/check_version.py
+
+      - id: cache-rust
+        name: cache rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: v3
+
+      - uses: messense/maturin-action@v1
+        with:
+          manylinux: "auto"
+          target: ppc64le
+          container: messense/manylinux_2_24-cross:ppc64le
+          command: build
+          args: --release --sdist -o dist --interpreter '3.7 3.8 3.9 3.10 3.11'
+          rust-toolchain: stable
+
+      - name: upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: dist
+
+  linux-musl-s390x:
+    if: github.ref == 'refs/heads/main'
+    needs: [rust-test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: install depends
+        run: |
+          sudo apt-get install pkg-config libudev-dev libssl-dev clang
+          echo $PKG_CONFIG_ALLOW_CROSS
+
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: check package version
+        run: |
+          pip install --upgrade httpx toml
+          python .github/check_version.py
+
+      - id: cache-rust
+        name: cache rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: v3
+
+      - uses: messense/maturin-action@v1
+        with:
+          target: s390x
+          manylinux: "auto"
+          container: messense/manylinux_2_24-cross:s390x
+          command: build
+          args: --release --sdist -o dist --interpreter '3.7 3.8 3.9 3.10 3.11'
+          rust-toolchain: stable
+
+      - name: upload wheels
         uses: actions/upload-artifact@v3
         with:
           name: wheels
