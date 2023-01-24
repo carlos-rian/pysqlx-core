@@ -33,6 +33,7 @@ jobs:
 
   build:
     name: build on ${{ matrix.platform || matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
+    needs: [rust-test]
     strategy:
       fail-fast: true
       matrix:
@@ -132,7 +133,7 @@ jobs:
   release:
     name: Release
     if: github.ref == 'refs/heads/main'
-    needs: [rust-test, build]
+    needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
