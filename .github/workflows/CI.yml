@@ -186,12 +186,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
+          tag_name: ${{ env.PY_SQLX_VERSION }}
           release_name: ${{ env.PY_SQLX_VERSION }}
           body: |
             Changes in this Release
-            - Change ci to support many binary types
-            - Support to musllinux
-            - Support to aarch64
+            ${{ github.event.head_commit.message }}
           draft: false
           prerelease: false
