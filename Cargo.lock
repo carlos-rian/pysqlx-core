@@ -1242,7 +1242,7 @@ dependencies = [
 [[package]]
 name = "mysql_async"
 version = "0.30.0"
-source = "git+https://github.com/prisma/mysql_async?branch=vendored-openssl#e3f8bdb41d57e769412f53d0f479bf67fdcc0ee3"
+source = "git+https://github.com/prisma/mysql_async?branch=vendored-openssl#b5d16fb211fc6a0d5c892269536a95da803eabae"
 dependencies = [
  "bytes",
  "crossbeam",
@@ -1749,7 +1749,7 @@ dependencies = [
 [[package]]
 name = "quaint"
 version = "0.2.0-alpha.13"
-source = "git+https://github.com/prisma/quaint#6df49f14efe99696e577ffb9902c83b09bec8de2"
+source = "git+https://github.com/prisma/quaint#2e6305d2d9bb3b708784761bf72e26cb06c9ab1f"
 dependencies = [
  "async-trait",
  "base64 0.12.3",
@@ -2252,9 +2252,9 @@ dependencies = [
 
 [[package]]
 name = "tiberius"
-version = "0.11.5"
+version = "0.11.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71bd0ed15d7d9f17f4407de0f6991b19a96a4aced32aab85cd28c63f20a94249"
+checksum = "3cff04849bffc92a61210e3fea7a1e83faf3666cf55b26edc4d7656ea879293b"
 dependencies = [
  "async-native-tls",
  "async-trait",
