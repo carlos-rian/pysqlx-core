@@ -24,8 +24,8 @@ crate-type = ["rlib", "cdylib"]
 python-source = "pysqlx_core"
 
 [dependencies]
-pyo3 = { version = "0.17", features = ["extension-module"] }
-pyo3-asyncio = { version = "0.17", features = ["tokio-runtime"] }
+pyo3 = { version = "0.18", features = ["extension-module"] }
+pyo3-asyncio = { version = "0.18", features = ["tokio-runtime"] }
 #env_logger = "0.10"
 
 # my packages
