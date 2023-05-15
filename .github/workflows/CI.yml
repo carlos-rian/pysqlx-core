@@ -5,6 +5,7 @@ on:
     branches:
       - "main"
       - "release/*"
+      - "deps/*"
 
     paths-ignore:
       - "LICENSE"
@@ -17,7 +18,7 @@ on:
     branches:
       - "main"
       - "release/*"
-
+      - "deps/*"
     paths-ignore:
       - "LICENSE"
       - "SECURITY.md"
