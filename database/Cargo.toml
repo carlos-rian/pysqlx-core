@@ -20,7 +20,7 @@ convert = { path = "../convert"}
 vendored-openssl = ["quaint/vendored-openssl"]
 
 [dependencies.quaint]
-git = "https://github.com/prisma/quaint"
+git = "https://github.com/carlos-rian/quaint"
 features = [
     "postgresql",
     "mysql",
