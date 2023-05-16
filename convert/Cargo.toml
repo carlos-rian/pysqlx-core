@@ -9,7 +9,7 @@ edition = "2021"
 py_types = { path = "../py_types"}
 
 [dependencies.quaint]
-git = "https://github.com/prisma/quaint"
+git = "https://github.com/carlos-rian/quaint"
 features = [
     "json",
     "uuid",
@@ -21,7 +21,7 @@ features = [
 tokio = { version = "1", features = ["macros"] }
 
 [dev-dependencies.quaint]
-git = "https://github.com/prisma/quaint"
+git = "https://github.com/carlos-rian/quaint"
 features = [
     "sqlite",
 ]
