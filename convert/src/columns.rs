@@ -2,17 +2,27 @@ use std::collections::HashMap;
 
 use py_types::PyColumnTypes;
 use quaint::prelude::ResultSet;
-use quaint::Value;
+use quaint::{Value, ValueType};
 
 fn get_type(value: &Value) -> String {
-    match value {
-        Value::Boolean(_) => "bool".to_string(),
-        Value::Enum(_) => "str".to_string(),
-        Value::Text(_) => "str".to_string(),
-        Value::Char(_) => "str".to_string(),
-        Value::Int32(_) => "int".to_string(),
-        Value::Int64(_) => "int".to_string(),
-        Value::Array(v) => match v {
+    match value.typed.clone() {
+        ValueType::Boolean(_) => "bool".to_string(),
+        ValueType::Enum(_, _) => "str".to_string(),
+        ValueType::EnumArray(v, _) => match v {
+            Some(v) => {
+                if v.is_empty() {
+                    "array".to_string()
+                } else {
+                    "array_str".to_string()
+                }
+            }
+            None => "array".to_string(),
+        },
+        ValueType::Text(_) => "str".to_string(),
+        ValueType::Char(_) => "str".to_string(),
+        ValueType::Int32(_) => "int".to_string(),
+        ValueType::Int64(_) => "int".to_string(),
+        ValueType::Array(v) => match v {
             Some(v) => {
                 if v.is_empty() {
                     "array".to_string()
@@ -22,16 +32,16 @@ fn get_type(value: &Value) -> String {
             }
             None => "array".to_string(),
         },
-        Value::Json(_) => "json".to_string(),
-        Value::Xml(_) => "str".to_string(),
-        Value::Uuid(_) => "uuid".to_string(),
-        Value::Time(_) => "time".to_string(),
-        Value::Date(_) => "date".to_string(),
-        Value::DateTime(_) => "datetime".to_string(),
-        Value::Float(_) => "float".to_string(),
-        Value::Double(_) => "float".to_string(),
-        Value::Bytes(_) => "bytes".to_string(),
-        Value::Numeric(_) => "decimal".to_string(),
+        ValueType::Json(_) => "json".to_string(),
+        ValueType::Xml(_) => "str".to_string(),
+        ValueType::Uuid(_) => "uuid".to_string(),
+        ValueType::Time(_) => "time".to_string(),
+        ValueType::Date(_) => "date".to_string(),
+        ValueType::DateTime(_) => "datetime".to_string(),
+        ValueType::Float(_) => "float".to_string(),
+        ValueType::Double(_) => "float".to_string(),
+        ValueType::Bytes(_) => "bytes".to_string(),
+        ValueType::Numeric(_) => "decimal".to_string(),
     }
 }
 
