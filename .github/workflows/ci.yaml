@@ -179,7 +179,6 @@ jobs:
   
   build-pgo:
     name: build pgo-optimized on ${{ matrix.platform || matrix.os }} (${{ matrix.interpreter}} - ${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
-    needs: [rust-test]
     strategy:
       fail-fast: true
       matrix:
@@ -265,7 +264,7 @@ jobs:
   release:
     name: Release
     if: contains(github.ref, 'main') || contains(github.ref, 'release')
-    needs: [build]
+    needs: [build,build-pgo]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
