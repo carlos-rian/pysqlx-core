@@ -186,7 +186,7 @@ jobs:
         os: [ubuntu, windows]
         target: [x86_64]
         manylinux: [auto]
-        interpreter: ["3.7", "3.8", "3.9", "3.10", "3.11", "pypy3.7", "pypy3.8", "pypy3.9", "pypy3.10"]
+        interpreter: ["3.7", "3.8", "3.9", "3.10", "3.11"]
         include:
           - os: ubuntu
             platform: linux
