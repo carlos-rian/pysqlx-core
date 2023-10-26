@@ -13,7 +13,7 @@ on:
       - "README.md"
       - "makefile"
       - ".gitingore"
-      - ".github/workflows/*"
+      #- ".github/workflows/*"
   push:
     branches:
       - "main"
@@ -25,7 +25,7 @@ on:
       - "README.md"
       - "makefile"
       - ".gitingore"
-      - ".github/workflows/*"
+      #- ".github/workflows/*"
   
 env:
   PKG_CONFIG_ALLOW_CROSS: 1
