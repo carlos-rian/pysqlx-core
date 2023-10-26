@@ -179,7 +179,7 @@ jobs:
   
   build-pgo:
     name: build pgo-optimized on ${{ matrix.platform || matrix.os }} (${{ matrix.interpreter}} - ${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
-    needs: [rust-test]
+    # needs: [rust-test]
     strategy:
       fail-fast: true
       matrix:
@@ -214,39 +214,39 @@ jobs:
       - run: pip install -U 'black>=22.3.0,<23' typing_extensions
 
 
-      - name: build initial wheel
-        uses: PyO3/maturin-action@v1
-        with:
-          target: ${{ matrix.target }}
-          manylinux: ${{ matrix.manylinux || 'auto' }}
-          args: >
-            --release
-            --out pgo-wheel
-            --interpreter ${{ matrix.interpreter }}
-          rust-toolchain: stable
-          docker-options: -e CI
-        env:
-          RUSTFLAGS: "-Cprofile-generate=${{ github.workspace }}/profdata"
+      #- name: build initial wheel
+      #  uses: PyO3/maturin-action@v1
+      #  with:
+      #    target: ${{ matrix.target }}
+      #    manylinux: ${{ matrix.manylinux || 'auto' }}
+      #    args: >
+      #      --release
+      #      --out pgo-wheel
+      #      --interpreter ${{ matrix.interpreter }}
+      #    rust-toolchain: stable
+      #    docker-options: -e CI
+      #  env:
+      #    RUSTFLAGS: "-Cprofile-generate=${{ github.workspace }}/profdata"
 
-      - name: detect rust host
-        run: echo RUST_HOST=$(rustc -Vv | grep host | cut -d ' ' -f 2) >> "$GITHUB_ENV"
-        shell: bash
+      #- name: detect rust host
+      #  run: echo RUST_HOST=$(rustc -Vv | grep host | cut -d ' ' -f 2) >> "$GITHUB_ENV"
+      #  shell: bash
 
-      - name: generate pgo data
-        run: |
-          pip install -U pip poetry
-          poetry export -f requirements.txt --without-hashes -o requirements.txt --with dev
-          pip install -r requirements.txt
-          pip install pysqlx-core --no-index --no-deps --find-links pgo-wheel --force-reinstall
-          rustup run stable bash -c 'echo LLVM_PROFDATA=$RUSTUP_HOME/toolchains/$RUSTUP_TOOLCHAIN/lib/rustlib/${{ env.RUST_HOST }}/bin/llvm-profdata >> "$GITHUB_ENV"'
+      #- name: generate pgo data
+      #  run: |
+      #    pip install -U pip poetry
+      #    poetry export -f requirements.txt --without-hashes -o requirements.txt --with dev
+      #    pip install -r requirements.txt
+      #    pip install pysqlx-core --no-index --no-deps --find-links pgo-wheel --force-reinstall
+      #    rustup run stable bash -c 'echo LLVM_PROFDATA=$RUSTUP_HOME/toolchains/$RUSTUP_TOOLCHAIN/lib/rustlib/${{ env.RUST_HOST }}/bin/llvm-profdata >> "$GITHUB_ENV"'
       
-      - run: |
-          ls -la  ${{ github.workspace }}
-          ls -la  ${{ github.workspace }}/pysqlx-core/
-        shell: bash
+      #- run: |
+      #    ls -la  ${{ github.workspace }}
+      #    ls -la  ${{ github.workspace }}/pysqlx-core/
+      #  shell: bash
 
-      - name: merge pgo data
-        run: ${{ env.LLVM_PROFDATA }} merge -o ${{ github.workspace }}/merged.profdata ${{ github.workspace }}/profdata
+      #- name: merge pgo data
+      #  run: ${{ env.LLVM_PROFDATA }} merge -o ${{ github.workspace }}/merged.profdata ${{ github.workspace }}/profdata
 
       - name: build pgo-optimized wheel
         uses: PyO3/maturin-action@v1
@@ -259,8 +259,8 @@ jobs:
             --interpreter ${{ matrix.interpreter }}
           rust-toolchain: stable
           docker-options: -e CI
-        env:
-          RUSTFLAGS: "-Cprofile-use=${{ github.workspace }}/merged.profdata"
+        # env:
+        #   RUSTFLAGS: "-Cprofile-use=${{ github.workspace }}/merged.profdata"
 
       - run: ${{ matrix.ls || 'ls -lh' }} dist/
 
