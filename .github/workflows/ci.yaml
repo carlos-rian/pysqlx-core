@@ -51,7 +51,7 @@ jobs:
 
   build:
     name: build on ${{ matrix.platform || matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
-    needs: [rust-test]
+    needs: [rust-test, build-pgo]
     strategy:
       fail-fast: true
       matrix:
@@ -239,6 +239,11 @@ jobs:
           pip install -r requirements.txt
           pip install pysqlx-core --no-index --no-deps --find-links pgo-wheel --force-reinstall
           rustup run stable bash -c 'echo LLVM_PROFDATA=$RUSTUP_HOME/toolchains/$RUSTUP_TOOLCHAIN/lib/rustlib/${{ env.RUST_HOST }}/bin/llvm-profdata >> "$GITHUB_ENV"'
+      
+      - run: |
+          ls -la  ${{ github.workspace }}
+          ls -la  ${{ github.workspace }}/pysqlx-core/
+        shell: bash
 
       - name: merge pgo data
         run: ${{ env.LLVM_PROFDATA }} merge -o ${{ github.workspace }}/merged.profdata ${{ github.workspace }}/profdata
