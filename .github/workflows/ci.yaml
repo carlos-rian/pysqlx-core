@@ -179,6 +179,7 @@ jobs:
   
   build-pgo:
     name: build pgo-optimized on ${{ matrix.platform || matrix.os }} (${{ matrix.interpreter}} - ${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
+    needs: [rust-test]
     strategy:
       fail-fast: true
       matrix:
@@ -212,8 +213,6 @@ jobs:
 
       - run: pip install -U 'black>=22.3.0,<23' typing_extensions
 
-      # generate self-schema now, so we don't have to do so inside docker in maturin build
-      - run: python generate_self_schema.py
 
       - name: build initial wheel
         uses: PyO3/maturin-action@v1
@@ -235,6 +234,10 @@ jobs:
 
       - name: generate pgo data
         run: |
+          pip install -U pip poetry
+          poetry export -f requirements.txt --without-hashes -o requirements.txt --with dev
+          pip install -r requirements.txt
+          pip install pysqlx-core --no-index --no-deps --find-links pgo-wheel --force-reinstall
           rustup run stable bash -c 'echo LLVM_PROFDATA=$RUSTUP_HOME/toolchains/$RUSTUP_TOOLCHAIN/lib/rustlib/${{ env.RUST_HOST }}/bin/llvm-profdata >> "$GITHUB_ENV"'
 
       - name: merge pgo data
