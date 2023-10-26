@@ -42,9 +42,11 @@ jobs:
         with:
           key: v3
 
-      - uses: actions-rs/toolchain@v1
+      - name: install rust stable
+        id: rust-toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          components: llvm-tools
 
       - name: run test
         run: cargo test -p database -p convert -p py_types
@@ -138,6 +140,12 @@ jobs:
         with:
           python-version: "3.11"
           architecture: ${{ matrix.python-architecture || 'x64' }}
+      
+      - name: install rust stable
+        id: rust-toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools
 
       - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions httpx toml
 
@@ -150,23 +158,19 @@ jobs:
         if: contains(github.ref, 'release')
         run: |
           python .github/release.py
-
-      - name: build sdist
-        if: ${{ matrix.os == 'ubuntu' && matrix.target == 'x86_64' && matrix.manylinux == 'auto' }}
-        uses: messense/maturin-action@v1
-        with:
-          command: sdist
-          args: --out dist
-          rust-toolchain: stable
-
-      - name: build wheels
-        uses: messense/maturin-action@v1
+      
+      - name: build wheel
+        uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
           manylinux: ${{ matrix.manylinux || 'auto' }}
-          container: ${{ matrix.container }}
-          args: --release --out dist --interpreter ${{ matrix.interpreter || '3.7 3.8 3.9 3.10 3.11 pypy3.7 pypy3.8 pypy3.9' }}
+          args: >
+            --release
+            --out dist
+            --interpreter ${{ matrix.interpreter || '3.7 3.8 3.9 3.10 3.11 pypy3.7 pypy3.8 pypy3.9' }}
           rust-toolchain: stable
+          sccache: true
+          docker-options: -e CI
 
       - run: ${{ matrix.ls || 'ls -lh' }} dist/
 
