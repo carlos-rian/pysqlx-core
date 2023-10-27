@@ -13,7 +13,7 @@ on:
       - "README.md"
       - "makefile"
       - ".gitingore"
-      - ".github/workflows/*"
+      #- ".github/workflows/*"
   push:
     branches:
       - "main"
@@ -25,7 +25,7 @@ on:
       - "README.md"
       - "makefile"
       - ".gitingore"
-      - ".github/workflows/*"
+      #- ".github/workflows/*"
   
 env:
   PKG_CONFIG_ALLOW_CROSS: 1
@@ -34,7 +34,7 @@ jobs:
   rust-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - id: cache-rust
         name: cache rust
@@ -42,9 +42,11 @@ jobs:
         with:
           key: v3
 
-      - uses: actions-rs/toolchain@v1
+      - name: install rust stable
+        id: rust-toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          components: llvm-tools
 
       - name: run test
         run: cargo test -p database -p convert -p py_types
@@ -61,17 +63,21 @@ jobs:
         include:
           - os: ubuntu
             platform: linux
+
           - os: windows
             ls: dir
             interpreter: 3.7 3.8 3.9 3.10 3.11
+
           - os: windows
             ls: dir
             target: i686
             python-architecture: x86
             interpreter: 3.7 3.8 3.9 3.10 3.11
+
           - os: macos
             target: aarch64
             interpreter: 3.7 3.8 3.9 3.10 3.11
+
           - os: ubuntu
             platform: linux
             target: i686
@@ -81,44 +87,131 @@ jobs:
             platform: linux
             target: aarch64
             container: messense/manylinux_2_24-cross:aarch64
+
           - os: ubuntu
             platform: linux
             target: armv7
             container: messense/manylinux_2_24-cross:armv7
             interpreter: 3.7 3.8 3.9 3.10 3.11
+
           # musllinux
           - os: ubuntu
             platform: linux
             target: x86_64
             manylinux: musllinux_1_1
+
           - os: ubuntu
             platform: linux
             target: aarch64
             manylinux: musllinux_1_1
+
           - os: ubuntu
             platform: linux
             target: ppc64le
             container: messense/manylinux_2_24-cross:ppc64le
             interpreter: 3.7 3.8 3.9 3.10 3.11
+
           - os: ubuntu
             platform: linux
             target: s390x
             container: messense/manylinux_2_24-cross:s390x
             interpreter: 3.7 3.8 3.9 3.10 3.11
+
         exclude:
+           # Optimized PGO builds for x86_64 manylinux and windows follow a different matrix,
+          # maybe in future maturin-action can support this automatically
+          - os: ubuntu
+            target: x86_64
+            manylinux: auto
+
+          - os: windows
+            target: x86_64
           # Windows on arm64 only supports Python 3.11+
+
           - os: windows
             target: aarch64
 
     runs-on: ${{ matrix.os }}-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: set up python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
           architecture: ${{ matrix.python-architecture || 'x64' }}
+      
+      - name: install rust stable
+        id: rust-toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools
+
+      - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions httpx toml
+
+      - name: production - check package version
+        if: github.ref == 'refs/heads/main'
+        run: |
+          python .github/prod.py
+
+      - name: release - check package version
+        if: contains(github.ref, 'release')
+        run: |
+          python .github/release.py
+      
+      - name: build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux || 'auto' }}
+          args: >
+            --release
+            --out dist
+            --interpreter ${{ matrix.interpreter || '3.7 3.8 3.9 3.10 3.11 pypy3.7 pypy3.8 pypy3.9' }}
+          rust-toolchain: stable
+          sccache: true
+          docker-options: -e CI
+
+      - run: ${{ matrix.ls || 'ls -lh' }} dist/
+
+      - run: twine check --strict dist/*
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: pypi_files
+          path: dist
+  
+  build-pgo:
+    name: build pgo-optimized on ${{ matrix.platform || matrix.os }} (${{ matrix.interpreter}} - ${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
+    needs: [rust-test]
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu, windows]
+        target: [x86_64]
+        manylinux: [auto]
+        interpreter: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        include:
+          - os: ubuntu
+            platform: linux
+          - os: windows
+            ls: dir
+
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.interpreter }}
+          architecture: ${{ matrix.python-architecture || 'x64' }}
+
+      - name: install rust stable
+        id: rust-toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools
 
       - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions httpx toml
 
@@ -132,26 +225,20 @@ jobs:
         run: |
           python .github/release.py
 
-      - name: build sdist
-        if: ${{ matrix.os == 'ubuntu' && matrix.target == 'x86_64' && matrix.manylinux == 'auto' }}
-        uses: messense/maturin-action@v1
-        with:
-          command: sdist
-          args: --out dist
-          rust-toolchain: stable
-
-      - name: build wheels
-        uses: messense/maturin-action@v1
+      - name: build pgo-optimized wheel
+        uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
           manylinux: ${{ matrix.manylinux || 'auto' }}
-          container: ${{ matrix.container }}
-          args: --release --out dist --interpreter ${{ matrix.interpreter || '3.7 3.8 3.9 3.10 3.11 pypy3.7 pypy3.8 pypy3.9' }}
+          args: >
+            --release
+            --out dist
+            --interpreter ${{ matrix.interpreter }}
           rust-toolchain: stable
+          sccache: true
+          docker-options: -e CI
 
       - run: ${{ matrix.ls || 'ls -lh' }} dist/
-
-      - run: twine check --strict dist/*
 
       - uses: actions/upload-artifact@v3
         with:
@@ -161,10 +248,10 @@ jobs:
   release:
     name: Release
     if: contains(github.ref, 'main') || contains(github.ref, 'release')
-    needs: [build]
+    needs: [build,build-pgo]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: set up python
         uses: actions/setup-python@v4
@@ -185,7 +272,7 @@ jobs:
           python .github/release.py
 
       - name: download articart
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: pypi_files
           path: dist

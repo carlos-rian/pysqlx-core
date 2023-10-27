@@ -24,8 +24,8 @@ crate-type = ["rlib", "cdylib"]
 python-source = "pysqlx_core"
 
 [dependencies]
-pyo3 = { version = "0.18", features = ["extension-module"] }
-pyo3-asyncio = { version = "0.18", features = ["tokio-runtime"] }
+pyo3 = { version = "0.19", features = ["extension-module"] }
+pyo3-asyncio = { version = "0.19", features = ["tokio-runtime"] }
 #env_logger = "0.10"
 
 # my packages
@@ -34,8 +34,19 @@ convert = { path = "convert"}
 database = { path = "database"}
 
 [workspace]
-members = ["convert/", "database/", "py_types/"]
+members = ["quaint", "convert/", "database/", "py_types/"]
 
+[workspace.dependencies.quaint]
+path = "quaint"
+features = [
+  "expose-drivers",
+  "fmt-sql",
+  "mssql",
+  "mysql",
+  #"pooled",
+  "postgresql",
+  "sqlite",
+]
 
 [profile.release]
 opt-level = 3
