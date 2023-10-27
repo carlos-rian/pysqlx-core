@@ -78,9 +78,10 @@ jobs:
         include:
           - os: ubuntu
             platform: linux
+
           - os: windows
             ls: dir
-            interpreter: 3.7 3.8 3.9 3.10 3.11 3.12 pypy3.8 pypy3.9 pypy3.10
+            interpreter: 3.7 3.8 3.9 3.10 3.11 3.12
 
           - os: windows
             ls: dir
@@ -96,7 +97,7 @@ jobs:
 
           - os: macos
             target: aarch64
-            interpreter: 3.7 3.8 3.9 3.10 3.11 3.12 pypy3.8 pypy3.9 pypy3.10
+            interpreter: 3.7 3.8 3.9 3.10 3.11 3.12
 
           - os: ubuntu
             platform: linux
@@ -153,7 +154,7 @@ jobs:
           python-version: "3.11"
           architecture: ${{ matrix.python-architecture || 'x64' }}
 
-      - run: pip install -U toml httpx
+      - run: pip install -U toml httpx twine
 
       - name: production - check package version
         if: github.ref == 'refs/heads/main'
@@ -173,7 +174,7 @@ jobs:
           args: >
             --release
             --out dist
-            --interpreter ${{ matrix.interpreter || '3.7 3.8 3.9 3.10 3.11 3.12 pypy3.7 pypy3.8 pypy3.9 pypy3.10' }} ${{ matrix.extra-build-args }}
+            --interpreter ${{ matrix.interpreter || '3.7 3.8 3.9 3.10 3.11 3.12' }} ${{ matrix.extra-build-args }}
           rust-toolchain: stable
           sccache: true
           docker-options: -e CI
@@ -196,14 +197,12 @@ jobs:
         os: [ubuntu, windows]
         target: [x86_64]
         manylinux: [auto]
-        interpreter: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12-dev", "pypy3.7", "pypy3.8", "pypy3.9", "pypy3.10"]
+        interpreter: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12"]
         include:
           - os: ubuntu
             platform: linux
           - os: windows
             ls: dir
-          - interpreter: 3.12-dev
-            maturin-interpreter: "3.12"
 
     runs-on: ${{ matrix.os }}-latest
     steps:
@@ -222,7 +221,7 @@ jobs:
           components: llvm-tools
 
 
-      - run: pip install -U toml httpx
+      - run: pip install -U toml httpx twine
 
       - name: production - check package version
         if: github.ref == 'refs/heads/main'
@@ -248,6 +247,8 @@ jobs:
           docker-options: -e CI
 
       - run: ${{ matrix.ls || 'ls -lh' }} dist/
+
+      - run: twine check --strict dist/*
 
       - uses: actions/upload-artifact@v3
         with:
