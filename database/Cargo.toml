@@ -20,20 +20,5 @@ quaint.workspace = true
 [features]
 vendored-openssl = ["quaint/vendored-openssl"]
 
-# [dependencies.quaint]
-# git = "https://github.com/carlos-rian/quaint"
-# features = [
-#     "postgresql",
-#     "mysql",
-#     "mssql",
-#     "sqlite",
-#     "json",
-#     "uuid",
-#     "chrono",
-#     "bigdecimal",
-#     #"pooled",
-#     "fmt-sql"
-# ]
-
 [dev-dependencies]
 tokio = { version = "1", features = ["macros"] }
