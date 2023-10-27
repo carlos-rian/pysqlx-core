@@ -1,33 +1,15 @@
 name: ci
 
 on:
-  pull_request:
-    branches:
-      - "main"
-      - "release/*"
-      - "deps/*"
-
-    paths-ignore:
-      - "LICENSE"
-      - "SECURITY.md"
-      - "README.md"
-      - "makefile"
-      - ".gitingore"
-      #- ".github/workflows/*"
   push:
     branches:
-      - "main"
-      - "release/*"
-      - "deps/*"
-    paths-ignore:
-      - "LICENSE"
-      - "SECURITY.md"
-      - "README.md"
-      - "makefile"
-      - ".gitingore"
-      #- ".github/workflows/*"
-  
+      - main
+    tags:
+      - '**'
+  pull_request: {}
+
 env:
+  COLUMNS: 150
   PKG_CONFIG_ALLOW_CROSS: 1
 
 jobs:
@@ -68,9 +50,10 @@ jobs:
 
   build:
     name: build on ${{ matrix.platform || matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
-    needs: [rust-test]
+    # only run on push to main and on release
+    # if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'Full Build')
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
         target: [x86_64, aarch64]
@@ -121,7 +104,6 @@ jobs:
             platform: linux
             target: s390x
             interpreter: 3.7 3.8 3.9 3.10 3.11 3.12
-
         exclude:
           # Optimized PGO builds for x86_64 manylinux and windows follow a different matrix,
           # maybe in future maturin-action can support this automatically
@@ -141,10 +123,10 @@ jobs:
       - name: set up python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: '3.11'
           architecture: ${{ matrix.python-architecture || 'x64' }}
 
-      - run: pip install -U toml httpx
+      - run: pip install -U 'black>=22.3.0,<23' typing_extensions toml httpx
 
       - name: production - check package version
         if: github.ref == 'refs/heads/main'
@@ -155,34 +137,30 @@ jobs:
         if: contains(github.ref, 'release')
         run: |
           python .github/release.py
-      
-      - name: build wheel
+
+      - name: build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
           manylinux: ${{ matrix.manylinux || 'auto' }}
-          args: >
-            --release
-            --out dist
-            --interpreter ${{ matrix.interpreter || '3.7 3.8 3.9 3.10 3.11 3.12 pypy3.7 pypy3.8 pypy3.9 pypy3.10' }} ${{ matrix.extra-build-args }}
+          container: ${{ matrix.container }}
+          args: --release --out dist --interpreter ${{ matrix.interpreter || '3.7 3.8 3.9 3.10 3.11 3.12 pypy3.7 pypy3.8 pypy3.9 pypy3.10' }} ${{ matrix.extra-build-args }}
           rust-toolchain: stable
-          sccache: true
           docker-options: -e CI
 
       - run: ${{ matrix.ls || 'ls -lh' }} dist/
-
-      - run: twine check --strict dist/*
 
       - uses: actions/upload-artifact@v3
         with:
           name: pypi_files
           path: dist
-  
+
   build-pgo:
     name: build pgo-optimized on ${{ matrix.platform || matrix.os }} (${{ matrix.interpreter}} - ${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
-    needs: [rust-test]
+    # only run on push to main and on release
+    # if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'Full Build')
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [ubuntu, windows]
         target: [x86_64]
@@ -205,15 +183,14 @@ jobs:
         with:
           python-version: ${{ matrix.interpreter }}
           architecture: ${{ matrix.python-architecture || 'x64' }}
-      
+
       - name: install rust stable
         id: rust-toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools
 
-
-      - run: pip install -U toml httpx
+      - run: pip install -U 'black>=22.3.0,<23' typing_extensions toml httpx
 
       - name: production - check package version
         if: github.ref == 'refs/heads/main'
@@ -225,6 +202,35 @@ jobs:
         run: |
           python .github/release.py
 
+      - name: build initial wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux || 'auto' }}
+          args: >
+            --release
+            --out pgo-wheel
+            --interpreter ${{ matrix.maturin-interpreter || matrix.interpreter }}
+          rust-toolchain: stable
+          docker-options: -e CI
+        env:
+          RUSTFLAGS: "-Cprofile-generate=${{ github.workspace }}/profdata"
+
+      - name: detect rust host
+        run: echo RUST_HOST=$(rustc -Vv | grep host | cut -d ' ' -f 2) >> "$GITHUB_ENV"
+        shell: bash
+
+      - name: generate pgo data
+        run: |
+          pip install -U pip poetry
+					poetry export -f requirements.txt --without-hashes -o requirements.txt --with dev
+          pip install -r requirements.txt
+          pip install pysqlx-core --no-index --no-deps --find-links pgo-wheel --force-reinstall
+          rustup run stable bash -c 'echo LLVM_PROFDATA=$RUSTUP_HOME/toolchains/$RUSTUP_TOOLCHAIN/lib/rustlib/${{ env.RUST_HOST }}/bin/llvm-profdata >> "$GITHUB_ENV"'
+
+      - name: merge pgo data
+        run: ${{ env.LLVM_PROFDATA }} merge -o ${{ github.workspace }}/merged.profdata ${{ github.workspace }}/profdata
+
       - name: build pgo-optimized wheel
         uses: PyO3/maturin-action@v1
         with:
@@ -235,8 +241,9 @@ jobs:
             --out dist
             --interpreter ${{ matrix.maturin-interpreter || matrix.interpreter }}
           rust-toolchain: stable
-          sccache: true
           docker-options: -e CI
+        env:
+          RUSTFLAGS: "-Cprofile-use=${{ github.workspace }}/merged.profdata"
 
       - run: ${{ matrix.ls || 'ls -lh' }} dist/
 
@@ -299,3 +306,47 @@ jobs:
             ${{ github.event.head_commit.message }}
           draft: false
           prerelease: false
+
+    needs: [test-builds-arch, test-builds-os, build-sdist, check]
+    if: success() && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: set up python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - run: pip install -U twine
+
+      - name: check package version
+        run: python .github/check_version.py
+
+      - name: get dist artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: pypi_files
+          path: dist
+
+      - run: twine check --strict dist/*
+
+      - name: upload to pypi
+        run: twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.pypi_token }}
+
+      - name: get wasm dist artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: wasm_wheels
+          path: wasm
+
+      - name: upload to github release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            wasm/*.whl
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}
