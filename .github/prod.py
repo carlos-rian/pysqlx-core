@@ -1,7 +1,6 @@
-import http.client as http
-import json
 import os
 
+import httpx
 import toml
 
 with open("Cargo.toml", mode="r") as file:
@@ -10,14 +9,11 @@ with open("Cargo.toml", mode="r") as file:
 
 # convert get_version to use native python libs
 def get_version():
-    host = "pypi.org"
     for _ in range(3):
-        conn = http.HTTPSConnection(host, timeout=30)
-        conn.request("GET", "/pypi/pysqlx-core/json")
-        resp = conn.getresponse()
-        if resp.status == 200:
+        resp = httpx.get(f"https://pypi.org/pypi/pysqlx-core/json")
+        if resp.status_code == 200:
             break
-    data: dict = json.load(resp)
+    data: dict = resp.json()
     return data["info"]["version"]
 
 

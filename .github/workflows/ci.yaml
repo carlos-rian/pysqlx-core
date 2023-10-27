@@ -144,7 +144,7 @@ jobs:
           python-version: "3.11"
           architecture: ${{ matrix.python-architecture || 'x64' }}
 
-      - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions toml
+      - run: pip install -U toml httpx
 
       - name: production - check package version
         if: github.ref == 'refs/heads/main'
@@ -213,7 +213,7 @@ jobs:
           components: llvm-tools
 
 
-      - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions toml
+      - run: pip install -U toml httpx
 
       - name: production - check package version
         if: github.ref == 'refs/heads/main'
@@ -259,7 +259,7 @@ jobs:
           python-version: "3.10"
 
       - name: install deps
-        run: pip install -U twine toml
+        run: pip install -U twine toml httpx
 
       - name: production - check package version
         if: github.ref == 'refs/heads/main'
