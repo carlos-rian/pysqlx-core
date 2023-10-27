@@ -147,7 +147,7 @@ jobs:
         with:
           components: llvm-tools
 
-      - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions httpx toml
+      - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions toml
 
       - name: production - check package version
         if: github.ref == 'refs/heads/main'
@@ -214,7 +214,7 @@ jobs:
         with:
           components: llvm-tools
 
-      - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions httpx toml
+      - run: pip install -U twine 'black>=22.3.0,<23' typing_extensions toml
 
       - name: production - check package version
         if: github.ref == 'refs/heads/main'
@@ -260,7 +260,7 @@ jobs:
           python-version: "3.10"
 
       - name: install deps
-        run: pip install -U twine httpx toml
+        run: pip install -U twine toml
 
       - name: production - check package version
         if: github.ref == 'refs/heads/main'

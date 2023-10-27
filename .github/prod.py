@@ -1,19 +1,22 @@
-import httpx
-import toml
+import json
 import os
+import urllib
+
+import toml
 
 with open("Cargo.toml", mode="r") as file:
     text: str = file.read()
 
 
+# convert get_version to use native python libs
 def get_version():
     uri = "https://pypi.org/pypi/pysqlx-core/json"
     for _ in range(3):
-        resp = httpx.get(uri)
-        if resp.is_success:
+        resp = urllib.request.urlopen(uri)
+        if resp.status == 200:
             break
-    json: dict = resp.json()
-    return json["info"]["version"]
+    data: dict = json.loads(resp.read())
+    return data["info"]["version"]
 
 
 version: str = get_version()
