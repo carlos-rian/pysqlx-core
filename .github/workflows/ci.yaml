@@ -57,6 +57,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - run: pip install -U toml httpx
+
       - name: production - check package version
         if: github.ref == 'refs/heads/main'
         run: |
