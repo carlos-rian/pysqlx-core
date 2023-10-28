@@ -56,6 +56,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: production - check package version
+        if: github.ref == 'refs/heads/main'
+        run: |
+          python .github/prod.py
+
+      - name: release - check package version
+        if: contains(github.ref, 'release')
+        run: |
+          python .github/release.py
+
       - uses: PyO3/maturin-action@v1
         with:
           command: sdist
