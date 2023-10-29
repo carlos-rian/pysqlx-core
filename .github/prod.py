@@ -14,7 +14,7 @@ def get_version():
         if resp.status_code == 200:
             break
     data: dict = resp.json()
-    return data["info"]["version"]
+    return "0.1.48"  # data["info"]["version"]
 
 
 version: str = get_version()
