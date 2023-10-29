@@ -49,11 +49,38 @@ jobs:
           components: llvm-tools
 
       - name: run test
-        run: cargo test -p database -p convert -p py_types 
+        run: cargo test -p database -p convert -p py_types
+  
+  build-sdist:
+    name: build sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: pip install -U toml httpx
+
+      - name: production - check package version
+        if: github.ref == 'refs/heads/main'
+        run: |
+          python .github/prod.py
+
+      - name: release - check package version
+        if: contains(github.ref, 'release')
+        run: |
+          python .github/release.py
+
+      - uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+          rust-toolchain: stable
+      - uses: actions/upload-artifact@v3
+        with:
+          name: pypi_files
+          path: dist
   
   build:
     name: build on ${{ matrix.platform || matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
-    needs: [rust-test]
     strategy:
       fail-fast: true
       matrix:
@@ -175,7 +202,6 @@ jobs:
   
   build-pgo:
     name: build pgo-optimized on ${{ matrix.platform || matrix.os }} (${{ matrix.interpreter}} - ${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
-    needs: [rust-test]
     strategy:
       fail-fast: true
       matrix:
@@ -242,8 +268,8 @@ jobs:
 
   release:
     name: Release
-    if: contains(github.ref, 'main') || contains(github.ref, 'release')
-    needs: [build,build-pgo]
+    if: contains(github.ref, 'main') || contains(github.ref, 'release') && !cancelled() && success()
+    needs: [rust-test, build-sdist, build, build-pgo]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
