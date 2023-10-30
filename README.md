@@ -1,10 +1,10 @@
 # __pysqlx-core__
 
 [![cargo ci](https://github.com/carlos-rian/pysqlx-core/workflows/ci/badge.svg?branch=main)](https://github.com/carlos-rian/pysqlx-core/actions?query=event%3Apush+branch%3Amain+workflow%3Aci)
-[![pypi](https://img.shields.io/pypi/v/pysqlx-core.svg)](https://pypi.python.org/pypi/pysqlx-core)
-[![versions](https://img.shields.io/pypi/pyversions/pysqlx-core.svg)](https://github.com/carlos-rian/pysqlx-core)
-[![license](https://img.shields.io/github/license/carlos-rian/pysqlx-core.svg)](https://github.com/carlos-rian/pysqlx-core/blob/main/LICENSE)
-[![downloads](https://static.pepy.tech/personalized-badge/pysqlx-core?period=total&units=international_system&left_color=grey&right_color=orange&left_text=Downloads)](https://pepy.tech/project/pysqlx-core)
+[![pypi](https://img.shields.io/pypi/v/pysqlx-core.svg?color=%2334D058)](https://pypi.python.org/pypi/pysqlx-core)
+[![versions](https://img.shields.io/pypi/pyversions/pysqlx-core.svg?color=%2334D058)](https://github.com/carlos-rian/pysqlx-core)
+[![license](https://img.shields.io/github/license/carlos-rian/pysqlx-core.svg?color=%2334D058)](https://github.com/carlos-rian/pysqlx-core/blob/main/LICENSE)
+[![downloads](https://static.pepy.tech/personalized-badge/pysqlx-core?period=total&units=international_system&left_color=grey&right_color=brightgreen&left_text=downloads)](https://pepy.tech/project/pysqlx-core)
 
 pysqlx-core is an extremely fast Python library for communicating with various SQL databases.
 
