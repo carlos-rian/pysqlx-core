@@ -3,7 +3,7 @@ use quaint::{connector::ResultSet, prelude::ResultRow};
 use std::collections::HashMap;
 
 use crate::columns::{check_column_name, get_column_types};
-use py_types::{PyColumnTypes, PyRow, PyRows, PySQLXResult, PyValue};
+use py_types::{PyColumnTypes, PyRow, PyRows, PySQLXResult, PySQLxValue};
 
 pub fn convert_result_set(result_set: ResultSet) -> PySQLXResult {
     let mut py_result = PySQLXResult::default();
@@ -41,7 +41,7 @@ fn convert_row(columns: &Vec<String>, row: ResultRow) -> PyRow {
             new_column = format!("{}_{}", new_column, count);
             count += 1;
         }
-        data.insert(new_column, PyValue::from(value));
+        data.insert(new_column, PySQLxValue::from(value));
     }
     data
 }
@@ -76,10 +76,10 @@ mod tests {
         let py_result = convert_result_set(result);
         assert_eq!(py_result.__len__() as usize, 1);
         let row = py_result.rows();
-        assert_eq!(row[0].get("id").unwrap(), &PyValue::Int(1));
+        assert_eq!(row[0].get("id").unwrap(), &PySQLxValue::Int(1));
         assert_eq!(
             row[0].get("name").unwrap(),
-            &PyValue::String("hello".to_string())
+            &PySQLxValue::String("hello".to_string())
         );
         assert_eq!(row.len(), 1);
     }
@@ -94,10 +94,10 @@ mod tests {
             .unwrap();
         let py_result = convert_result_set_as_list(result);
         assert_eq!(py_result.len(), 1);
-        assert_eq!(py_result[0].get("id").unwrap(), &PyValue::Int(1));
+        assert_eq!(py_result[0].get("id").unwrap(), &PySQLxValue::Int(1));
         assert_eq!(
             py_result[0].get("name").unwrap(),
-            &PyValue::String("hello".to_string())
+            &PySQLxValue::String("hello".to_string())
         );
     }
 }

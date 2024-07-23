@@ -205,7 +205,7 @@ impl Connection {
 
 #[cfg(test)]
 mod tests {
-    use py_types::PyValue;
+    use py_types::PySQLxValue;
 
     use super::*;
 
@@ -230,11 +230,11 @@ mod tests {
 
         assert_eq!(
             res.rows().get(0).unwrap().get("col_1").unwrap().clone(),
-            PyValue::Int(1)
+            PySQLxValue::Int(1)
         );
         assert_eq!(
             res.rows().get(0).unwrap().get("col_2").unwrap().clone(),
-            PyValue::Int(2)
+            PySQLxValue::Int(2)
         );
 
         assert_eq!(res.types().get("col_1").unwrap(), "int");
@@ -244,7 +244,7 @@ mod tests {
 
         assert_eq!(
             res.rows().get(0).unwrap().get("col_1_3").unwrap().clone(),
-            PyValue::Float(-1.3)
+            PySQLxValue::Float(-1.3)
         );
 
         assert_eq!(
@@ -254,7 +254,7 @@ mod tests {
                 .get("col_453_32")
                 .unwrap()
                 .clone(),
-            PyValue::Float(-453.32)
+            PySQLxValue::Float(-453.32)
         );
         assert_eq!(res.types().get("col_1_3").unwrap(), "float");
         assert_eq!(res.types().get("col_453_32").unwrap(), "float");
@@ -314,7 +314,7 @@ mod tests {
         assert_eq!(res, 1);
 
         let res = conn._query_as_list("SELECT * FROM test").await.unwrap();
-        assert_eq!(res[0].get("id").unwrap(), &PyValue::Int(1));
+        assert_eq!(res[0].get("id").unwrap(), &PySQLxValue::Int(1));
     }
 
     #[tokio::test]
@@ -347,7 +347,7 @@ mod tests {
             ._query_first_as_dict("SELECT * FROM test")
             .await
             .unwrap();
-        assert_eq!(res.get("id").unwrap(), &PyValue::Int(1));
+        assert_eq!(res.get("id").unwrap(), &PySQLxValue::Int(1));
     }
 
     #[tokio::test]

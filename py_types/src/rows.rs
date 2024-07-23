@@ -4,9 +4,9 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use crate::types::PyValue;
+use crate::types::PySQLxValue;
 
-pub type PyRow = HashMap<String, PyValue>;
+pub type PyRow = HashMap<String, PySQLxValue>;
 pub type PyRows = Vec<PyRow>;
 pub type PyColumnTypes = HashMap<String, String>;
 
@@ -93,16 +93,16 @@ mod tests {
     fn test_py_sqlx_result() {
         let mut result = PySQLXResult::default();
         let mut row = HashMap::new();
-        row.insert("id".to_string(), PyValue::Int(1));
-        row.insert("name".to_string(), PyValue::String("John".to_string()));
+        row.insert("id".to_string(), PySQLxValue::Int(1));
+        row.insert("name".to_string(), PySQLxValue::String("John".to_string()));
         result.push(row);
         let mut row = HashMap::new();
-        row.insert("id".to_string(), PyValue::Int(2));
-        row.insert("name".to_string(), PyValue::String("Jane".to_string()));
+        row.insert("id".to_string(), PySQLxValue::Int(2));
+        row.insert("name".to_string(), PySQLxValue::String("Jane".to_string()));
         result.push(row);
         let mut row = HashMap::new();
-        row.insert("id".to_string(), PyValue::Int(3));
-        row.insert("name".to_string(), PyValue::String("Jack".to_string()));
+        row.insert("id".to_string(), PySQLxValue::Int(3));
+        row.insert("name".to_string(), PySQLxValue::String("Jack".to_string()));
         result.push(row);
         let mut column_types = HashMap::new();
         column_types.insert("id".to_string(), "int".to_string());
