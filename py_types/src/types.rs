@@ -1,15 +1,14 @@
+use core::panic;
 use std::borrow::Cow;
 
 use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
-use chrono::{Datelike, Timelike};
-use pyo3::types::{PyBytes, PyTuple, PyTzInfo};
-use pyo3::types::{PyBytes, PyTuple, PyTzInfo};
-use pyo3::{PyObject, Python, ToPyObject};
+use pyo3::types::{PyBytes, PyTuple};
+use pyo3::{pyclass, pyfunction, FromPyObject, PyAny, PyObject, PyResult, Python, ToPyObject};
 use quaint::{Value, ValueType};
 use serde::Deserialize;
 
 // this type is a placeholder for the actual type
-type PyValueList = Vec<PySQLxValue>;
+type PyValueArray = Vec<PySQLxValue>;
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
 #[serde(untagged)]
@@ -23,7 +22,7 @@ pub enum PySQLxValue {
     // 1.0
     Int(i64),
     // Vec<String>,
-    List(PyValueList),
+    Array(PyValueArray),
     // { "name": "foo", "age": 42 }
     Json(String),
     // <body>...</body>
@@ -57,7 +56,7 @@ impl<'a> From<Value<'a>> for PySQLxValue {
                     for item in v {
                         list.push(PySQLxValue::Enum(item.into_owned()));
                     }
-                    PySQLxValue::List(list)
+                    PySQLxValue::Array(list)
                 })
                 .unwrap_or(PySQLxValue::Null),
             ValueType::Int32(Some(i)) => PySQLxValue::Int(i as i64),
@@ -67,7 +66,7 @@ impl<'a> From<Value<'a>> for PySQLxValue {
                 for item in l {
                     list.push(PySQLxValue::from(item));
                 }
-                PySQLxValue::List(list)
+                PySQLxValue::Array(list)
             }
             ValueType::Json(Some(s)) => PySQLxValue::Json(s.to_string()),
             ValueType::Xml(Some(s)) => PySQLxValue::Xml(s.to_string()),
@@ -93,7 +92,7 @@ impl<'a> ToPyObject for PySQLxValue {
             PySQLxValue::String(s) => s.to_object(py),
             PySQLxValue::Enum(s) => s.to_object(py),
             PySQLxValue::Int(i) => i.to_object(py),
-            PySQLxValue::List(l) => {
+            PySQLxValue::Array(l) => {
                 let mut list = Vec::new();
                 for item in l {
                     list.push(item.to_object(py));
@@ -105,21 +104,8 @@ impl<'a> ToPyObject for PySQLxValue {
             PySQLxValue::Json(s) => s.to_object(py),
             PySQLxValue::Xml(s) => s.to_object(py),
             PySQLxValue::Uuid(s) => s.to_object(py),
-            PySQLxValue::Time(s) => {
-                return PyTime::new(
-                    py,
-                    s.hour() as u8,
-                    s.minute() as u8,
-                    s.second() as u8,
-                    s.nanosecond() / 1000 as u32,
-                    None,
-                )
-                .unwrap()
-                .to_object(py);
-            }
-            PySQLxValue::Date(s) => PyDate::new(py, s.year(), s.month() as u8, s.day() as u8)
-                .unwrap()
-                .to_object(py),
+            PySQLxValue::Time(s) => s.to_object(py),
+            PySQLxValue::Date(s) => s.to_object(py),
             PySQLxValue::DateTime(s) => s.to_object(py),
             PySQLxValue::Float(f) => f.to_object(py),
             PySQLxValue::Bytes(b) => PyBytes::new(py, b).to_object(py),
@@ -128,6 +114,55 @@ impl<'a> ToPyObject for PySQLxValue {
     }
 }
 
+impl FromPyObject<'_> for PySQLxValue {
+    fn extract(ob: &PyAny) -> PyResult<Self> {
+        if let Ok(b) = ob.extract::<bool>() {
+            return Ok(PySQLxValue::Boolean(b));
+        }
+        if let Ok(s) = ob.extract::<String>() {
+            return Ok(PySQLxValue::String(s));
+        }
+        if let Ok(s) = ob.extract::<i64>() {
+            return Ok(PySQLxValue::Int(s));
+        }
+        if let Ok(s) = ob.extract::<Vec<PySQLxValue>>() {
+            return Ok(PySQLxValue::Array(s));
+        }
+        if let Ok(s) = ob.extract::<PyObject>() {
+            return Ok(PySQLxValue::Json(s.to_string()));
+        }
+        if let Ok(s) = ob.extract::<PyObject>() {
+            return Ok(PySQLxValue::Xml(s.to_string()));
+        }
+        if let Ok(s) = ob.extract::<PyObject>() {
+            return Ok(PySQLxValue::Uuid(s.to_string()));
+        }
+        if let Ok(s) = ob.extract::<NaiveTime>() {
+            return Ok(PySQLxValue::Time(s));
+        }
+        if let Ok(s) = ob.extract::<NaiveDate>() {
+            return Ok(PySQLxValue::Date(s));
+        }
+        if let Ok(s) = ob.extract::<DateTime<Utc>>() {
+            return Ok(PySQLxValue::DateTime(s));
+        }
+        if let Ok(s) = ob.extract::<f64>() {
+            return Ok(PySQLxValue::Float(s));
+        }
+        if let Ok(s) = ob.extract::<Vec<u8>>() {
+            return Ok(PySQLxValue::Bytes(s));
+        }
+        if ob.is_none() {
+            return Ok(PySQLxValue::Null);
+        }
+
+        Err(pyo3::exceptions::PyTypeError::new_err(
+            "Invalid type, expected a valid SQLx value",
+        )) //todo implement error
+    }
+}
+
+#[pyclass]
 #[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
 #[serde(untagged)]
 pub enum PySQLxType {
@@ -167,7 +202,7 @@ fn get_sqlx_type(value: &PySQLxValue) -> PySQLxType {
         PySQLxValue::String(_) => PySQLxType::String,
         PySQLxValue::Enum(_) => PySQLxType::Enum,
         PySQLxValue::Int(_) => PySQLxType::Int,
-        PySQLxValue::List(_) => PySQLxType::List,
+        PySQLxValue::Array(_) => PySQLxType::List,
         PySQLxValue::Json(_) => PySQLxType::Json,
         PySQLxValue::Xml(_) => PySQLxType::Xml,
         PySQLxValue::Uuid(_) => PySQLxType::Uuid,
@@ -180,6 +215,7 @@ fn get_sqlx_type(value: &PySQLxValue) -> PySQLxType {
     }
 }
 
+#[pyclass]
 #[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
 pub struct PySQLxValueIn {
     pub value: PySQLxValue,
@@ -197,16 +233,16 @@ impl From<PySQLxValueIn> for Value<'_> {
             PySQLxType::Enum => Value::from(ValueType::Enum(
                 Some(match value.value {
                     PySQLxValue::Enum(s) => s.into(),
-                    _ => "".to_string().into(),
+                    _ => panic!("Invalid Enum string"),
                 }),
                 None,
             )),
             PySQLxType::Int => Value::from(ValueType::Int64(Some(match value.value {
                 PySQLxValue::Int(i) => i,
-                _ => 0,
+                _ => panic!("Invalid int"),
             }))),
             PySQLxType::List => Value::from(ValueType::Array(Some(match value.value {
-                PySQLxValue::List(l) => {
+                PySQLxValue::Array(l) => {
                     let mut list = Vec::new();
                     for item in l {
                         list.push(Value::from(PySQLxValueIn::from(PySQLxValueIn {
@@ -216,50 +252,60 @@ impl From<PySQLxValueIn> for Value<'_> {
                     }
                     list
                 }
-                _ => Vec::new(),
+                _ => panic!("Invalid list"),
             }))),
             PySQLxType::Json => Value::from(ValueType::Json(Some(match value.value {
                 PySQLxValue::Json(s) => serde_json::from_str(&s).unwrap(),
-                _ => "".to_string().into(),
+                _ => panic!("Invalid JSON string"),
             }))),
             PySQLxType::Xml => Value::from(ValueType::Xml(Some(match value.value {
                 PySQLxValue::Xml(s) => Cow::from(s),
-                _ => Cow::from("".to_string()),
+                _ => panic!("Invalid XML string"),
             }))),
             PySQLxType::Uuid => Value::from(ValueType::Uuid(Some(match value.value {
                 PySQLxValue::Uuid(s) => {
                     uuid::Uuid::parse_str(&s).expect(format!("Invalid UUID: {}", s).as_str())
                 }
-                _ => uuid::uuid!("urn:uuid:00000000-0000-0000-0000-000000000000"),
+                _ => panic!("Invalid UUID"),
             }))),
             PySQLxType::Time => Value::from(ValueType::Time(Some(match value.value {
-                PySQLxValue::Time(s) => chrono::NaiveTime::parse_from_str(&s, "%H:%M:%S").unwrap(),
-                _ => chrono::NaiveTime::from_hms_opt(0, 0, 0).expect("Sorry, invalid time"),
+                PySQLxValue::Time(s) => s,
+                _ => panic!("Invalid time"),
             }))),
             PySQLxType::Date => Value::from(ValueType::Date(Some(match value.value {
-                PySQLxValue::Date(s) => chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d").unwrap(),
-                _ => chrono::NaiveDate::from_ymd_opt(1970, 1, 1).expect("Sorry, invalid date"),
+                PySQLxValue::Date(s) => s,
+                _ => panic!("Invalid date"),
             }))),
             PySQLxType::DateTime => Value::from(ValueType::DateTime(Some(match value.value {
-                PySQLxValue::DateTime(s) => {
-                    chrono::DateTime::parse_from_rfc3339(&s).unwrap().into()
-                }
-                _ => chrono::Utc::now(),
+                PySQLxValue::DateTime(s) => s,
+                _ => panic!("Invalid datetime"),
             }))),
             PySQLxType::Float => Value::from(ValueType::Float(Some(match value.value {
                 PySQLxValue::Float(f) => f as f32,
-                _ => 0.0,
+                _ => panic!("Invalid float"),
             }))),
             PySQLxType::Bytes => Value::from(ValueType::Bytes(Some(match value.value {
                 PySQLxValue::Bytes(b) => Cow::from(b),
-                _ => Cow::from(Vec::new()),
+                _ => panic!("Invalid bytes"),
             }))),
             PySQLxType::String => Value::from(ValueType::Text(Some(match value.value {
                 PySQLxValue::String(s) => Cow::from(s),
-                _ => Cow::from("".to_string()),
+                _ => panic!("Invalid string"),
             }))),
             PySQLxType::Null => Value::from(ValueType::Text(None)),
         }
+    }
+}
+
+#[pyfunction]
+pub fn convert_pyobject_to_value_in(py: Python, obj: PyObject) -> PySQLxValueIn {
+    let value = obj.extract::<PySQLxValue>(py);
+    match value {
+        Ok(val) => PySQLxValueIn {
+            py_type: get_sqlx_type(&val),
+            value: val,
+        },
+        Err(_) => todo!("Handle error, generate a python exception"),
     }
 }
 
@@ -295,7 +341,7 @@ mod tests {
         let pyvalue = PySQLxValue::from(value);
         assert_eq!(
             pyvalue,
-            PySQLxValue::List(vec![PySQLxValue::Enum("red".to_string())])
+            PySQLxValue::Array(vec![PySQLxValue::Enum("red".to_string())])
         );
 
         let value = Value::from(ValueType::Int32(Some(1)));
@@ -310,7 +356,7 @@ mod tests {
             Some(1),
         ))])));
         let pyvalue = PySQLxValue::from(value);
-        assert_eq!(pyvalue, PySQLxValue::List(vec![PySQLxValue::Int(1)]));
+        assert_eq!(pyvalue, PySQLxValue::Array(vec![PySQLxValue::Int(1)]));
 
         let value = Value::from(ValueType::Json(Some(json!({"name": "foo"}))));
         let pyvalue = PySQLxValue::from(value);
@@ -334,21 +380,24 @@ mod tests {
             NaiveTime::from_str("12:01:02").unwrap(),
         )));
         let pyvalue = PySQLxValue::from(value);
-        assert_eq!(pyvalue, PySQLxValue::Time("12:01:02".to_string()));
+        assert_eq!(
+            pyvalue,
+            PySQLxValue::Time(NaiveTime::from_hms_opt(12, 1, 2).expect("invalid"))
+        );
 
         let value = Value::from(ValueType::Date(Some(
-            NaiveDate::from_str("2022-01-01").unwrap(),
+            NaiveDate::from_str("2022-01-01").expect("invalid"),
         )));
         let pyvalue = PySQLxValue::from(value);
-        assert_eq!(pyvalue, PySQLxValue::Date("2022-01-01".to_string()));
+        assert_eq!(
+            pyvalue,
+            PySQLxValue::Date(NaiveDate::from_ymd_opt(2022, 1, 1).expect("invalid"))
+        );
 
         let v = Utc::now();
         let value = Value::from(ValueType::DateTime(Some(v)));
         let pyvalue = PySQLxValue::from(value);
-        assert_eq!(
-            pyvalue,
-            PySQLxValue::DateTime(v.to_rfc3339_opts(SecondsFormat::Millis, true))
-        );
+        assert_eq!(pyvalue, PySQLxValue::DateTime(v));
 
         let value = Value::from(ValueType::Float(Some(1.0)));
         let pyvalue = PySQLxValue::from(value);
@@ -414,7 +463,7 @@ mod tests {
         assert_eq!(v, Value::from(ValueType::Int64(Some(1))));
 
         let value = PySQLxValueIn {
-            value: PySQLxValue::List(vec![PySQLxValue::Int(1)]),
+            value: PySQLxValue::Array(vec![PySQLxValue::Int(1)]),
             py_type: PySQLxType::List,
         };
         let v: Value = value.into();
@@ -458,7 +507,7 @@ mod tests {
         );
 
         let value = PySQLxValueIn {
-            value: PySQLxValue::Time("12:01:02".to_string()),
+            value: PySQLxValue::Time(NaiveTime::from_hms_opt(12, 1, 2).expect("invalid")),
             py_type: PySQLxType::Time,
         };
         let v: Value = value.into();
@@ -470,7 +519,7 @@ mod tests {
         );
 
         let value = PySQLxValueIn {
-            value: PySQLxValue::Date("2022-01-01".to_string()),
+            value: PySQLxValue::Date(NaiveDate::from_ymd_opt(2022, 1, 1).expect("invalid")),
             py_type: PySQLxType::Date,
         };
 
@@ -484,7 +533,7 @@ mod tests {
 
         let now = Utc::now();
         let value = PySQLxValueIn {
-            value: PySQLxValue::DateTime(now.to_rfc3339_opts(SecondsFormat::Millis, true)),
+            value: PySQLxValue::DateTime(now),
             py_type: PySQLxType::DateTime,
         };
         let v: Value = value.into();
