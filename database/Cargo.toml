@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 uuid = { version = "1.3" }
-pyo3 = { version = "0.22", features = ["extension-module"] }
+pyo3 = { version = "0.20", features = ["extension-module"] }
 pyo3-asyncio = { version = "0.20", features = ["tokio-runtime"] }
 tokio = { version = "1", features = ["full"] }
 openssl = { version = "0.10", features = ["vendored"] }
