@@ -124,9 +124,9 @@ impl Connection {
         params: Vec<PyObject>,
     ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, params).as_slice();
+        let sql_params = convert_to_quaint_values(py, &params);
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf._query(sql.as_str(), sql_params).await {
+            match slf._query(sql.as_str(), sql_params.as_slice()).await {
                 Ok(r) => Ok(r),
                 Err(e) => Err(e.to_pyerr()),
             }
@@ -140,9 +140,9 @@ impl Connection {
         params: Vec<PyObject>,
     ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, params).as_slice();
+        let sql_params = convert_to_quaint_values(py, &params);
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf._execute(sql.as_str(), sql_params).await {
+            match slf._execute(sql.as_str(), sql_params.as_slice()).await {
                 Ok(r) => Python::with_gil(|py| Ok(r.to_object(py))),
                 Err(e) => Err(e.to_pyerr()),
             }
@@ -156,9 +156,12 @@ impl Connection {
         params: Vec<PyObject>,
     ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, params).as_slice();
+        let sql_params = convert_to_quaint_values(py, &params);
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let rows = match slf._query_as_list(sql.as_str(), sql_params).await {
+            let rows = match slf
+                ._query_as_list(sql.as_str(), sql_params.as_slice())
+                .await
+            {
                 Ok(r) => r,
                 Err(e) => return Err(e.to_pyerr()),
             };
@@ -176,9 +179,12 @@ impl Connection {
         params: Vec<PyObject>,
     ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, params).as_slice();
+        let sql_params = convert_to_quaint_values(py, &params);
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let row = match slf._query_first_as_dict(sql.as_str(), sql_params).await {
+            let row = match slf
+                ._query_first_as_dict(sql.as_str(), sql_params.as_slice())
+                .await
+            {
                 Ok(r) => r,
                 Err(e) => return Err(e.to_pyerr()),
             };
@@ -247,7 +253,10 @@ mod tests {
         let conn = Connection::new("file:///tmp/db.db".to_string())
             .await
             .unwrap();
-        let res = conn._query("SELECT 1 as number").await.unwrap();
+        let res = conn
+            ._query("SELECT ? as number", &[Value::from(1)])
+            .await
+            .unwrap();
         assert_eq!(res.rows().len(), 1);
         assert_eq!(res.types().len(), 1);
         assert_eq!(res.types().get("number").unwrap(), "int");
@@ -259,7 +268,10 @@ mod tests {
             .await
             .unwrap();
 
-        let res = conn._query("SELECT 1, 2").await.unwrap();
+        let res = conn
+            ._query("SELECT ?, ?", &[Value::from(1), Value::from(2)])
+            .await
+            .unwrap();
 
         assert_eq!(
             res.rows().get(0).unwrap().get("col_1").unwrap().clone(),
@@ -273,7 +285,10 @@ mod tests {
         assert_eq!(res.types().get("col_1").unwrap(), "int");
         assert_eq!(res.types().get("col_2").unwrap(), "int");
 
-        let res = conn._query("SELECT -1.3, -453.32").await.unwrap();
+        let res = conn
+            ._query("SELECT $1, $2", &[Value::from(1.3), Value::from(-453.32)])
+            .await
+            .unwrap();
 
         assert_eq!(
             res.rows().get(0).unwrap().get("col_1_3").unwrap().clone(),
@@ -298,7 +313,7 @@ mod tests {
         let conn = Connection::new("file:///tmp/db.db".to_string())
             .await
             .unwrap();
-        let res = conn._query("SELECT * FROM InvalidTable").await;
+        let res = conn._query("SELECT * FROM InvalidTable", &[]).await;
         assert!(res.is_err())
     }
 
@@ -308,13 +323,13 @@ mod tests {
             .await
             .unwrap();
         let res = conn
-            ._execute("CREATE TABLE IF NOT EXISTS test (id int)")
+            ._execute("CREATE TABLE IF NOT EXISTS test (id int)", &[])
             .await
             .unwrap();
         assert_eq!(res, 0);
 
         let res = conn
-            ._execute("INSERT INTO test (id) VALUES (1)")
+            ._execute("INSERT INTO test (id) VALUES (?)", &[Value::from(1)])
             .await
             .unwrap();
         assert_eq!(res, 1);
@@ -325,7 +340,7 @@ mod tests {
         let conn = Connection::new("file:///tmp/db.db".to_string())
             .await
             .unwrap();
-        let res = conn._execute("CREATE TABL test (id int)").await;
+        let res = conn._execute("CREATE TABL test (id int)", &[]).await;
         assert!(res.is_err())
     }
 
@@ -335,18 +350,21 @@ mod tests {
             .await
             .unwrap();
         let res = conn
-            ._execute("CREATE TABLE IF NOT EXISTS test (id int)")
+            ._execute("CREATE TABLE IF NOT EXISTS test (id int)", &[])
             .await
             .unwrap();
         assert_eq!(res, 0);
 
         let res = conn
-            ._execute("INSERT INTO test (id) VALUES (1)")
+            ._execute("INSERT INTO test (id) VALUES (?)", &[Value::from(1)])
             .await
             .unwrap();
         assert_eq!(res, 1);
 
-        let res = conn._query_as_list("SELECT * FROM test").await.unwrap();
+        let res = conn
+            ._query_as_list("SELECT * FROM test", &[])
+            .await
+            .unwrap();
         assert_eq!(res[0].get("id").unwrap(), &PySQLxValue::Int(1));
     }
 
@@ -355,7 +373,7 @@ mod tests {
         let conn = Connection::new("file:///tmp/db.db".to_string())
             .await
             .unwrap();
-        let res = conn._query_as_list("SELECT * FROM InvalidTable").await;
+        let res = conn._query_as_list("SELECT * FROM InvalidTable", &[]).await;
         assert!(res.is_err())
     }
 
@@ -365,19 +383,19 @@ mod tests {
             .await
             .unwrap();
         let res = conn
-            ._execute("CREATE TABLE IF NOT EXISTS test (id int)")
+            ._execute("CREATE TABLE IF NOT EXISTS test (id int)", &[])
             .await
             .unwrap();
         assert_eq!(res, 0);
 
         let res = conn
-            ._execute("INSERT INTO test (id) VALUES (1)")
+            ._execute("INSERT INTO test (id) VALUES (?)", &[Value::from(1)])
             .await
             .unwrap();
         assert_eq!(res, 1);
 
         let res = conn
-            ._query_first_as_dict("SELECT * FROM test")
+            ._query_first_as_dict("SELECT * FROM test", &[])
             .await
             .unwrap();
         assert_eq!(res.get("id").unwrap(), &PySQLxValue::Int(1));
@@ -389,13 +407,13 @@ mod tests {
             .await
             .unwrap();
         let res = conn
-            ._execute("CREATE TABLE IF NOT EXISTS test (id int)")
+            ._execute("CREATE TABLE IF NOT EXISTS test (id int)", &[])
             .await
             .unwrap();
         assert_eq!(res, 0);
 
         let res = conn
-            ._query_first_as_dict("SELECT * FROM test WHERE id = 0")
+            ._query_first_as_dict("SELECT * FROM test WHERE id = ?", &[Value::from(0)])
             .await
             .unwrap();
         assert_eq!(res.len(), 0);
@@ -407,7 +425,7 @@ mod tests {
             .await
             .unwrap();
         let res = conn
-            ._query_first_as_dict("SELECT * FROM InvalidTable")
+            ._query_first_as_dict("SELECT * FROM InvalidTable", &[])
             .await;
         assert!(res.is_err())
     }

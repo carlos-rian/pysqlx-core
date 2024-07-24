@@ -294,7 +294,7 @@ impl From<String> for PySQLxParamKind {
     }
 }
 
-pub fn convert_to_quaint_values(py: Python, values: Vec<PyObject>) -> Vec<Value<'static>> {
+pub fn convert_to_quaint_values(py: Python, values: &Vec<PyObject>) -> Vec<Value<'static>> {
     let mut params = Vec::new();
     for value in values {
         let kind = PySQLxParamKind::from(
@@ -304,7 +304,7 @@ pub fn convert_to_quaint_values(py: Python, values: Vec<PyObject>) -> Vec<Value<
                 .extract::<String>(py)
                 .unwrap(),
         );
-        let param = convert_to_pysqlx_value(py, kind, value);
+        let param = convert_to_pysqlx_value(py, kind, value.clone_ref(py));
         params.push(param);
     }
 
