@@ -5,4 +5,4 @@ mod types;
 // re-export
 pub use errors::{py_error, DBError, PySQLXError};
 pub use rows::{PyColumnTypes, PyRow, PyRows, PySQLXResult};
-pub use types::{PySQLxType, PySQLxValue, PySQLxValueIn};
+pub use types::PySQLxValue;

@@ -1,16 +1,17 @@
-use core::panic;
-use std::borrow::Cow;
-
 use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
 use pyo3::types::{PyBytes, PyTuple};
 use pyo3::{pyclass, pyfunction, FromPyObject, PyAny, PyObject, PyResult, Python, ToPyObject};
+use pythonize::pythonize;
+use quaint::ast::EnumVariant;
 use quaint::{Value, ValueType};
 use serde::Deserialize;
+use serde_json::Value as JsonValue;
+use std::borrow::Cow;
 
 // this type is a placeholder for the actual type
 type PyValueArray = Vec<PySQLxValue>;
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 #[serde(untagged)]
 pub enum PySQLxValue {
     // true, false
@@ -19,12 +20,14 @@ pub enum PySQLxValue {
     String(String),
     // red, green, blue
     Enum(String),
+    // [red, green, blue]
+    EnumArray(Vec<String>),
     // 1.0
     Int(i64),
     // Vec<String>,
     Array(PyValueArray),
     // { "name": "foo", "age": 42 }
-    Json(String),
+    Json(JsonValue),
     // <body>...</body>
     Xml(String),
     // 00000000-0000-0000-0000-000000000000
@@ -46,21 +49,29 @@ pub enum PySQLxValue {
 impl<'a> From<Value<'a>> for PySQLxValue {
     fn from(value: Value) -> Self {
         match value.typed {
-            ValueType::Boolean(Some(b)) => PySQLxValue::Boolean(b),
-            ValueType::Enum(s, _) => s
-                .map(|s| PySQLxValue::Enum(s.into_owned()))
-                .unwrap_or(PySQLxValue::Null),
-            ValueType::EnumArray(s, _) => s
-                .map(|v| {
-                    let mut list = Vec::new();
-                    for item in v {
-                        list.push(PySQLxValue::Enum(item.into_owned()));
-                    }
-                    PySQLxValue::Array(list)
-                })
-                .unwrap_or(PySQLxValue::Null),
+            // numbers
             ValueType::Int32(Some(i)) => PySQLxValue::Int(i as i64),
             ValueType::Int64(Some(i)) => PySQLxValue::Int(i),
+            ValueType::Float(Some(s)) => PySQLxValue::Float(s as f64),
+            ValueType::Double(Some(s)) => PySQLxValue::Float(s),
+            // String value.
+            ValueType::Text(Some(s)) => PySQLxValue::String(s.to_string()),
+            // enums
+            ValueType::Enum(Some(s), _) => PySQLxValue::Enum(s.into_owned()),
+            ValueType::EnumArray(Some(l), _) => {
+                let mut list = Vec::new();
+                for item in l {
+                    list.push(item.into_owned());
+                }
+                PySQLxValue::EnumArray(list)
+            }
+            // bytes
+            ValueType::Bytes(Some(b)) => PySQLxValue::Bytes(b.into_owned()),
+            // boolean
+            ValueType::Boolean(Some(b)) => PySQLxValue::Boolean(b),
+            // char
+            ValueType::Char(Some(s)) => PySQLxValue::String(s.to_string()),
+            // array of values (Postgres arrays)
             ValueType::Array(Some(l)) => {
                 let mut list = Vec::new();
                 for item in l {
@@ -68,18 +79,18 @@ impl<'a> From<Value<'a>> for PySQLxValue {
                 }
                 PySQLxValue::Array(list)
             }
-            ValueType::Json(Some(s)) => PySQLxValue::Json(s.to_string()),
-            ValueType::Xml(Some(s)) => PySQLxValue::Xml(s.to_string()),
-            ValueType::Uuid(Some(s)) => PySQLxValue::Uuid(s.to_string()),
-            ValueType::Time(Some(s)) => PySQLxValue::Time(s),
-            ValueType::Date(Some(s)) => PySQLxValue::Date(s),
-            ValueType::DateTime(Some(s)) => PySQLxValue::DateTime(s),
-            ValueType::Float(Some(s)) => PySQLxValue::Float(s as f64),
-            ValueType::Double(Some(s)) => PySQLxValue::Float(s),
-            ValueType::Bytes(Some(b)) => PySQLxValue::Bytes(b.into_owned()),
-            ValueType::Text(Some(s)) => PySQLxValue::String(s.to_string()),
-            ValueType::Char(Some(s)) => PySQLxValue::String(s.to_string()),
+            // Numeric
             ValueType::Numeric(Some(s)) => PySQLxValue::String(s.to_string()),
+            // Json
+            ValueType::Json(Some(s)) => PySQLxValue::Json(s),
+            // Xml
+            ValueType::Xml(Some(s)) => PySQLxValue::Xml(s.to_string()),
+            // Uuid
+            ValueType::Uuid(Some(s)) => PySQLxValue::Uuid(s.to_string()),
+            // date, time, datetime
+            ValueType::Time(Some(s)) => PySQLxValue::Time(s),
+            ValueType::DateTime(Some(s)) => PySQLxValue::DateTime(s),
+            ValueType::Date(Some(s)) => PySQLxValue::Date(s),
             _ => PySQLxValue::Null,
         }
     }
@@ -91,6 +102,13 @@ impl<'a> ToPyObject for PySQLxValue {
             PySQLxValue::Boolean(b) => b.to_object(py),
             PySQLxValue::String(s) => s.to_object(py),
             PySQLxValue::Enum(s) => s.to_object(py),
+            PySQLxValue::Array(l) => {
+                let mut list = Vec::new();
+                for item in l {
+                    list.push(item.to_object(py));
+                }
+                PyTuple::new(py, &list).to_object(py)
+            }
             PySQLxValue::Int(i) => i.to_object(py),
             PySQLxValue::Array(l) => {
                 let mut list = Vec::new();
@@ -162,137 +180,39 @@ impl FromPyObject<'_> for PySQLxValue {
     }
 }
 
-#[pyclass]
-#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
-#[serde(untagged)]
-pub enum PySQLxType {
-    // true, false
-    Boolean,
-    // text
-    String,
-    // red, green, blue
-    Enum,
-    // 1.0
-    Int,
-    // Vec<String>,
-    List,
-    // { "name": "foo", "age": 42 }
-    Json,
-    // <body>...</body>
-    Xml,
-    // 00000000-0000-0000-0000-000000000000
-    Uuid,
-    // 00:00:00
-    Time,
-    // 2020-01-01
-    Date,
-    // 2020-01-01T00:00:01
-    DateTime,
-    // 18373737.8274
-    Float,
-    // Vec<u8>
-    Bytes,
-    // None
-    Null,
-}
-
-fn get_sqlx_type(value: &PySQLxValue) -> PySQLxType {
-    match value {
-        PySQLxValue::Boolean(_) => PySQLxType::Boolean,
-        PySQLxValue::String(_) => PySQLxType::String,
-        PySQLxValue::Enum(_) => PySQLxType::Enum,
-        PySQLxValue::Int(_) => PySQLxType::Int,
-        PySQLxValue::Array(_) => PySQLxType::List,
-        PySQLxValue::Json(_) => PySQLxType::Json,
-        PySQLxValue::Xml(_) => PySQLxType::Xml,
-        PySQLxValue::Uuid(_) => PySQLxType::Uuid,
-        PySQLxValue::Time(_) => PySQLxType::Time,
-        PySQLxValue::Date(_) => PySQLxType::Date,
-        PySQLxValue::DateTime(_) => PySQLxType::DateTime,
-        PySQLxValue::Float(_) => PySQLxType::Float,
-        PySQLxValue::Bytes(_) => PySQLxType::Bytes,
-        PySQLxValue::Null => PySQLxType::Null,
-    }
-}
-
-#[pyclass]
-#[derive(Debug, Clone, PartialEq, PartialOrd, Deserialize)]
-pub struct PySQLxValueIn {
-    pub value: PySQLxValue,
-    pub py_type: PySQLxType,
-}
-
 // convert PySQLxValue to quaint::Value
-impl From<PySQLxValueIn> for Value<'_> {
-    fn from(value: PySQLxValueIn) -> Self {
-        match value.py_type {
-            PySQLxType::Boolean => Value::from(ValueType::Boolean(Some(match value.value {
-                PySQLxValue::Boolean(b) => b,
-                _ => false,
-            }))),
-            PySQLxType::Enum => Value::from(ValueType::Enum(
-                Some(match value.value {
-                    PySQLxValue::Enum(s) => s.into(),
-                    _ => panic!("Invalid Enum string"),
-                }),
-                None,
-            )),
-            PySQLxType::Int => Value::from(ValueType::Int64(Some(match value.value {
-                PySQLxValue::Int(i) => i,
-                _ => panic!("Invalid int"),
-            }))),
-            PySQLxType::List => Value::from(ValueType::Array(Some(match value.value {
-                PySQLxValue::Array(l) => {
-                    let mut list = Vec::new();
-                    for item in l {
-                        list.push(Value::from(PySQLxValueIn::from(PySQLxValueIn {
-                            value: item.clone(),
-                            py_type: get_sqlx_type(&item),
-                        })));
-                    }
-                    list
+impl From<PySQLxValue> for Value<'_> {
+    fn from(value: PySQLxValue) -> Value<'_> {
+        match value {
+            PySQLxValue::Boolean(b) => Value::from(ValueType::Boolean(Some(b))),
+            PySQLxValue::String(s) => Value::from(ValueType::Text(Some(Cow::from(s)))),
+            PySQLxValue::Enum(s) => Value::from(ValueType::Enum(Some(EnumVariant::new(s)), None)),
+            PySQLxValue::EnumArray(l) => {
+                let mut list = Vec::new();
+                for item in l {
+                    list.push(Value::from(item));
                 }
-                _ => panic!("Invalid list"),
-            }))),
-            PySQLxType::Json => Value::from(ValueType::Json(Some(match value.value {
-                PySQLxValue::Json(s) => serde_json::from_str(&s).unwrap(),
-                _ => panic!("Invalid JSON string"),
-            }))),
-            PySQLxType::Xml => Value::from(ValueType::Xml(Some(match value.value {
-                PySQLxValue::Xml(s) => Cow::from(s),
-                _ => panic!("Invalid XML string"),
-            }))),
-            PySQLxType::Uuid => Value::from(ValueType::Uuid(Some(match value.value {
-                PySQLxValue::Uuid(s) => {
-                    uuid::Uuid::parse_str(&s).expect(format!("Invalid UUID: {}", s).as_str())
+                Value::from(ValueType::EnumArray(Some(list), None))
+            }
+            PySQLxValue::Int(i) => Value::from(ValueType::Int64(Some(i))),
+            PySQLxValue::Array(l) => {
+                let mut list = Vec::new();
+                for item in l {
+                    list.push(ValueType::Enum((), ()));
                 }
-                _ => panic!("Invalid UUID"),
-            }))),
-            PySQLxType::Time => Value::from(ValueType::Time(Some(match value.value {
-                PySQLxValue::Time(s) => s,
-                _ => panic!("Invalid time"),
-            }))),
-            PySQLxType::Date => Value::from(ValueType::Date(Some(match value.value {
-                PySQLxValue::Date(s) => s,
-                _ => panic!("Invalid date"),
-            }))),
-            PySQLxType::DateTime => Value::from(ValueType::DateTime(Some(match value.value {
-                PySQLxValue::DateTime(s) => s,
-                _ => panic!("Invalid datetime"),
-            }))),
-            PySQLxType::Float => Value::from(ValueType::Float(Some(match value.value {
-                PySQLxValue::Float(f) => f as f32,
-                _ => panic!("Invalid float"),
-            }))),
-            PySQLxType::Bytes => Value::from(ValueType::Bytes(Some(match value.value {
-                PySQLxValue::Bytes(b) => Cow::from(b),
-                _ => panic!("Invalid bytes"),
-            }))),
-            PySQLxType::String => Value::from(ValueType::Text(Some(match value.value {
-                PySQLxValue::String(s) => Cow::from(s),
-                _ => panic!("Invalid string"),
-            }))),
-            PySQLxType::Null => Value::from(ValueType::Text(None)),
+                Value::from(ValueType::Array(Some(list)))
+            }
+            PySQLxValue::Json(s) => Value::from(ValueType::Json(Some(s))),
+            PySQLxValue::Xml(s) => Value::from(ValueType::Xml(Some(Cow::from(s)))),
+            PySQLxValue::Uuid(s) => {
+                Value::from(ValueType::Uuid(Some(Uuid::parse_str(&s).unwrap())))
+            }
+            PySQLxValue::Time(s) => Value::from(ValueType::Time(Some(s))),
+            PySQLxValue::Date(s) => Value::from(ValueType::Date(Some(s))),
+            PySQLxValue::DateTime(s) => Value::from(ValueType::DateTime(Some(s))),
+            PySQLxValue::Float(f) => Value::from(ValueType::Float(Some(f as f32))),
+            PySQLxValue::Bytes(b) => Value::from(ValueType::Bytes(Some(Cow::from(b)))),
+            PySQLxValue::Null => Value::from(ValueType::Text(None)),
         }
     }
 }
