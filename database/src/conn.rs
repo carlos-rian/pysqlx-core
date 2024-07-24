@@ -1,8 +1,8 @@
 use convert::convert_result_set;
 use convert::convert_result_set_as_list;
-use py_types::PyRow;
-use py_types::PyRows;
-use py_types::{py_error, DBError, PySQLXError, PySQLXResult};
+use py_types::PySQLxRow;
+use py_types::PySQLxRows;
+use py_types::{py_error, DBError, PySQLxError, PySQLxResult};
 use pyo3::prelude::*;
 use quaint::connector::IsolationLevel;
 use quaint::prelude::*;
@@ -16,7 +16,7 @@ pub struct Connection {
 
 impl Connection {
     // create a new connection using the given url
-    pub async fn new(uri: String) -> Result<Self, PySQLXError> {
+    pub async fn new(uri: String) -> Result<Self, PySQLxError> {
         let conn = match Quaint::new(uri.as_str()).await {
             Ok(r) => r,
             Err(e) => return Err(py_error(e, DBError::ConnectError)),
@@ -25,48 +25,48 @@ impl Connection {
     }
 
     // Execute a query given as SQL, interpolating the given parameters. return a PySQLXResult
-    async fn _query(&self, sql: &str) -> Result<PySQLXResult, PySQLXError> {
+    async fn _query(&self, sql: &str) -> Result<PySQLxResult, PySQLxError> {
         match self.conn.query_raw(sql, &[]).await {
             Ok(r) => Ok(convert_result_set(r)),
             Err(e) => Err(py_error(e, DBError::QueryError)),
         }
     }
     // Execute a query given as SQL, interpolating the given parameters. return a list of rows
-    async fn _query_as_list(&self, sql: &str) -> Result<PyRows, PySQLXError> {
+    async fn _query_as_list(&self, sql: &str) -> Result<PySQLxRows, PySQLxError> {
         match self.conn.query_raw(sql, &[]).await {
             Ok(r) => Ok(convert_result_set_as_list(r)),
             Err(e) => Err(py_error(e, DBError::QueryError)),
         }
     }
     // Execute a query given as SQL, interpolating the given parameters. return a dict of rows
-    async fn _query_first_as_dict(&self, sql: &str) -> Result<PyRow, PySQLXError> {
+    async fn _query_first_as_dict(&self, sql: &str) -> Result<PySQLxRow, PySQLxError> {
         match self.conn.query_raw(sql, &[]).await {
             Ok(r) => {
                 let rows = convert_result_set_as_list(r);
                 match rows.get(0) {
                     Some(r) => Ok(r.clone()),
-                    None => Ok(PyRow::new()),
+                    None => Ok(PySQLxRow::new()),
                 }
             }
             Err(e) => Err(py_error(e, DBError::QueryError)),
         }
     }
     // Execute a query given as SQL, interpolating the given parameters and returning the number of affected rows.
-    async fn _execute(&self, sql: &str) -> Result<u64, PySQLXError> {
+    async fn _execute(&self, sql: &str) -> Result<u64, PySQLxError> {
         match self.conn.execute_raw(sql, &[]).await {
             Ok(r) => Ok(r),
             Err(e) => Err(py_error(e, DBError::ExecuteError)),
         }
     }
     // Run a command in the database, for queries that can't be run using prepared statements.
-    async fn _raw_cmd(&self, sql: &str) -> Result<(), PySQLXError> {
+    async fn _raw_cmd(&self, sql: &str) -> Result<(), PySQLxError> {
         match self.conn.raw_cmd(sql).await {
             Ok(_) => Ok(()),
             Err(e) => Err(py_error(e, DBError::RawCmdError)),
         }
     }
     // return the isolation level
-    fn get_isolation_level(&self, isolation_level: String) -> Result<IsolationLevel, PySQLXError> {
+    fn get_isolation_level(&self, isolation_level: String) -> Result<IsolationLevel, PySQLxError> {
         match isolation_level.to_uppercase().as_str() {
             "READUNCOMMITTED" => Ok(IsolationLevel::ReadUncommitted),
             "READCOMMITTED" => Ok(IsolationLevel::ReadCommitted),
@@ -74,7 +74,7 @@ impl Connection {
             "SNAPSHOT" => Ok(IsolationLevel::Snapshot),
             "SERIALIZABLE" => Ok(IsolationLevel::Serializable),
             _ => {
-                return Err(PySQLXError::new(
+                return Err(PySQLxError::new(
                     "PY001IL".to_string(),
                     "invalid isolation level".to_string(),
                     DBError::IsoLevelError,
@@ -84,7 +84,7 @@ impl Connection {
     }
 
     // Sets the transaction isolation level to given value. Implementers have to make sure that the passed isolation level is valid for the underlying database.
-    async fn _set_isolation_level(&self, isolation_level: String) -> Result<(), PySQLXError> {
+    async fn _set_isolation_level(&self, isolation_level: String) -> Result<(), PySQLxError> {
         let level = self.get_isolation_level(isolation_level)?;
         match self.conn.set_tx_isolation_level(level).await {
             Ok(_) => Ok(()),
@@ -93,7 +93,7 @@ impl Connection {
     }
 
     // Start a new transaction.
-    async fn _start_transaction(&self, isolation_level: Option<String>) -> Result<(), PySQLXError> {
+    async fn _start_transaction(&self, isolation_level: Option<String>) -> Result<(), PySQLxError> {
         let level = match isolation_level {
             Some(l) => Some(self.get_isolation_level(l)?),
             None => None,

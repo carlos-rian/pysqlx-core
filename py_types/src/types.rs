@@ -1,7 +1,7 @@
 use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
 use pyo3::types::PyDict;
 use pyo3::types::{PyBytes, PyModule, PyTuple};
-use pyo3::{PyObject, PyResult, Python, ToPyObject};
+use pyo3::{pyclass, PyObject, PyResult, Python, ToPyObject};
 use quaint::ast::EnumVariant;
 use quaint::{Value, ValueType};
 use serde::{Deserialize, Serialize};
@@ -215,17 +215,17 @@ fn convert_python_str_to_serde_value(py: Python, value: PyObject) -> JsonValue {
     v
 }
 
-pub fn convert_to_pysqlx_value(py: Python, kind: String, value: PyObject) -> PySQLxValue {
-    match kind.as_str() {
-        "Boolean" => PySQLxValue::Boolean(value.extract::<bool>(py).unwrap()),
-        "String" => PySQLxValue::String(value.extract::<String>(py).unwrap()),
-        "Enum" => PySQLxValue::Enum(value.extract::<String>(py).unwrap()),
-        "EnumArray" => {
+pub fn convert_to_pysqlx_value(py: Python, kind: PySQLxParamKind, value: PyObject) -> PySQLxValue {
+    match kind {
+        PySQLxParamKind::Boolean => PySQLxValue::Boolean(value.extract::<bool>(py).unwrap()),
+        PySQLxParamKind::String => PySQLxValue::String(value.extract::<String>(py).unwrap()),
+        PySQLxParamKind::Enum => PySQLxValue::Enum(value.extract::<String>(py).unwrap()),
+        PySQLxParamKind::EnumArray => {
             let list = value.extract::<Vec<String>>(py).unwrap();
             PySQLxValue::EnumArray(list)
         }
-        "Int" => PySQLxValue::Int(value.extract::<i64>(py).unwrap()),
-        "Array" => {
+        PySQLxParamKind::Int => PySQLxValue::Int(value.extract::<i64>(py).unwrap()),
+        PySQLxParamKind::Array => {
             let list = value.extract::<Vec<PyObject>>(py).unwrap();
             let mut pysqlx_list = Vec::new();
             for item in list {
@@ -233,19 +233,64 @@ pub fn convert_to_pysqlx_value(py: Python, kind: String, value: PyObject) -> PyS
             }
             PySQLxValue::Array(pysqlx_list)
         }
-        "Json" => PySQLxValue::Json(convert_python_str_to_serde_value(py, value)),
-        "Xml" => PySQLxValue::Xml(value.extract::<String>(py).unwrap()),
-        "Uuid" => {
+        PySQLxParamKind::Json => PySQLxValue::Json(convert_python_str_to_serde_value(py, value)),
+        PySQLxParamKind::Xml => PySQLxValue::Xml(value.extract::<String>(py).unwrap()),
+        PySQLxParamKind::Uuid => {
             let rs_uuid = convert_to_rs_uuid(py, value);
             PySQLxValue::Uuid(rs_uuid)
         }
-        "Time" => PySQLxValue::Time(value.extract::<NaiveTime>(py).unwrap()),
-        "Date" => PySQLxValue::Date(value.extract::<NaiveDate>(py).unwrap()),
-        "DateTime" => PySQLxValue::DateTime(value.extract::<DateTime<Utc>>(py).unwrap()),
-        "Float" => PySQLxValue::Float(value.extract::<f64>(py).unwrap()),
-        "Bytes" => PySQLxValue::Bytes(value.extract::<Vec<u8>>(py).unwrap()),
-        "Null" => PySQLxValue::Null,
-        _ => PySQLxValue::Null,
+        PySQLxParamKind::Time => PySQLxValue::Time(value.extract::<NaiveTime>(py).unwrap()),
+        PySQLxParamKind::Date => PySQLxValue::Date(value.extract::<NaiveDate>(py).unwrap()),
+        PySQLxParamKind::DateTime => {
+            PySQLxValue::DateTime(value.extract::<DateTime<Utc>>(py).unwrap())
+        }
+        PySQLxParamKind::Float => PySQLxValue::Float(value.extract::<f64>(py).unwrap()),
+        PySQLxParamKind::Bytes => PySQLxValue::Bytes(value.extract::<Vec<u8>>(py).unwrap()),
+        PySQLxParamKind::Null => PySQLxValue::Null,
+    }
+}
+
+#[pyclass]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub enum PySQLxParamKind {
+    Boolean,
+    String,
+    Enum,
+    EnumArray,
+    Int,
+    Array,
+    Json,
+    Xml,
+    Uuid,
+    Time,
+    Date,
+    DateTime,
+    Float,
+    Bytes,
+    Null,
+}
+
+impl From<String> for PySQLxParamKind {
+    fn from(kind: String) -> Self {
+        // kind string is python class Type name
+        match kind.to_lowercase().as_str() {
+            "boolean" => PySQLxParamKind::Boolean,
+            "string" => PySQLxParamKind::String,
+            "enum" => PySQLxParamKind::Enum,
+            "enumarray" => PySQLxParamKind::EnumArray,
+            "int" => PySQLxParamKind::Int,
+            "tuple" => PySQLxParamKind::Array,
+            "json" => PySQLxParamKind::Json,
+            "xml" => PySQLxParamKind::Xml,
+            "uuid" => PySQLxParamKind::Uuid,
+            "time" => PySQLxParamKind::Time,
+            "date" => PySQLxParamKind::Date,
+            "datetime" => PySQLxParamKind::DateTime,
+            "float" => PySQLxParamKind::Float,
+            "bytes" => PySQLxParamKind::Bytes,
+            "null" => PySQLxParamKind::Null,
+            _ => PySQLxParamKind::Null,
+        }
     }
 }
 
@@ -375,4 +420,85 @@ mod tests {
         let pyvalue = PySQLxValue::from(value);
         assert_eq!(pyvalue, PySQLxValue::Null);
     }
+
+    /*#[test] // this test is not working because of the Python::with_gil
+    fn test_pyobject_to_pysqlx_value() {
+        pyo3::prepare_freethreaded_python();
+        Python::with_gil(|py| {
+            let value = true.to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "Boolean".to_string(), value);
+            assert_eq!(pyvalue, PySQLxValue::Boolean(true));
+
+            let value = "foo".to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "String".to_string(), value);
+            assert_eq!(pyvalue, PySQLxValue::String("foo".to_string()));
+
+            let value = "red".to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "Enum".to_string(), value);
+            assert_eq!(pyvalue, PySQLxValue::Enum("red".to_string()));
+
+            let value = vec!["red", "green"].to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "EnumArray".to_string(), value);
+            assert_eq!(
+                pyvalue,
+                PySQLxValue::EnumArray(vec!["red".to_string(), "green".to_string()])
+            );
+
+            let value = 1.to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "Int".to_string(), value);
+            assert_eq!(pyvalue, PySQLxValue::Int(1));
+
+            let value = vec![1, 2].to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "Array".to_string(), value);
+            assert_eq!(
+                pyvalue,
+                PySQLxValue::Array(vec![PySQLxValue::Int(1), PySQLxValue::Int(2)])
+            );
+
+            let value = json!({"name": "foo"}).to_string().to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "Json".to_string(), value);
+            assert_eq!(
+                pyvalue,
+                PySQLxValue::Json(serde_json::json!({"name":"foo"}))
+            );
+
+            let value = "<body>foo</body>".to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "Xml".to_string(), value);
+            assert_eq!(pyvalue, PySQLxValue::Xml("<body>foo</body>".to_string()));
+
+            let value = Uuid::new_v4().to_string().to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "Uuid".to_string(), value);
+            assert!(matches!(pyvalue, PySQLxValue::Uuid(_)));
+
+            let value = NaiveTime::from_hms_opt(12, 1, 2).to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "Time".to_string(), value);
+            assert_eq!(
+                pyvalue,
+                PySQLxValue::Time(NaiveTime::from_hms_opt(12, 1, 2).expect("invalid"))
+            );
+
+            let value = NaiveDate::from_ymd_opt(2022, 1, 1).to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "Date".to_string(), value);
+            assert_eq!(
+                pyvalue,
+                PySQLxValue::Date(NaiveDate::from_ymd_opt(2022, 1, 1).expect("invalid"))
+            );
+
+            let value = Utc::now().to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "DateTime".to_string(), value);
+            assert_eq!(pyvalue, PySQLxValue::DateTime(Utc::now()));
+
+            let value = 1.0.to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "Float".to_string(), value);
+            assert_eq!(pyvalue, PySQLxValue::Float(1.0));
+
+            let value = vec![1, 2, 3].to_object(py);
+            let pyvalue = convert_to_pysqlx_value(py, "Bytes".to_string(), value);
+            assert_eq!(pyvalue, PySQLxValue::Bytes(vec![1, 2, 3]));
+
+            let value = py.None();
+            let pyvalue = convert_to_pysqlx_value(py, "Null".to_string(), value);
+            assert_eq!(pyvalue, PySQLxValue::Null);
+        })
+    }*/
 }

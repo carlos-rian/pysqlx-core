@@ -76,7 +76,7 @@ color_output = true
 
 
 [tool.poetry]
-name = "pysqlx-engine"
+name = "pysqlx-core"
 version = "0.1.6"
 description = "Python Async SQL Engines"
 authors = ["Carlos Rian <crian.rian@gmail.com>"]

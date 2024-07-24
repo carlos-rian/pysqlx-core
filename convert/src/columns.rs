@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use py_types::PyColumnTypes;
+use py_types::PySQLxColumnTypes;
 use quaint::prelude::ResultSet;
 use quaint::{Value, ValueType};
 
@@ -59,8 +59,8 @@ pub fn check_column_name(column: &String, index: usize) -> String {
     }
 }
 
-pub fn get_column_types(columns: &Vec<String>, row: &ResultSet) -> PyColumnTypes {
-    let mut data: PyColumnTypes = HashMap::new();
+pub fn get_column_types(columns: &Vec<String>, row: &ResultSet) -> PySQLxColumnTypes {
+    let mut data: PySQLxColumnTypes = HashMap::new();
     let mut count: i32 = 1;
 
     if let Some(first) = row.first() {

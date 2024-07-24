@@ -3,12 +3,12 @@ use quaint::{connector::ResultSet, prelude::ResultRow};
 use std::collections::HashMap;
 
 use crate::columns::{check_column_name, get_column_types};
-use py_types::{PyColumnTypes, PyRow, PyRows, PySQLXResult, PySQLxValue};
+use py_types::{PySQLxColumnTypes, PySQLxResult, PySQLxRow, PySQLxRows, PySQLxValue};
 
-pub fn convert_result_set(result_set: ResultSet) -> PySQLXResult {
-    let mut py_result = PySQLXResult::default();
+pub fn convert_result_set(result_set: ResultSet) -> PySQLxResult {
+    let mut py_result = PySQLxResult::default();
     let columns: Vec<String> = result_set.columns().iter().map(|c| c.to_string()).collect();
-    let column_types: PyColumnTypes = get_column_types(&columns, &result_set);
+    let column_types: PySQLxColumnTypes = get_column_types(&columns, &result_set);
     py_result.set_column_types(column_types);
 
     for row in result_set.into_iter() {
@@ -18,8 +18,8 @@ pub fn convert_result_set(result_set: ResultSet) -> PySQLXResult {
     py_result
 }
 
-pub fn convert_result_set_as_list(result_set: ResultSet) -> PyRows {
-    let mut py_result: PyRows = Vec::new();
+pub fn convert_result_set_as_list(result_set: ResultSet) -> PySQLxRows {
+    let mut py_result: PySQLxRows = Vec::new();
     let columns: Vec<String> = result_set.columns().iter().map(|c| c.to_string()).collect();
 
     for row in result_set.into_iter() {
@@ -28,8 +28,8 @@ pub fn convert_result_set_as_list(result_set: ResultSet) -> PyRows {
     py_result
 }
 
-fn convert_row(columns: &Vec<String>, row: ResultRow) -> PyRow {
-    let mut data: PyRow = HashMap::new();
+fn convert_row(columns: &Vec<String>, row: ResultRow) -> PySQLxRow {
+    let mut data: PySQLxRow = HashMap::new();
     let mut count: i32 = 1;
 
     for (index, value) in row.into_iter().enumerate() {

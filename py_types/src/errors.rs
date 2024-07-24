@@ -56,14 +56,14 @@ impl Display for DBError {
 
 #[pyclass(name = "PySQLXError", extends = PyTypeError)]
 #[derive(Debug, Clone, Deserialize, PartialEq)]
-pub struct PySQLXError {
+pub struct PySQLxError {
     pub code: String,
     pub message: String,
     pub error: DBError,
 }
 
 #[pymethods]
-impl PySQLXError {
+impl PySQLxError {
     #[new]
     pub fn py_new(code: String, message: String, error: DBError) -> Self {
         Self {
@@ -97,7 +97,7 @@ impl PySQLXError {
     }
 }
 
-impl PySQLXError {
+impl PySQLxError {
     pub fn new(code: String, message: String, error: DBError) -> Self {
         Self {
             code,
@@ -106,7 +106,7 @@ impl PySQLXError {
         }
     }
     pub fn to_pyerr(&self) -> PyErr {
-        PyErr::new::<PySQLXError, _>((
+        PyErr::new::<PySQLxError, _>((
             self.code.clone(),
             self.message.clone(),
             self.error.to_string(),
@@ -114,11 +114,11 @@ impl PySQLXError {
     }
 }
 
-pub fn py_error(err: QuaintError, typ: DBError) -> PySQLXError {
+pub fn py_error(err: QuaintError, typ: DBError) -> PySQLxError {
     if err.original_code().is_none() || err.original_message().is_none() {
-        PySQLXError::py_new(String::from("0"), String::from(err.to_string()), typ)
+        PySQLxError::py_new(String::from("0"), String::from(err.to_string()), typ)
     } else {
-        PySQLXError::py_new(
+        PySQLxError::py_new(
             String::from(err.original_code().unwrap_or_default()),
             String::from(err.original_message().unwrap_or_default()),
             typ,
@@ -132,7 +132,7 @@ mod tests {
 
     #[test]
     fn test_py_sqlx_error() {
-        let err = PySQLXError::py_new(
+        let err = PySQLxError::py_new(
             String::from("0"),
             String::from("test"),
             DBError::ConnectError,
