@@ -4,7 +4,7 @@ use pyo3::types::{PyBytes, PyModule, PyTuple};
 use pyo3::{PyObject, PyResult, Python, ToPyObject};
 use quaint::ast::EnumVariant;
 use quaint::{Value, ValueType};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::borrow::Cow;
 use uuid::Uuid;
@@ -12,7 +12,7 @@ use uuid::Uuid;
 // this type is a placeholder for the actual type
 type PyValueArray = Vec<PySQLxValue>;
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum PySQLxValue {
     // true, false
@@ -204,6 +204,51 @@ fn convert_to_py_uuid(py: Python, r_uuid: String) -> PyResult<PyObject> {
     Ok(py_uuid.to_object(py))
 }
 
+fn convert_to_rs_uuid(py: Python, value: PyObject) -> Uuid {
+    let py_uuid = &value.extract::<String>(py).unwrap();
+    Uuid::parse_str(&py_uuid).unwrap()
+}
+
+fn convert_python_str_to_serde_value(py: Python, value: PyObject) -> JsonValue {
+    let s = value.extract::<String>(py).unwrap();
+    let v: JsonValue = serde_json::from_str(s.as_str()).unwrap();
+    v
+}
+
+pub fn convert_to_pysqlx_value(py: Python, kind: String, value: PyObject) -> PySQLxValue {
+    match kind.as_str() {
+        "Boolean" => PySQLxValue::Boolean(value.extract::<bool>(py).unwrap()),
+        "String" => PySQLxValue::String(value.extract::<String>(py).unwrap()),
+        "Enum" => PySQLxValue::Enum(value.extract::<String>(py).unwrap()),
+        "EnumArray" => {
+            let list = value.extract::<Vec<String>>(py).unwrap();
+            PySQLxValue::EnumArray(list)
+        }
+        "Int" => PySQLxValue::Int(value.extract::<i64>(py).unwrap()),
+        "Array" => {
+            let list = value.extract::<Vec<PyObject>>(py).unwrap();
+            let mut pysqlx_list = Vec::new();
+            for item in list {
+                pysqlx_list.push(convert_to_pysqlx_value(py, kind.clone(), item));
+            }
+            PySQLxValue::Array(pysqlx_list)
+        }
+        "Json" => PySQLxValue::Json(convert_python_str_to_serde_value(py, value)),
+        "Xml" => PySQLxValue::Xml(value.extract::<String>(py).unwrap()),
+        "Uuid" => {
+            let rs_uuid = convert_to_rs_uuid(py, value);
+            PySQLxValue::Uuid(rs_uuid)
+        }
+        "Time" => PySQLxValue::Time(value.extract::<NaiveTime>(py).unwrap()),
+        "Date" => PySQLxValue::Date(value.extract::<NaiveDate>(py).unwrap()),
+        "DateTime" => PySQLxValue::DateTime(value.extract::<DateTime<Utc>>(py).unwrap()),
+        "Float" => PySQLxValue::Float(value.extract::<f64>(py).unwrap()),
+        "Bytes" => PySQLxValue::Bytes(value.extract::<Vec<u8>>(py).unwrap()),
+        "Null" => PySQLxValue::Null,
+        _ => PySQLxValue::Null,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{borrow::Cow, str::FromStr};
@@ -257,7 +302,7 @@ mod tests {
         let pyvalue = PySQLxValue::from(value);
         assert_eq!(
             pyvalue,
-            PySQLxValue::Json(serde_json::json!(r#"{"name":"foo"}"#.to_string()))
+            PySQLxValue::Json(serde_json::json!({"name":"foo"}))
         );
 
         let value = Value::from(ValueType::Xml(Some(Cow::from(
