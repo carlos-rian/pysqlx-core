@@ -1,5 +1,6 @@
 use convert::convert_result_set;
 use convert::convert_result_set_as_list;
+use py_types::convert_to_quaint_values;
 use py_types::PySQLxRow;
 use py_types::PySQLxRows;
 use py_types::{py_error, DBError, PySQLxError, PySQLxResult};
@@ -25,22 +26,30 @@ impl Connection {
     }
 
     // Execute a query given as SQL, interpolating the given parameters. return a PySQLXResult
-    async fn _query(&self, sql: &str) -> Result<PySQLxResult, PySQLxError> {
-        match self.conn.query_raw(sql, &[]).await {
+    async fn _query(&self, sql: &str, params: &[Value<'_>]) -> Result<PySQLxResult, PySQLxError> {
+        match self.conn.query_raw(sql, params).await {
             Ok(r) => Ok(convert_result_set(r)),
             Err(e) => Err(py_error(e, DBError::QueryError)),
         }
     }
     // Execute a query given as SQL, interpolating the given parameters. return a list of rows
-    async fn _query_as_list(&self, sql: &str) -> Result<PySQLxRows, PySQLxError> {
-        match self.conn.query_raw(sql, &[]).await {
+    async fn _query_as_list(
+        &self,
+        sql: &str,
+        params: &[Value<'_>],
+    ) -> Result<PySQLxRows, PySQLxError> {
+        match self.conn.query_raw(sql, params).await {
             Ok(r) => Ok(convert_result_set_as_list(r)),
             Err(e) => Err(py_error(e, DBError::QueryError)),
         }
     }
     // Execute a query given as SQL, interpolating the given parameters. return a dict of rows
-    async fn _query_first_as_dict(&self, sql: &str) -> Result<PySQLxRow, PySQLxError> {
-        match self.conn.query_raw(sql, &[]).await {
+    async fn _query_first_as_dict(
+        &self,
+        sql: &str,
+        params: &[Value<'_>],
+    ) -> Result<PySQLxRow, PySQLxError> {
+        match self.conn.query_raw(sql, params).await {
             Ok(r) => {
                 let rows = convert_result_set_as_list(r);
                 match rows.get(0) {
@@ -52,8 +61,8 @@ impl Connection {
         }
     }
     // Execute a query given as SQL, interpolating the given parameters and returning the number of affected rows.
-    async fn _execute(&self, sql: &str) -> Result<u64, PySQLxError> {
-        match self.conn.execute_raw(sql, &[]).await {
+    async fn _execute(&self, sql: &str, params: &[Value<'_>]) -> Result<u64, PySQLxError> {
+        match self.conn.execute_raw(sql, params).await {
             Ok(r) => Ok(r),
             Err(e) => Err(py_error(e, DBError::ExecuteError)),
         }
@@ -108,30 +117,48 @@ impl Connection {
 
 #[pymethods]
 impl Connection {
-    pub fn query<'a>(&self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
+    pub fn query<'a>(
+        &self,
+        py: Python<'a>,
+        sql: String,
+        params: Vec<PyObject>,
+    ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
+        let sql_params = convert_to_quaint_values(py, params).as_slice();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf._query(sql.as_str()).await {
+            match slf._query(sql.as_str(), sql_params).await {
                 Ok(r) => Ok(r),
                 Err(e) => Err(e.to_pyerr()),
             }
         })
     }
 
-    pub fn execute<'a>(&mut self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
+    pub fn execute<'a>(
+        &mut self,
+        py: Python<'a>,
+        sql: String,
+        params: Vec<PyObject>,
+    ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
+        let sql_params = convert_to_quaint_values(py, params).as_slice();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf._execute(sql.as_str()).await {
+            match slf._execute(sql.as_str(), sql_params).await {
                 Ok(r) => Python::with_gil(|py| Ok(r.to_object(py))),
                 Err(e) => Err(e.to_pyerr()),
             }
         })
     }
 
-    pub fn query_as_list<'a>(&mut self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
+    pub fn query_as_list<'a>(
+        &mut self,
+        py: Python<'a>,
+        sql: String,
+        params: Vec<PyObject>,
+    ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
+        let sql_params = convert_to_quaint_values(py, params).as_slice();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let rows = match slf._query_as_list(sql.as_str()).await {
+            let rows = match slf._query_as_list(sql.as_str(), sql_params).await {
                 Ok(r) => r,
                 Err(e) => return Err(e.to_pyerr()),
             };
@@ -142,10 +169,16 @@ impl Connection {
         })
     }
 
-    pub fn query_first_as_dict<'a>(&mut self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
+    pub fn query_first_as_dict<'a>(
+        &mut self,
+        py: Python<'a>,
+        sql: String,
+        params: Vec<PyObject>,
+    ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
+        let sql_params = convert_to_quaint_values(py, params).as_slice();
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            let row = match slf._query_first_as_dict(sql.as_str()).await {
+            let row = match slf._query_first_as_dict(sql.as_str(), sql_params).await {
                 Ok(r) => r,
                 Err(e) => return Err(e.to_pyerr()),
             };

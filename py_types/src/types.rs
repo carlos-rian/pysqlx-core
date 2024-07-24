@@ -132,9 +132,9 @@ impl<'a> ToPyObject for PySQLxValue {
 }
 
 // convert PySQLxValue to quaint::Value
-impl From<PySQLxValue> for Value<'_> {
-    fn from(value: PySQLxValue) -> Value<'static> {
-        match value {
+impl PySQLxValue {
+    pub fn to_value(self) -> Value<'static> {
+        match self {
             PySQLxValue::Boolean(b) => Value::from(ValueType::Boolean(Some(b))),
             PySQLxValue::String(s) => Value::from(ValueType::Text(Some(Cow::from(s)))),
             PySQLxValue::Enum(s) => Value::from(ValueType::Enum(Some(EnumVariant::new(s)), None)),
@@ -149,7 +149,7 @@ impl From<PySQLxValue> for Value<'_> {
             PySQLxValue::Array(l) => {
                 let mut list = Vec::new();
                 for item in l {
-                    list.push(Value::from(item));
+                    list.push(item.to_value());
                 }
                 Value::from(ValueType::Array(Some(list)))
             }
@@ -292,6 +292,23 @@ impl From<String> for PySQLxParamKind {
             _ => PySQLxParamKind::Null,
         }
     }
+}
+
+pub fn convert_to_quaint_values(py: Python, values: Vec<PyObject>) -> Vec<Value<'static>> {
+    let mut params = Vec::new();
+    for value in values {
+        let kind = PySQLxParamKind::from(
+            value
+                .getattr(py, "__name__")
+                .unwrap()
+                .extract::<String>(py)
+                .unwrap(),
+        );
+        let param = convert_to_pysqlx_value(py, kind, value);
+        params.push(param);
+    }
+
+    params.iter().map(|v| v.clone().to_value()).collect()
 }
 
 #[cfg(test)]

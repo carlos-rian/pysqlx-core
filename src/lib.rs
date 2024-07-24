@@ -1,5 +1,5 @@
 use database::Connection;
-use py_types::{PySQLxError, PySQLxParams, PySQLxResult};
+use py_types::{PySQLxError, PySQLxResult};
 
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
@@ -31,6 +31,5 @@ fn pysqlx_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Connection>()?;
     m.add_class::<PySQLxResult>()?;
     m.add_class::<PySQLxError>()?;
-    m.add_class::<PySQLxParams>()?;
     Ok(())
 }

@@ -4,7 +4,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use crate::{convert_to_pysqlx_value, PySQLxParamKind, PySQLxValue};
+use crate::PySQLxValue;
 
 pub type PySQLxRow = HashMap<String, PySQLxValue>;
 pub type PySQLxRows = Vec<PySQLxRow>;
@@ -81,32 +81,6 @@ impl PySQLxResult {
 
     pub fn __repr__(&self) -> String {
         self.to_string()
-    }
-}
-
-#[pyclass]
-pub struct PySQLxParams {
-    pub params: Vec<PySQLxValue>,
-}
-
-#[pymethods]
-impl PySQLxParams {
-    #[new]
-    pub fn new(py: Python, values: Vec<PyObject>) -> Self {
-        let mut params = Vec::new();
-        for value in values {
-            let kind = PySQLxParamKind::from(
-                value
-                    .getattr(py, "__name__")
-                    .unwrap()
-                    .extract::<String>(py)
-                    .unwrap(),
-            );
-            let param = convert_to_pysqlx_value(py, kind, value);
-            params.push(param);
-        }
-
-        Self { params }
     }
 }
 
