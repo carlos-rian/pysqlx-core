@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use pyo3::types::PyDict;
 use pyo3::types::{PyBytes, PyModule, PyTuple};
 use pyo3::{pyclass, PyObject, PyResult, Python, ToPyObject};
@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::borrow::Cow;
 use uuid::Uuid;
-
 // this type is a placeholder for the actual type
 type PyValueArray = Vec<PySQLxValue>;
 
@@ -215,6 +214,18 @@ fn convert_python_str_to_serde_value(py: Python, value: PyObject) -> JsonValue {
     v
 }
 
+fn convert_to_datetime(py: Python, value: PyObject) -> DateTime<Utc> {
+    match value.extract::<DateTime<Utc>>(py) {
+        //datetime with timezone
+        Ok(v) => v,
+        Err(_) => {
+            let naive_dt = value.extract::<NaiveDateTime>(py).unwrap();
+            //datetime without timezone
+            DateTime::<Utc>::from_utc(naive_dt, Utc)
+        }
+    }
+}
+
 pub fn convert_to_pysqlx_value(py: Python, kind: PySQLxParamKind, value: PyObject) -> PySQLxValue {
     match kind {
         PySQLxParamKind::Boolean => PySQLxValue::Boolean(value.extract::<bool>(py).unwrap()),
@@ -241,9 +252,7 @@ pub fn convert_to_pysqlx_value(py: Python, kind: PySQLxParamKind, value: PyObjec
         }
         PySQLxParamKind::Time => PySQLxValue::Time(value.extract::<NaiveTime>(py).unwrap()),
         PySQLxParamKind::Date => PySQLxValue::Date(value.extract::<NaiveDate>(py).unwrap()),
-        PySQLxParamKind::DateTime => {
-            PySQLxValue::DateTime(value.extract::<DateTime<Utc>>(py).unwrap())
-        }
+        PySQLxParamKind::DateTime => PySQLxValue::DateTime(convert_to_datetime(py, value)),
         PySQLxParamKind::Float => PySQLxValue::Float(value.extract::<f64>(py).unwrap()),
         PySQLxParamKind::Bytes => PySQLxValue::Bytes(value.extract::<Vec<u8>>(py).unwrap()),
         PySQLxParamKind::Null => PySQLxValue::Null,
@@ -274,8 +283,8 @@ impl From<String> for PySQLxParamKind {
     fn from(kind: String) -> Self {
         // kind string is python class Type name
         match kind.to_lowercase().as_str() {
-            "boolean" => PySQLxParamKind::Boolean,
-            "string" => PySQLxParamKind::String,
+            "bool" => PySQLxParamKind::Boolean,
+            "str" => PySQLxParamKind::String,
             "enum" => PySQLxParamKind::Enum,
             "enumarray" => PySQLxParamKind::EnumArray,
             "int" => PySQLxParamKind::Int,
@@ -288,7 +297,7 @@ impl From<String> for PySQLxParamKind {
             "datetime" => PySQLxParamKind::DateTime,
             "float" => PySQLxParamKind::Float,
             "bytes" => PySQLxParamKind::Bytes,
-            "null" => PySQLxParamKind::Null,
+            "none" => PySQLxParamKind::Null,
             _ => PySQLxParamKind::Null,
         }
     }

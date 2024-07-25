@@ -1,5 +1,6 @@
 use convert::convert_result_set;
 use convert::convert_result_set_as_list;
+use log::info;
 use py_types::convert_to_quaint_values;
 use py_types::PySQLxRow;
 use py_types::PySQLxRows;
@@ -121,10 +122,10 @@ impl Connection {
         &self,
         py: Python<'a>,
         sql: String,
-        params: Vec<PyObject>,
+        params: Option<Vec<PyObject>>,
     ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, &params);
+        let sql_params = convert_to_quaint_values(py, &params.unwrap_or(Vec::new()));
         pyo3_asyncio::tokio::future_into_py(py, async move {
             match slf._query(sql.as_str(), sql_params.as_slice()).await {
                 Ok(r) => Ok(r),
@@ -137,10 +138,10 @@ impl Connection {
         &mut self,
         py: Python<'a>,
         sql: String,
-        params: Vec<PyObject>,
+        params: Option<Vec<PyObject>>,
     ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, &params);
+        let sql_params = convert_to_quaint_values(py, &params.unwrap_or(Vec::new()));
         pyo3_asyncio::tokio::future_into_py(py, async move {
             match slf._execute(sql.as_str(), sql_params.as_slice()).await {
                 Ok(r) => Python::with_gil(|py| Ok(r.to_object(py))),
@@ -153,10 +154,10 @@ impl Connection {
         &mut self,
         py: Python<'a>,
         sql: String,
-        params: Vec<PyObject>,
+        params: Option<Vec<PyObject>>,
     ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, &params);
+        let sql_params = convert_to_quaint_values(py, &params.unwrap_or(Vec::new()));
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let rows = match slf
                 ._query_as_list(sql.as_str(), sql_params.as_slice())
@@ -176,10 +177,10 @@ impl Connection {
         &mut self,
         py: Python<'a>,
         sql: String,
-        params: Vec<PyObject>,
+        params: Option<Vec<PyObject>>,
     ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, &params);
+        let sql_params = convert_to_quaint_values(py, &params.unwrap_or(Vec::new()));
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let row = match slf
                 ._query_first_as_dict(sql.as_str(), sql_params.as_slice())
