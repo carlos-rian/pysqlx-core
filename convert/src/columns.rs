@@ -50,7 +50,7 @@ fn check_column_is_number(column: &String) -> bool {
 }
 
 pub fn check_column_name(column: &String, index: usize) -> String {
-    if column.len() == 0 || column == "" || column == "?column?" {
+    if column.len() == 0 || column == "" || column == "?column?" || column == "?" {
         format!("col_{}", index)
     } else if check_column_is_number(column) {
         format!("col_{}", column.replace("-", "_").replace(".", "_")).replace("__", "_")
