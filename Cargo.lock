@@ -571,6 +571,7 @@ name = "database"
 version = "0.1.0"
 dependencies = [
  "convert",
+ "log",
  "openssl",
  "py_types",
  "pyo3",
@@ -1854,6 +1855,7 @@ version = "0.1.0"
 dependencies = [
  "bigdecimal",
  "chrono",
+ "log",
  "pyo3",
  "quaint",
  "serde",

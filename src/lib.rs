@@ -1,8 +1,10 @@
 use database::Connection;
 use py_types::{PySQLxError, PySQLxResult};
 
+use env_logger;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
+use std::env::{set_var, var};
 
 pub fn get_version() -> String {
     let version = env!("CARGO_PKG_VERSION").to_string();
@@ -24,6 +26,25 @@ fn new(py: Python, uri: String) -> PyResult<&PyAny> {
     })
 }
 
+fn activate_log() {
+    for (k, v) in vec![
+        ("PYSQL_CORE_INFO", "info"),
+        ("PYSQL_CORE_DEBUG", "debug"),
+        ("PYSQL_CORE_TRACE", "trace"),
+    ]
+    .iter()
+    {
+        match var(k) {
+            Ok(_) => {
+                set_var("RUST_LOG", v);
+                env_logger::init();
+                return;
+            }
+            Err(_) => {}
+        }
+    }
+}
+
 #[pymodule]
 fn pysqlx_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add("__version__", get_version())?;
@@ -31,5 +52,8 @@ fn pysqlx_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Connection>()?;
     m.add_class::<PySQLxResult>()?;
     m.add_class::<PySQLxError>()?;
+
+    activate_log();
+
     Ok(())
 }
