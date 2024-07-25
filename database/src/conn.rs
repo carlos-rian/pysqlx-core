@@ -1,6 +1,5 @@
 use convert::convert_result_set;
 use convert::convert_result_set_as_list;
-use log::info;
 use py_types::convert_to_quaint_values;
 use py_types::PySQLxRow;
 use py_types::PySQLxRows;
