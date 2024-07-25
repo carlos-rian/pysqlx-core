@@ -113,16 +113,16 @@ class Connection:
     ```
     """
 
-    async def query(self, sql: str) -> "PySQLxResult":
+    async def query(self, sql: str, params: tuple = tuple()) -> "PySQLxResult":
         """Returns a `PySQLxResult` object representing the result of the query."""
         raise PySQLxError()
-    async def execute(self, sql: str) -> "int":
+    async def execute(self, sql: str, params: tuple = tuple()) -> "int":
         """Executes a query and returns the number of rows affected."""
         raise PySQLxError()
-    async def query_as_list(self, sql: str) -> "List[Dict[str, Any]]":
+    async def query_as_list(self, sql: str, params: tuple = tuple()) -> "List[Dict[str, Any]]":
         """Returns a list of dictionaries representing the rows of the query result."""
         raise PySQLxError()
-    async def query_first_as_dict(self, sql: str) -> "Dict[str, Any]":
+    async def query_first_as_dict(self, sql: str, params: tuple = tuple()) -> "Dict[str, Any]":
         """Returns the first row of the query result as a dictionary."""
         raise PySQLxError()
     async def raw_cmd(self, sql: str) -> "None":
