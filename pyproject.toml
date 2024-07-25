@@ -103,3 +103,4 @@ taskipy = "^1.13.0"
 [tool.taskipy.tasks]
 test = "cargo test -p database -p convert -p py_types"
 dev = "maturin develop"
+release = "maturin develop --release"
