@@ -1,14 +1,14 @@
 from typing import Any, Dict, List, Union
 from typing_extensions import Literal
 
-__all__ = ("__version__", "new", "Connection", 'PySQLXError', "PySQLXResult")
+__all__ = ("__version__", "new", "Connection", 'PySQLxError', "PySQLxResult")
 __version__: str
 
 IsolationLevel = Literal["ReadUncommitted", "ReadCommitted", "RepeatableRead", "Snapshot", "Serializable"]
 
-class PySQLXError(Exception):
+class PySQLxError(Exception):
     """
-    ## PySQLXError
+    ## PySQLxError
 
     ### Base class for all exceptions raised by pysqlx.
 
@@ -46,21 +46,25 @@ class PySQLXError(Exception):
         """
         ...
 
-class PySQLXResult:
+class PySQLxResult:
     """
-    PySQLXResult is a class that represents the result of a query.
+    PySQLxResult is a class that represents the result of a query.
     It is returned by the `query` method of the `Connection` class.
     """
 
     def get_types(self) -> "Dict[str, str]":
         """Returns a dictionary of column names and their types used to generate Pydantic BaseModel."""
-        raise PySQLXError()
+        raise PySQLxError()
     def get_all(self) -> "List[Dict[str, Any]]":
         """Returns a list of dictionaries representing the rows of the query result."""
-        raise PySQLXError()
+        raise PySQLxError()
     def get_first(self) -> "Dict[str, Any]":
         """Returns the first row of the query result as a dictionary."""
-        raise PySQLXError()
+        raise PySQLxError()
+    def get_last_insert_id(self) -> "Union[int, None]":
+        """Returns the last inserted id."""
+        ...
+
     def __len__(self) -> int:
         """Returns the number of rows in the query result."""
         ...
@@ -91,7 +95,7 @@ class Connection:
         # Insert a row and return quantity rows affected
         await db.execute(sql="INSERT INTO test (name) VALUES ('Carlos');")
 
-        # Select all rows, return a class PySQLXResult
+        # Select all rows, return a class PySQLxResult
         result = await db.query(sql="SELECT * FROM test;")
         # get first row
         row = result.get_first() # Dict[str, Any]
@@ -109,21 +113,21 @@ class Connection:
     ```
     """
 
-    async def query(self, sql: str) -> "PySQLXResult":
-        """Returns a `PySQLXResult` object representing the result of the query."""
-        raise PySQLXError()
+    async def query(self, sql: str) -> "PySQLxResult":
+        """Returns a `PySQLxResult` object representing the result of the query."""
+        raise PySQLxError()
     async def execute(self, sql: str) -> "int":
         """Executes a query and returns the number of rows affected."""
-        raise PySQLXError()
+        raise PySQLxError()
     async def query_as_list(self, sql: str) -> "List[Dict[str, Any]]":
         """Returns a list of dictionaries representing the rows of the query result."""
-        raise PySQLXError()
+        raise PySQLxError()
     async def query_first_as_dict(self, sql: str) -> "Dict[str, Any]":
         """Returns the first row of the query result as a dictionary."""
-        raise PySQLXError()
+        raise PySQLxError()
     async def raw_cmd(self, sql: str) -> "None":
         """Run a command in the database, for queries that can't be run using prepared statements."""
-        raise PySQLXError()
+        raise PySQLxError()
     def is_healthy(self) -> "bool":
         """Returns false, if connection is considered to not be in a working state"""
         ...
@@ -151,11 +155,11 @@ class Connection:
         * [MySQL documentation]: (https://dev.mysql.com/doc/refman/8.0/en/innodb-transaction-isolation-levels.html)
         * [SQLite documentation]: (https://www.sqlite.org/isolation.html)
         """
-        raise PySQLXError()
+        raise PySQLxError()
     async def start_transaction(self, isolation_level: "Union[IsolationLevel, None]") -> "None":
         """Starts a transaction with BEGIN. by default, does not set the isolation level."""
-        raise PySQLXError()
+        raise PySQLxError()
 
 async def new(uri: str) -> 'Connection':
     """Creates a new connection to the database. Returns a `Connection` object."""
-    raise PySQLXError()
+    raise PySQLxError()
