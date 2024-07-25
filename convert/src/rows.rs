@@ -10,6 +10,7 @@ pub fn convert_result_set(result_set: ResultSet) -> PySQLxResult {
     let columns: Vec<String> = result_set.columns().iter().map(|c| c.to_string()).collect();
     let column_types: PySQLxColumnTypes = get_column_types(&columns, &result_set);
     py_result.set_column_types(column_types);
+    py_result.last_insert_id = result_set.last_insert_id();
 
     for row in result_set.into_iter() {
         py_result.push(convert_row(&columns, row));

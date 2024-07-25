@@ -274,21 +274,18 @@ mod tests {
             .unwrap();
 
         assert_eq!(
-            res.rows().get(0).unwrap().get("col_1").unwrap().clone(),
+            res.rows().get(0).unwrap().get("col_0").unwrap().clone(),
             PySQLxValue::Int(1)
         );
         assert_eq!(
-            res.rows().get(0).unwrap().get("col_2").unwrap().clone(),
+            res.rows().get(0).unwrap().get("col_1").unwrap().clone(),
             PySQLxValue::Int(2)
         );
 
+        assert_eq!(res.types().get("col_0").unwrap(), "int");
         assert_eq!(res.types().get("col_1").unwrap(), "int");
-        assert_eq!(res.types().get("col_2").unwrap(), "int");
 
-        let res = conn
-            ._query("SELECT $1, $2", &[Value::from(1.3), Value::from(-453.32)])
-            .await
-            .unwrap();
+        let res = conn._query("SELECT -1.3, -453.32", &[]).await.unwrap();
 
         assert_eq!(
             res.rows().get(0).unwrap().get("col_1_3").unwrap().clone(),

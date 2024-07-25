@@ -15,6 +15,7 @@ pub type PySQLxColumnTypes = HashMap<String, String>;
 pub struct PySQLxResult {
     pub rows: PySQLxRows,
     pub column_types: PySQLxColumnTypes,
+    pub last_insert_id: Option<u64>,
 }
 
 impl PySQLxResult {
@@ -39,8 +40,8 @@ impl Display for PySQLxResult {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "PySQLXResult(rows: [...], column_types: {:?})",
-            self.column_types
+            "PySQLXResult(rows: [...], column_types: {:?}, last_insert_id: {:?})",
+            self.column_types, self.last_insert_id
         )
     }
 }
@@ -49,7 +50,11 @@ impl Default for PySQLxResult {
     fn default() -> Self {
         let rows: PySQLxRows = Vec::new();
         let column_types: PySQLxColumnTypes = HashMap::new();
-        Self { rows, column_types }
+        Self {
+            rows,
+            column_types,
+            last_insert_id: None,
+        }
     }
 }
 
@@ -69,6 +74,10 @@ impl PySQLxResult {
             Some(row) => row.to_object(py),
             None => PyDict::new(py).to_object(py),
         }
+    }
+
+    pub fn get_last_insert_id(&self) -> Option<u64> {
+        self.last_insert_id
     }
 
     pub fn __len__(&self) -> usize {
