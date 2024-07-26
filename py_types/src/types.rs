@@ -7,6 +7,7 @@ use quaint::{Value, ValueType};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::borrow::Cow;
+use std::collections::HashMap;
 use uuid::Uuid;
 // this type is a placeholder for the actual type
 type PyValueArray = Vec<PySQLxValue>;
@@ -208,10 +209,37 @@ fn convert_to_rs_uuid(py: Python, value: PyObject) -> Uuid {
     Uuid::parse_str(&py_uuid).unwrap()
 }
 
-fn convert_python_str_to_serde_value(py: Python, value: PyObject) -> JsonValue {
-    let s = value.extract::<String>(py).unwrap();
-    let v: JsonValue = serde_json::from_str(s.as_str()).unwrap();
-    v
+fn convert_json_pyobject_to_serde_value(py: Python, value: PyObject) -> JsonValue {
+    // the could be a PyDict, PyList, bool, int, float, str or None
+    match value.as_ref(py).get_type().name().unwrap() {
+        "dict" => {
+            let dict = value.extract::<HashMap<String, PyObject>>(py).unwrap();
+            let mut map = serde_json::Map::new();
+            for (key, value) in dict {
+                let v = convert_json_pyobject_to_serde_value(py, value);
+                map.insert(key, v);
+            }
+            JsonValue::Object(map)
+        }
+        "list" => {
+            let list = value.extract::<Vec<PyObject>>(py).unwrap();
+            let mut vec = Vec::new();
+            for item in list {
+                vec.push(convert_json_pyobject_to_serde_value(py, item));
+            }
+            JsonValue::Array(vec)
+        }
+        "bool" => JsonValue::Bool(value.extract::<bool>(py).unwrap()),
+        "int" => JsonValue::Number(serde_json::Number::from(value.extract::<i64>(py).unwrap())),
+        "float" => JsonValue::Number(
+            serde_json::Number::from_f64(value.extract::<f64>(py).unwrap()).unwrap(),
+        ),
+        "str" => JsonValue::String(value.extract::<String>(py).unwrap()),
+        "NoneType" => JsonValue::Null,
+        value_type => {
+            panic!("Unsupported type: {}", value_type)
+        }
+    }
 }
 
 fn convert_to_datetime(py: Python, value: PyObject) -> DateTime<Utc> {
@@ -244,7 +272,7 @@ pub fn convert_to_pysqlx_value(py: Python, kind: PySQLxParamKind, value: PyObjec
             }
             PySQLxValue::Array(pysqlx_list)
         }
-        PySQLxParamKind::Json => PySQLxValue::Json(convert_python_str_to_serde_value(py, value)),
+        PySQLxParamKind::Json => PySQLxValue::Json(convert_json_pyobject_to_serde_value(py, value)),
         PySQLxParamKind::Xml => PySQLxValue::Xml(value.extract::<String>(py).unwrap()),
         PySQLxParamKind::Uuid => {
             let rs_uuid = convert_to_rs_uuid(py, value);
@@ -298,7 +326,7 @@ impl From<String> for PySQLxParamKind {
             "float" => PySQLxParamKind::Float,
             "bytes" => PySQLxParamKind::Bytes,
             "none" => PySQLxParamKind::Null,
-            _ => PySQLxParamKind::Null,
+            t => panic!("Unsupported type: {}", t),
         }
     }
 }
