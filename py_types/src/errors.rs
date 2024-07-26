@@ -54,7 +54,7 @@ impl Display for DBError {
     }
 }
 
-#[pyclass(name = "PySQLXError", extends = PyTypeError)]
+#[pyclass(name = "PySQLxError", extends = PyTypeError)]
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct PySQLxError {
     pub code: String,
@@ -75,7 +75,7 @@ impl PySQLxError {
 
     pub fn __str__(&self) -> String {
         format!(
-            "PySQLXError(code='{}', message='{}', error='{}')",
+            "PySQLxError(code='{}', message='{}', error='{}')",
             self.code, self.message, self.error
         )
     }
