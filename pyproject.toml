@@ -104,4 +104,4 @@ patchelf = "^0.17.2.1"
 [tool.taskipy.tasks]
 test = "cargo test -p database -p convert -p py_types"
 dev = "maturin develop"
-release = "maturin develop --release"
+build = "maturin build"
