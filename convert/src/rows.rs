@@ -47,38 +47,6 @@ fn convert_row(columns: &Vec<String>, row: ResultRow) -> PySQLxRow {
     data
 }
 
-fn _find_sql_param_position_based_on_key(
-    sql: String,
-    param_keys: Vec<String>,
-) -> Vec<(i8, String)> {
-    // Find the position of the parameters in the SQL query
-    // i8 is the sequence of the parameter in the query
-    // for example, if the query is "SELECT * FROM table WHERE id = :x AND name = :y"
-    // the position of (0, "x") and (1, "y")
-    // if the param repeated in the query, the position will be different
-    // for example, if the query is "SELECT * FROM table WHERE id = :x AND name = :x"
-    // the position of (0, "x") and (1, "x")
-    // if the param is repeated and the query is "SELECT * FROM table WHERE id = :x AND name = :y AND id = :x"
-    // the position of (0, "x"), (1, "y"), and (2, "x")
-    let mut param_positions: Vec<(i8, String)> = Vec::new();
-    // start, end and key
-    let mut position: Vec<(usize, usize, String)> = Vec::new();
-    for key in param_keys {
-        let matches = sql.match_indices(key.as_str());
-        for (start, _) in matches {
-            let end = start + key.len();
-            position.push((start, end, key.clone()));
-        }
-    }
-    println!("unsorted: {:?}", position);
-    position.sort_by(|a: &(usize, usize, String), b: &(usize, usize, String)| a.0.cmp(&b.0));
-    println!("sorted: {:?}", position);
-    for (idx, value) in position.iter().enumerate() {
-        param_positions.push((idx as i8, value.2.clone()));
-    }
-    param_positions
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
