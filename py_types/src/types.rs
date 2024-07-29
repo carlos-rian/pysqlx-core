@@ -345,6 +345,10 @@ pub fn convert_to_pysqlx_value(
     }
 }
 
+fn get_type_name(py: Python, value: &PyObject) -> String {
+    value.as_ref(py).get_type().name().unwrap().to_string()
+}
+
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub enum PySQLxParamKind {
     Boolean,
@@ -365,10 +369,10 @@ pub enum PySQLxParamKind {
     UnsupportedType(String),
 }
 
-impl From<String> for PySQLxParamKind {
-    fn from(kind: String) -> Self {
+impl PySQLxParamKind {
+    fn from(py: Python, value: &PyObject) -> Self {
         // kind string is python class Type name
-        match kind.to_lowercase().as_str() {
+        match get_type_name(py, value).as_str() {
             "bool" => PySQLxParamKind::Boolean,
             "str" => PySQLxParamKind::String,
             "enum" => PySQLxParamKind::Enum,
@@ -396,8 +400,7 @@ pub fn convert_to_quaint_values(
 ) -> Result<HashMap<String, Value<'static>>, PySQLxInvalidParamType> {
     let mut params = HashMap::new();
     for (key, value) in values {
-        let value_type = value.as_ref(py).get_type().name().unwrap().to_string();
-        let kind = PySQLxParamKind::from(value_type);
+        let kind = PySQLxParamKind::from(py, value);
         match convert_to_pysqlx_value(py, kind, value.clone_ref(py)) {
             Ok(v) => {
                 params.insert(key.clone(), v.to_value());
