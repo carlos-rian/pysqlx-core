@@ -1,6 +1,8 @@
+use std::collections::HashMap;
+
 use convert::convert_result_set;
 use convert::convert_result_set_as_list;
-use py_types::convert_to_quaint_values;
+use py_types::prepare_sql_typed;
 use py_types::PySQLxRow;
 use py_types::PySQLxRows;
 use py_types::{py_error, DBError, PySQLxError, PySQLxResult};
@@ -113,6 +115,15 @@ impl Connection {
             Err(e) => Err(py_error(e, DBError::StartTransactionError)),
         }
     }
+
+    // provider
+    pub fn provider(&self) -> String {
+        self.conn
+            .connection_info()
+            .sql_family()
+            .to_string()
+            .to_lowercase()
+    }
 }
 
 #[pymethods]
@@ -121,12 +132,21 @@ impl Connection {
         &self,
         py: Python<'a>,
         sql: String,
-        params: Option<Vec<PyObject>>,
+        params: Option<HashMap<String, PyObject>>,
     ) -> PyResult<&'a PyAny> {
+        let (new_sql, sql_params) = match prepare_sql_typed(
+            py,
+            &sql,
+            &params.unwrap_or(HashMap::new()),
+            &self.provider(),
+        ) {
+            Ok(r) => r,
+            Err(e) => return Err(e.to_pyerr()),
+        };
+
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, &params.unwrap_or(Vec::new()));
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf._query(sql.as_str(), sql_params.as_slice()).await {
+            match slf._query(new_sql.as_str(), sql_params.as_slice()).await {
                 Ok(r) => Ok(r),
                 Err(e) => Err(e.to_pyerr()),
             }
@@ -137,12 +157,21 @@ impl Connection {
         &mut self,
         py: Python<'a>,
         sql: String,
-        params: Option<Vec<PyObject>>,
+        params: Option<HashMap<String, PyObject>>,
     ) -> PyResult<&'a PyAny> {
+        let (new_sql, sql_params) = match prepare_sql_typed(
+            py,
+            &sql,
+            &params.unwrap_or(HashMap::new()),
+            &self.provider(),
+        ) {
+            Ok(r) => r,
+            Err(e) => return Err(e.to_pyerr()),
+        };
+
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, &params.unwrap_or(Vec::new()));
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf._execute(sql.as_str(), sql_params.as_slice()).await {
+            match slf._execute(new_sql.as_str(), sql_params.as_slice()).await {
                 Ok(r) => Python::with_gil(|py| Ok(r.to_object(py))),
                 Err(e) => Err(e.to_pyerr()),
             }
@@ -153,13 +182,22 @@ impl Connection {
         &mut self,
         py: Python<'a>,
         sql: String,
-        params: Option<Vec<PyObject>>,
+        params: Option<HashMap<String, PyObject>>,
     ) -> PyResult<&'a PyAny> {
+        let (new_sql, sql_params) = match prepare_sql_typed(
+            py,
+            &sql,
+            &params.unwrap_or(HashMap::new()),
+            &self.provider(),
+        ) {
+            Ok(r) => r,
+            Err(e) => return Err(e.to_pyerr()),
+        };
+
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, &params.unwrap_or(Vec::new()));
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let rows = match slf
-                ._query_as_list(sql.as_str(), sql_params.as_slice())
+                ._query_as_list(new_sql.as_str(), sql_params.as_slice())
                 .await
             {
                 Ok(r) => r,
@@ -176,13 +214,21 @@ impl Connection {
         &mut self,
         py: Python<'a>,
         sql: String,
-        params: Option<Vec<PyObject>>,
+        params: Option<HashMap<String, PyObject>>,
     ) -> PyResult<&'a PyAny> {
+        let (new_sql, sql_params) = match prepare_sql_typed(
+            py,
+            &sql,
+            &params.unwrap_or(HashMap::new()),
+            &self.provider(),
+        ) {
+            Ok(r) => r,
+            Err(e) => return Err(e.to_pyerr()),
+        };
         let slf = self.clone();
-        let sql_params = convert_to_quaint_values(py, &params.unwrap_or(Vec::new()));
         pyo3_asyncio::tokio::future_into_py(py, async move {
             let row = match slf
-                ._query_first_as_dict(sql.as_str(), sql_params.as_slice())
+                ._query_first_as_dict(new_sql.as_str(), sql_params.as_slice())
                 .await
             {
                 Ok(r) => r,
