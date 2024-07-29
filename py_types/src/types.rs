@@ -1,7 +1,7 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use pyo3::types::PyDict;
 use pyo3::types::{PyBytes, PyModule, PyTuple};
-use pyo3::{pyclass, PyObject, PyResult, Python, ToPyObject};
+use pyo3::{intern, PyObject, PyResult, Python, ToPyObject};
 use quaint::ast::EnumVariant;
 use quaint::{Value, ValueType};
 use serde::{Deserialize, Serialize};
@@ -9,6 +9,8 @@ use serde_json::Value as JsonValue;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use uuid::Uuid;
+
+use crate::errors::PySQLxInvalidParamType;
 // this type is a placeholder for the actual type
 type PyValueArray = Vec<PySQLxValue>;
 
@@ -209,36 +211,75 @@ fn convert_to_rs_uuid(py: Python, value: PyObject) -> Uuid {
     Uuid::parse_str(&py_uuid).unwrap()
 }
 
-fn convert_json_pyobject_to_serde_value(py: Python, value: PyObject) -> JsonValue {
+fn convert_json_pyobject_to_serde_value(
+    py: Python,
+    value: PyObject,
+) -> Result<JsonValue, PySQLxInvalidParamType> {
     // the could be a PyDict, PyList, bool, int, float, str or None
     match value.as_ref(py).get_type().name().unwrap() {
         "dict" => {
             let dict = value.extract::<HashMap<String, PyObject>>(py).unwrap();
             let mut map = serde_json::Map::new();
             for (key, value) in dict {
-                let v = convert_json_pyobject_to_serde_value(py, value);
+                let v = convert_json_pyobject_to_serde_value(py, value).unwrap();
                 map.insert(key, v);
             }
-            JsonValue::Object(map)
+            Ok(JsonValue::Object(map))
         }
-        "list" => {
+        "list" | "tuple" => {
             let list = value.extract::<Vec<PyObject>>(py).unwrap();
             let mut vec = Vec::new();
             for item in list {
-                vec.push(convert_json_pyobject_to_serde_value(py, item));
+                vec.push(convert_json_pyobject_to_serde_value(py, item).unwrap());
             }
-            JsonValue::Array(vec)
+            Ok(JsonValue::Array(vec))
         }
-        "bool" => JsonValue::Bool(value.extract::<bool>(py).unwrap()),
-        "int" => JsonValue::Number(serde_json::Number::from(value.extract::<i64>(py).unwrap())),
-        "float" => JsonValue::Number(
+        "bool" => Ok(JsonValue::Bool(value.extract::<bool>(py).unwrap())),
+        "int" => Ok(JsonValue::Number(serde_json::Number::from(
+            value.extract::<i64>(py).unwrap(),
+        ))),
+        "float" => Ok(JsonValue::Number(
             serde_json::Number::from_f64(value.extract::<f64>(py).unwrap()).unwrap(),
-        ),
-        "str" => JsonValue::String(value.extract::<String>(py).unwrap()),
-        "NoneType" => JsonValue::Null,
-        value_type => {
-            panic!("Unsupported type: {}", value_type)
+        )),
+        "str" => Ok(JsonValue::String(value.extract::<String>(py).unwrap())),
+        "date" => {
+            let date: NaiveDate = value.extract::<NaiveDate>(py).unwrap();
+            Ok(JsonValue::String(date.to_string()))
         }
+        "time" => {
+            let time: NaiveTime = value.extract::<NaiveTime>(py).unwrap();
+            Ok(JsonValue::String(time.to_string()))
+        }
+        "datetime" => {
+            let datetime: DateTime<Utc> = convert_to_datetime(py, value);
+            Ok(JsonValue::String(datetime.to_rfc3339()))
+        }
+        "uuid" => {
+            let rs_uuid = convert_to_rs_uuid(py, value);
+            Ok(JsonValue::String(rs_uuid.to_string()))
+        }
+        "bytes" => {
+            let bytes = value.extract::<Vec<u8>>(py).unwrap();
+            Ok(JsonValue::String(base64::encode(bytes)))
+        }
+        "decimal" => {
+            let decimal = value.extract::<String>(py).unwrap();
+            Ok(JsonValue::String(decimal))
+        }
+        "enum" => {
+            let enum_value = value
+                .getattr(py, intern!(py, "value"))
+                .unwrap()
+                .extract::<String>(py)
+                .unwrap();
+            Ok(JsonValue::String(enum_value))
+        }
+        "NoneType" => Ok(JsonValue::Null),
+        value_type => Err(PySQLxInvalidParamType::py_new(
+            value_type.to_string(),
+            "json".to_string(),
+            "Unsupported type".to_string(),
+        )),
     }
 }
 
@@ -254,40 +295,56 @@ fn convert_to_datetime(py: Python, value: PyObject) -> DateTime<Utc> {
     }
 }
 
-pub fn convert_to_pysqlx_value(py: Python, kind: PySQLxParamKind, value: PyObject) -> PySQLxValue {
+pub fn convert_to_pysqlx_value(
+    py: Python,
+    kind: PySQLxParamKind,
+    value: PyObject,
+) -> Result<PySQLxValue, PySQLxInvalidParamType> {
     match kind {
-        PySQLxParamKind::Boolean => PySQLxValue::Boolean(value.extract::<bool>(py).unwrap()),
-        PySQLxParamKind::String => PySQLxValue::String(value.extract::<String>(py).unwrap()),
-        PySQLxParamKind::Enum => PySQLxValue::Enum(value.extract::<String>(py).unwrap()),
+        PySQLxParamKind::Boolean => Ok(PySQLxValue::Boolean(value.extract::<bool>(py).unwrap())),
+        PySQLxParamKind::String => Ok(PySQLxValue::String(value.extract::<String>(py).unwrap())),
+        PySQLxParamKind::Enum => Ok(PySQLxValue::Enum(value.extract::<String>(py).unwrap())),
         PySQLxParamKind::EnumArray => {
             let list = value.extract::<Vec<String>>(py).unwrap();
-            PySQLxValue::EnumArray(list)
+            Ok(PySQLxValue::EnumArray(list))
         }
-        PySQLxParamKind::Int => PySQLxValue::Int(value.extract::<i64>(py).unwrap()),
+        PySQLxParamKind::Int => Ok(PySQLxValue::Int(value.extract::<i64>(py).unwrap())),
         PySQLxParamKind::Array => {
             let list = value.extract::<Vec<PyObject>>(py).unwrap();
             let mut pysqlx_list = Vec::new();
             for item in list {
-                pysqlx_list.push(convert_to_pysqlx_value(py, kind.clone(), item));
+                pysqlx_list.push(match convert_to_pysqlx_value(py, kind.clone(), item) {
+                    Ok(v) => v,
+                    Err(e) => return Err(e),
+                });
             }
-            PySQLxValue::Array(pysqlx_list)
+            Ok(PySQLxValue::Array(pysqlx_list))
         }
-        PySQLxParamKind::Json => PySQLxValue::Json(convert_json_pyobject_to_serde_value(py, value)),
-        PySQLxParamKind::Xml => PySQLxValue::Xml(value.extract::<String>(py).unwrap()),
+        PySQLxParamKind::Json => Ok(PySQLxValue::Json(
+            match convert_json_pyobject_to_serde_value(py, value) {
+                Ok(v) => v,
+                Err(e) => return Err(e),
+            },
+        )),
+        PySQLxParamKind::Xml => Ok(PySQLxValue::Xml(value.extract::<String>(py).unwrap())),
         PySQLxParamKind::Uuid => {
             let rs_uuid = convert_to_rs_uuid(py, value);
-            PySQLxValue::Uuid(rs_uuid)
+            Ok(PySQLxValue::Uuid(rs_uuid))
         }
-        PySQLxParamKind::Time => PySQLxValue::Time(value.extract::<NaiveTime>(py).unwrap()),
-        PySQLxParamKind::Date => PySQLxValue::Date(value.extract::<NaiveDate>(py).unwrap()),
-        PySQLxParamKind::DateTime => PySQLxValue::DateTime(convert_to_datetime(py, value)),
-        PySQLxParamKind::Float => PySQLxValue::Float(value.extract::<f64>(py).unwrap()),
-        PySQLxParamKind::Bytes => PySQLxValue::Bytes(value.extract::<Vec<u8>>(py).unwrap()),
-        PySQLxParamKind::Null => PySQLxValue::Null,
+        PySQLxParamKind::Time => Ok(PySQLxValue::Time(value.extract::<NaiveTime>(py).unwrap())),
+        PySQLxParamKind::Date => Ok(PySQLxValue::Date(value.extract::<NaiveDate>(py).unwrap())),
+        PySQLxParamKind::DateTime => Ok(PySQLxValue::DateTime(convert_to_datetime(py, value))),
+        PySQLxParamKind::Float => Ok(PySQLxValue::Float(value.extract::<f64>(py).unwrap())),
+        PySQLxParamKind::Bytes => Ok(PySQLxValue::Bytes(value.extract::<Vec<u8>>(py).unwrap())),
+        PySQLxParamKind::Null => Ok(PySQLxValue::Null),
+        PySQLxParamKind::UnsupportedType(t) => Err(PySQLxInvalidParamType::py_new(
+            t,
+            "str|int|float|etc".to_string(),
+            "Unsupported type, check the documentation".to_string(),
+        )),
     }
 }
 
-#[pyclass]
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub enum PySQLxParamKind {
     Boolean,
@@ -305,6 +362,7 @@ pub enum PySQLxParamKind {
     Float,
     Bytes,
     Null,
+    UnsupportedType(String),
 }
 
 impl From<String> for PySQLxParamKind {
@@ -325,22 +383,30 @@ impl From<String> for PySQLxParamKind {
             "datetime" => PySQLxParamKind::DateTime,
             "float" => PySQLxParamKind::Float,
             "bytes" => PySQLxParamKind::Bytes,
+            "decimal" => PySQLxParamKind::String,
             "none" => PySQLxParamKind::Null,
-            t => panic!("Unsupported type: {}", t),
+            t => PySQLxParamKind::UnsupportedType(t.to_string()),
         }
     }
 }
 
-pub fn convert_to_quaint_values(py: Python, values: &Vec<PyObject>) -> Vec<Value<'static>> {
-    let mut params = Vec::new();
-    for value in values {
+pub fn convert_to_quaint_values(
+    py: Python,
+    values: &HashMap<String, PyObject>,
+) -> Result<HashMap<String, Value<'static>>, PySQLxInvalidParamType> {
+    let mut params = HashMap::new();
+    for (key, value) in values {
         let value_type = value.as_ref(py).get_type().name().unwrap().to_string();
         let kind = PySQLxParamKind::from(value_type);
-        let param = convert_to_pysqlx_value(py, kind, value.clone_ref(py));
-        params.push(param);
+        match convert_to_pysqlx_value(py, kind, value.clone_ref(py)) {
+            Ok(v) => {
+                params.insert(key.clone(), v.to_value());
+            }
+            Err(e) => return Err(e),
+        }
     }
 
-    params.iter().map(|v| v.clone().to_value()).collect()
+    Ok(params)
 }
 
 #[cfg(test)]
