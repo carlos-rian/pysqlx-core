@@ -126,6 +126,58 @@ pub fn py_error(err: QuaintError, typ: DBError) -> PySQLxError {
     }
 }
 
+#[pyclass(name = "PySQLxInvalidParamType", extends = PyTypeError)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
+pub struct PySQLxInvalidParamType {
+    typ_from: String,
+    typ_to: String,
+    details: String,
+}
+
+impl PySQLxInvalidParamType {
+    pub fn to_pyerr(&self) -> PyErr {
+        PyErr::new::<PySQLxInvalidParamType, _>((
+            self.typ_from.clone(),
+            self.typ_to.clone(),
+            self.details.clone(),
+        ))
+    }
+}
+#[pymethods]
+impl PySQLxInvalidParamType {
+    #[new]
+    pub fn py_new(typ_from: String, typ_to: String, details: String) -> Self {
+        Self {
+            typ_from,
+            typ_to,
+            details,
+        }
+    }
+
+    pub fn __str__(&self) -> String {
+        format!(
+            "PySQLxErrorParam(typ_from='{}', typ_to='{}', details='{}')",
+            self.typ_from, self.typ_to, self.details
+        )
+    }
+
+    pub fn __repr__(&self) -> String {
+        self.__str__()
+    }
+
+    pub fn typ_from(&self) -> String {
+        self.typ_from.clone()
+    }
+
+    pub fn typ_to(&self) -> String {
+        self.typ_to.clone()
+    }
+
+    pub fn details(&self) -> String {
+        self.details.clone()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
