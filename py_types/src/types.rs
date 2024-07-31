@@ -463,13 +463,14 @@ impl PySQLxStatement {
     fn py_new(
         py: Python,
         sql: String,
-        params: HashMap<String, PyObject>,
         provider: String,
+        params: Option<HashMap<String, PyObject>>,
     ) -> PyResult<Self> {
-        let (new_sql, new_params) = match Self::prepare_sql_typed(py, &sql, &params, &provider) {
-            Ok((sql, p)) => (sql, p),
-            Err(e) => return Err(e.to_pyerr()),
-        };
+        let (new_sql, new_params) =
+            match Self::prepare_sql_typed(py, &sql, &params.unwrap_or(HashMap::new()), &provider) {
+                Ok((sql, p)) => (sql, p),
+                Err(e) => return Err(e.to_pyerr()),
+            };
 
         Ok(PySQLxStatement {
             sql: new_sql,
