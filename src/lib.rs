@@ -1,5 +1,5 @@
 use database::Connection;
-use py_types::{PySQLxError, PySQLxResult};
+use py_types::{PySQLxError, PySQLxInvalidParamError, PySQLxResult, PySQLxStatement};
 
 use env_logger;
 use pyo3::prelude::*;
@@ -52,6 +52,8 @@ fn pysqlx_core(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Connection>()?;
     m.add_class::<PySQLxResult>()?;
     m.add_class::<PySQLxError>()?;
+    m.add_class::<PySQLxInvalidParamError>()?;
+    m.add_class::<PySQLxStatement>()?;
 
     activate_log();
 

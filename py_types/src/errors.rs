@@ -126,17 +126,17 @@ pub fn py_error(err: QuaintError, typ: DBError) -> PySQLxError {
     }
 }
 
-#[pyclass(name = "PySQLxInvalidParamType", extends = PyTypeError)]
+#[pyclass(name = "PySQLxInvalidParamError", extends = PyTypeError)]
 #[derive(Debug, Clone, Deserialize, PartialEq)]
-pub struct PySQLxInvalidParamType {
+pub struct PySQLxInvalidParamError {
     typ_from: String,
     typ_to: String,
     details: String,
 }
 
-impl PySQLxInvalidParamType {
+impl PySQLxInvalidParamError {
     pub fn to_pyerr(&self) -> PyErr {
-        PyErr::new::<PySQLxInvalidParamType, _>((
+        PyErr::new::<PySQLxInvalidParamError, _>((
             self.typ_from.clone(),
             self.typ_to.clone(),
             self.details.clone(),
@@ -144,7 +144,7 @@ impl PySQLxInvalidParamType {
     }
 }
 #[pymethods]
-impl PySQLxInvalidParamType {
+impl PySQLxInvalidParamError {
     #[new]
     pub fn py_new(typ_from: String, typ_to: String, details: String) -> Self {
         Self {
@@ -156,7 +156,7 @@ impl PySQLxInvalidParamType {
 
     pub fn __str__(&self) -> String {
         format!(
-            "PySQLxErrorParam(typ_from='{}', typ_to='{}', details='{}')",
+            "PySQLxInvalidParamError(typ_from='{}', typ_to='{}', details='{}')",
             self.typ_from, self.typ_to, self.details
         )
     }

@@ -11,7 +11,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use crate::errors::PySQLxInvalidParamType;
+use crate::errors::PySQLxInvalidParamError;
 // this type is a placeholder for the actual type
 type PyValueArray = Vec<PySQLxValue>;
 
@@ -222,7 +222,7 @@ impl PySQLxStatement {
     fn convert_json_pyobject_to_serde_value(
         py: Python,
         value: PyObject,
-    ) -> Result<JsonValue, PySQLxInvalidParamType> {
+    ) -> Result<JsonValue, PySQLxInvalidParamError> {
         // the could be a PyDict, PyList, bool, int, float, str or None
         match value.as_ref(py).get_type().name().unwrap() {
             "dict" => {
@@ -283,7 +283,7 @@ impl PySQLxStatement {
                 Ok(JsonValue::String(enum_value))
             }
             "NoneType" => Ok(JsonValue::Null),
-            value_type => Err(PySQLxInvalidParamType::py_new(
+            value_type => Err(PySQLxInvalidParamError::py_new(
                 value_type.to_string(),
                 "json".to_string(),
                 "Unsupported type".to_string(),
@@ -307,7 +307,7 @@ impl PySQLxStatement {
         py: Python,
         kind: PySQLxParamKind,
         value: PyObject,
-    ) -> Result<PySQLxValue, PySQLxInvalidParamType> {
+    ) -> Result<PySQLxValue, PySQLxInvalidParamError> {
         match kind {
             PySQLxParamKind::Boolean => {
                 Ok(PySQLxValue::Boolean(value.extract::<bool>(py).unwrap()))
@@ -353,7 +353,7 @@ impl PySQLxStatement {
             PySQLxParamKind::Float => Ok(PySQLxValue::Float(value.extract::<f64>(py).unwrap())),
             PySQLxParamKind::Bytes => Ok(PySQLxValue::Bytes(value.extract::<Vec<u8>>(py).unwrap())),
             PySQLxParamKind::Null => Ok(PySQLxValue::Null),
-            PySQLxParamKind::UnsupportedType(t) => Err(PySQLxInvalidParamType::py_new(
+            PySQLxParamKind::UnsupportedType(t) => Err(PySQLxInvalidParamError::py_new(
                 t,
                 "str|int|float|etc".to_string(),
                 "Unsupported type, check the documentation".to_string(),
@@ -364,7 +364,7 @@ impl PySQLxStatement {
     fn convert_to_pysqlx_value(
         py: Python,
         values: &HashMap<String, PyObject>,
-    ) -> Result<HashMap<String, PySQLxValue>, PySQLxInvalidParamType> {
+    ) -> Result<HashMap<String, PySQLxValue>, PySQLxInvalidParamError> {
         let mut params = HashMap::new();
         for (key, value) in values {
             let kind = PySQLxParamKind::from(py, value);
@@ -423,7 +423,7 @@ impl PySQLxStatement {
         sql: &String,
         params: &HashMap<String, PyObject>,
         provider: &'a String,
-    ) -> Result<(String, Vec<PySQLxValue>), PySQLxInvalidParamType> {
+    ) -> Result<(String, Vec<PySQLxValue>), PySQLxInvalidParamError> {
         if params.is_empty() {
             return Ok((sql.to_string(), Vec::new()));
         }
