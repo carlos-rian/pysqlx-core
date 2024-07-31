@@ -10,14 +10,14 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import Literal
 
-
-__all__ = ("__version__", "new", "Connection", 'PySQLxError', "PySQLxResult")
+__all__ = ("__version__", "new", "Connection", "PySQLxError", "PySQLxResult")
 __version__: str
 
-IsolationLevel = Literal["ReadUncommitted", "ReadCommitted", "RepeatableRead", "Snapshot", "Serializable"]
+IsolationLevel = Literal[
+    "ReadUncommitted", "ReadCommitted", "RepeatableRead", "Snapshot", "Serializable"
+]
 
-class EnumArray(tuple):
-    ...
+class EnumArray(tuple): ...
 
 SupportedValueType = Union[
     bool,
@@ -35,9 +35,6 @@ SupportedValueType = Union[
     Enum,
     None,
 ]
-
-        
-
 
 class PySQLxError(Exception):
     """
@@ -85,19 +82,19 @@ class PySQLxInvalidParamError(Exception):
     details: str
 
     def typ_from(self) -> str:
-        """ 
+        """
         Return the typ_from of the error
         """
         ...
 
     def typ_to(self) -> str:
-        """ 
+        """
         Return the typ_to of the error
         """
         ...
 
     def details(self) -> str:
-        """ 
+        """
         Return the details of the error
         """
         ...
@@ -107,11 +104,15 @@ class PySQLxStatement:
     ## PySQLxStatement
 
     Represents a prepared statement. The class prepares the statement and binds the parameters to use in the Connection class.
-    
+
     """
 
-    def __init__(self, provider: str, sql: str, params: Union[Dict[str, SupportedValueType], None]) -> Self:
-        ...
+    def __init__(
+        self,
+        provider: str,
+        sql: str,
+        params: Union[Dict[str, SupportedValueType], None],
+    ) -> Self: ...
 
 class PySQLxResult:
     """
@@ -186,10 +187,14 @@ class Connection:
     async def execute(self, sql: str, params: Union[tuple, None]) -> "int":
         """Executes a query and returns the number of rows affected."""
         raise PySQLxError()
-    async def query_as_list(self, sql: str, params: Union[tuple, None]) -> "List[Dict[str, Any]]":
+    async def query_as_list(
+        self, sql: str, params: Union[tuple, None]
+    ) -> "List[Dict[str, Any]]":
         """Returns a list of dictionaries representing the rows of the query result."""
         raise PySQLxError()
-    async def query_first_as_dict(self, sql: str, params: Union[tuple, None]) -> "Dict[str, Any]":
+    async def query_first_as_dict(
+        self, sql: str, params: Union[tuple, None]
+    ) -> "Dict[str, Any]":
         """Returns the first row of the query result as a dictionary."""
         raise PySQLxError()
     async def raw_cmd(self, sql: str) -> "None":
@@ -223,10 +228,12 @@ class Connection:
         * [SQLite documentation]: (https://www.sqlite.org/isolation.html)
         """
         raise PySQLxError()
-    async def start_transaction(self, isolation_level: "Union[IsolationLevel, None]") -> "None":
+    async def start_transaction(
+        self, isolation_level: "Union[IsolationLevel, None]"
+    ) -> "None":
         """Starts a transaction with BEGIN. by default, does not set the isolation level."""
         raise PySQLxError()
 
-async def new(uri: str) -> 'Connection':
+async def new(uri: str) -> "Connection":
     """Creates a new connection to the database. Returns a `Connection` object."""
     raise PySQLxError()
