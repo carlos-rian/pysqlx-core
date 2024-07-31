@@ -1,5 +1,9 @@
-from typing import Any, Dict, List, Union
+from datetime import date, datetime, time
+from decimal import Decimal
+from enum import Enum
+from typing import Any, Dict, List, Self, Union
 import sys
+from uuid import UUID
 
 if sys.version_info >= (3, 8):
     from typing import Literal
@@ -11,6 +15,29 @@ __all__ = ("__version__", "new", "Connection", 'PySQLxError', "PySQLxResult")
 __version__: str
 
 IsolationLevel = Literal["ReadUncommitted", "ReadCommitted", "RepeatableRead", "Snapshot", "Serializable"]
+
+class EnumArray(tuple):
+    ...
+
+SupportedValueType = Union[
+    bool,
+    str,
+    int,
+    Dict[str, Any],
+    List[Dict[str, Any]],
+    UUID,
+    time,
+    date,
+    datetime,
+    float,
+    bytes,
+    Decimal,
+    Enum,
+    None,
+]
+
+        
+
 
 class PySQLxError(Exception):
     """
@@ -50,6 +77,40 @@ class PySQLxError(Exception):
             * StartTransactionError
 
         """
+        ...
+
+class PySQLxInvalidParamError(Exception):
+    typ_from: str
+    typ_to: str
+    details: str
+
+    def typ_from(self) -> str:
+        """ 
+        Return the typ_from of the error
+        """
+        ...
+
+    def typ_to(self) -> str:
+        """ 
+        Return the typ_to of the error
+        """
+        ...
+
+    def details(self) -> str:
+        """ 
+        Return the details of the error
+        """
+        ...
+
+class PySQLxStatement:
+    """
+    ## PySQLxStatement
+
+    Represents a prepared statement. The class prepares the statement and binds the parameters to use in the Connection class.
+    
+    """
+
+    def __init__(self, sql: str, params: Dict[str, SupportedValueType]) -> Self:
         ...
 
 class PySQLxResult:
