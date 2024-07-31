@@ -1,6 +1,6 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::{PyAny, PyDict, PyType};
 use pyo3::types::{PyBytes, PyModule, PyTuple};
 use pyo3::{intern, pyclass, PyObject, PyResult, Python, ToPyObject};
 use quaint::ast::EnumVariant;
@@ -303,6 +303,47 @@ impl PySQLxStatement {
         }
     }
 
+    fn is_number_instance(obj: &PyAny) -> bool {
+        match obj.get_type().name() {
+            Ok(name) => name == "int" || name == "float",
+            Err(_) => false,
+        }
+    }
+
+    fn convert_enum_to_string(
+        py: Python,
+        value: PyObject,
+    ) -> Result<String, PySQLxInvalidParamError> {
+        let enum_value = value.as_ref(py).getattr(intern!(py, "value")).unwrap();
+        let enum_name = value.as_ref(py).getattr(intern!(py, "name")).unwrap();
+
+        log::debug!(
+            "Converting Enum(name={:?}({:?}), value={:?}({:?})",
+            enum_name.get_type().name().unwrap(),
+            enum_name,
+            enum_value.get_type().name().unwrap(),
+            enum_value,
+        );
+
+        if enum_value.get_type().name().unwrap() == "str" {
+            Ok(enum_value.to_string())
+        } else if Self::is_number_instance(&enum_value) {
+            Ok(enum_name.to_string())
+        } else {
+            Err(PySQLxInvalidParamError::py_new(
+                "enum".to_string(),
+                "str".to_string(),
+                r#"
+                    Unsupported enum type. 
+                    The postgres enum should be a `string`. 
+                    If the python enum.value is a string (str), we will use the enum.value.
+                    If the python enum.value is a number (int, float), we will use the enum.name.
+                    Otherwise, an error will be raised."#
+                    .to_string(),
+            ))
+        }
+    }
+
     fn convert_pyobject_to_pysqlx_value(
         py: Python,
         kind: PySQLxParamKind,
@@ -315,10 +356,23 @@ impl PySQLxStatement {
             PySQLxParamKind::String => {
                 Ok(PySQLxValue::String(value.extract::<String>(py).unwrap()))
             }
-            PySQLxParamKind::Enum => Ok(PySQLxValue::Enum(value.extract::<String>(py).unwrap())),
+            PySQLxParamKind::Enum => Ok(PySQLxValue::Enum(
+                match Self::convert_enum_to_string(py, value) {
+                    Ok(v) => v,
+                    Err(e) => return Err(e),
+                },
+            )),
             PySQLxParamKind::EnumArray => {
-                let list = value.extract::<Vec<String>>(py).unwrap();
-                Ok(PySQLxValue::EnumArray(list))
+                let list = value.extract::<Vec<PyObject>>(py).unwrap();
+                let mut enum_list = Vec::new();
+                for item in list {
+                    enum_list.push(match Self::convert_enum_to_string(py, item.clone_ref(py)) {
+                        Ok(v) => v,
+                        Err(e) => return Err(e),
+                    });
+                }
+
+                Ok(PySQLxValue::EnumArray(enum_list))
             }
             PySQLxParamKind::Int => Ok(PySQLxValue::Int(value.extract::<i64>(py).unwrap())),
             PySQLxParamKind::Array => {
@@ -412,8 +466,8 @@ impl PySQLxStatement {
 
     fn provider_param(param: &String, idx: i8) -> String {
         match param.as_str() {
-            "postgres" => format!("${}", idx + 1),
-            "mssql" => format!("@P{}", idx + 1),
+            "postgresql" => format!("${}", idx + 1),
+            "sqlserver" => format!("@P{}", idx + 1),
             _ => "?".to_string(), // "sqlite" | "mysql"
         }
     }
@@ -503,15 +557,58 @@ impl PySQLxParamKind {
     fn get_type_name(py: Python, value: &PyObject) -> String {
         value.as_ref(py).get_type().name().unwrap().to_string()
     }
+
+    fn is_enum_instance(py: Python, obj: PyObject) -> bool {
+        let enum_mod = PyModule::import(py, "enum").unwrap();
+        let enum_class = enum_mod.getattr("Enum").unwrap();
+
+        if let Ok(enum_class) = enum_class.downcast::<PyType>() {
+            match obj.as_ref(py).is_instance(enum_class) {
+                Ok(is_instance) => is_instance,
+                Err(_) => false,
+            }
+        } else {
+            false
+        }
+    }
+
+    fn validate_tuple_is_same_type(py: Python, tuple: &Vec<PyObject>) -> (bool, String) {
+        let kind = Self::get_type_name(py, &tuple[0]);
+        for (idx, item) in tuple.iter().enumerate().skip(1) {
+            let item_kind = Self::get_type_name(py, &item);
+            if kind != item_kind {
+                //return (false, format!("the tuple must have the same type, the first item is a {} and the current item is a {}", kind, item_kind));
+                return (false, format!("The tuple must have the same type, the first item is a {} and the current item position {} is a {}", kind, idx, item_kind));
+            }
+        }
+        (true, String::new())
+    }
+
     fn from(py: Python, value: &PyObject) -> Self {
         // kind string is python class Type name
         match Self::get_type_name(py, value).as_str() {
             "bool" => PySQLxParamKind::Boolean,
             "str" => PySQLxParamKind::String,
-            "enum" => PySQLxParamKind::Enum,
-            "enumarray" => PySQLxParamKind::EnumArray,
             "int" => PySQLxParamKind::Int,
-            "tuple" => PySQLxParamKind::Array,
+            "tuple" => {
+                // check if the tuple is empty
+                let tuple = value.extract::<Vec<PyObject>>(py).unwrap();
+                if tuple.is_empty() {
+                    return PySQLxParamKind::Array;
+                }
+
+                // check if the tuple has the same type
+                let (is_same_type, msg) = Self::validate_tuple_is_same_type(py, &tuple);
+                if !is_same_type {
+                    return PySQLxParamKind::UnsupportedType(msg);
+                }
+
+                if Self::is_enum_instance(py, tuple[0].clone_ref(py)) {
+                    return PySQLxParamKind::EnumArray;
+                }
+
+                PySQLxParamKind::Array
+            }
             "dict" | "list" => PySQLxParamKind::Json,
             "xml" => PySQLxParamKind::Xml,
             "uuid" => PySQLxParamKind::Uuid,
@@ -522,7 +619,14 @@ impl PySQLxParamKind {
             "bytes" => PySQLxParamKind::Bytes,
             "decimal" => PySQLxParamKind::String,
             "none" => PySQLxParamKind::Null,
-            t => PySQLxParamKind::UnsupportedType(t.to_string()),
+            "enum" => PySQLxParamKind::Enum,
+            t => {
+                if Self::is_enum_instance(py, value.clone_ref(py)) {
+                    PySQLxParamKind::Enum
+                } else {
+                    PySQLxParamKind::UnsupportedType(t.to_string())
+                }
+            }
         }
     }
 }

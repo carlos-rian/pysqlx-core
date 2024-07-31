@@ -28,9 +28,9 @@ fn new(py: Python, uri: String) -> PyResult<&PyAny> {
 
 fn activate_log() {
     for (k, v) in vec![
-        ("PYSQL_CORE_INFO", "info"),
-        ("PYSQL_CORE_DEBUG", "debug"),
         ("PYSQL_CORE_TRACE", "trace"),
+        ("PYSQL_CORE_DEBUG", "debug"),
+        ("PYSQL_CORE_INFO", "info"),
     ]
     .iter()
     {
