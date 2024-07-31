@@ -318,7 +318,7 @@ impl PySQLxStatement {
         let enum_name = value.as_ref(py).getattr(intern!(py, "name")).unwrap();
 
         log::debug!(
-            "Converting Enum(name={:?}({:?}), value={:?}({:?})",
+            "converting Enum(name={}({:?}), value={}({:?})",
             enum_name.get_type().name().unwrap(),
             enum_name,
             enum_value.get_type().name().unwrap(),
