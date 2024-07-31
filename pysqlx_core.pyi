@@ -110,7 +110,7 @@ class PySQLxStatement:
     
     """
 
-    def __init__(self, sql: str, params: Dict[str, SupportedValueType]) -> Self:
+    def __init__(self, provider: str, sql: str, params: Union[Dict[str, SupportedValueType], None]) -> Self:
         ...
 
 class PySQLxResult:
