@@ -3,10 +3,10 @@ use quaint::{connector::ResultSet, prelude::ResultRow};
 use std::collections::HashMap;
 
 use crate::columns::{check_column_name, get_column_types};
-use py_types::{PySQLxColumnTypes, PySQLxResult, PySQLxRow, PySQLxRows, PySQLxValue};
+use py_types::{PySQLxColumnTypes, PySQLxResponse, PySQLxRow, PySQLxRows, PySQLxValue};
 
-pub fn convert_result_set(result_set: ResultSet) -> PySQLxResult {
-    let mut py_result = PySQLxResult::default();
+pub fn convert_result_set(result_set: ResultSet) -> PySQLxResponse {
+    let mut py_result = PySQLxResponse::default();
     let columns: Vec<String> = result_set.columns().iter().map(|c| c.to_string()).collect();
     let column_types: PySQLxColumnTypes = get_column_types(&columns, &result_set);
     py_result.set_column_types(column_types);
