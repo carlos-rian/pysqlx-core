@@ -143,6 +143,7 @@ impl<'a> ToPyObject for PySQLxValue {
 #[derive(Debug, Clone, PartialEq)]
 struct SQLPosition {
     idx: i8,
+    key: String,
     new_key: String,
     old_key: String,
 }
@@ -202,7 +203,7 @@ impl PySQLxStatement {
             // if exist, generate again with length + 1
             return PySQLxStatement::generate_random_string(length + 1, &exist_keys);
         }
-        format!(":{}", rand_string)
+        format!(":{}", rand_string.to_lowercase())
     }
 
     fn json_value_to_pyobject(py: Python, value: &JsonValue) -> PyResult<PyObject> {
@@ -464,31 +465,32 @@ impl PySQLxStatement {
     fn mapped_sql(sql: &str, mut param_keys: Vec<String>) -> (String, Vec<(i8, SQLPosition)>) {
         let mut param_positions: Vec<(i8, SQLPosition)> = Vec::new();
         param_keys.sort_by(|a, b| b.len().cmp(&a.len()));
-        let mut position: Vec<(usize, usize, String, String)> = Vec::new();
+        let mut position: Vec<(usize, usize, String, String, String)> = Vec::new();
         let mut exist_keys: Vec<String> = Vec::new();
         let mut new_sql = sql.to_string();
 
         for key in param_keys {
-            let k = format!(":{}", key.as_str());
+            let old_key = format!(":{}", key.as_str());
             let temp = new_sql.clone();
-            let matches = temp.match_indices(k.as_str());
+            let matches = temp.match_indices(old_key.as_str());
             for (start, x) in matches {
-                debug!("key found: {}:{} -> {}", start, start + x.len(), k);
+                debug!("key found: {}:{} -> {}", start, start + x.len(), old_key);
                 let new_key = PySQLxStatement::generate_random_string(7, &exist_keys);
                 exist_keys.push(new_key.clone());
 
-                new_sql = new_sql.replacen(&k, &new_key, 1);
+                new_sql = new_sql.replacen(&old_key, &new_key, 1);
 
                 let end = start + new_key.len();
-                position.push((start, end, k.clone(), new_key))
+                position.push((start, end, key.clone(), old_key.clone(), new_key))
             }
         }
         position.sort_by(|a, b| a.0.cmp(&b.0));
-        for (idx, (_a, _b, old, new)) in position.iter().enumerate() {
+        for (idx, (_a, _b, key, old, new)) in position.iter().enumerate() {
             param_positions.push((
                 idx as i8,
                 SQLPosition {
                     idx: idx as i8,
+                    key: key.clone(),
                     old_key: old.clone(),
                     new_key: new.clone(),
                 },
@@ -525,7 +527,7 @@ impl PySQLxStatement {
         let mut new_params = Vec::new();
 
         for (idx, sql_pos) in param_positions {
-            let value = converted_params.get(&sql_pos.old_key).unwrap();
+            let value = converted_params.get(&sql_pos.key).unwrap();
             new_sql = new_sql.replace(
                 sql_pos.new_key.as_str(),
                 Self::provider_param(provider, idx).as_str(),
@@ -546,6 +548,11 @@ impl PySQLxStatement {
 
     pub fn get_params(&self) -> Vec<Value> {
         self.params.iter().map(|v| v.clone().to_value()).collect()
+    }
+
+    pub fn prepared_sql(&self) -> (String, Vec<Value>) {
+        let params = self.get_params();
+        (self.get_sql(), params)
     }
 }
 

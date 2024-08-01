@@ -1,3 +1,7 @@
+use std::env::set_var;
+use std::env::var;
+
+use database::tokio_runtime;
 use database::Connection;
 use py_types::{PySQLxError, PySQLxInvalidParamError, PySQLxResponse, PySQLxStatement};
 
@@ -17,9 +21,27 @@ pub fn get_version() -> String {
 
 #[pyfunction]
 async fn new(uri: String) -> PyResult<Connection> {
-    match Connection::new(uri).await {
+    match tokio_runtime().spawn(Connection::new(uri)).await.unwrap() {
         Ok(r) => Ok(r),
         Err(e) => Err(e.to_pyerr()),
+    }
+}
+
+fn activate_log() {
+    for (k, v) in vec![
+        ("PYSQL_CORE_INFO", "info"),
+        ("PYSQL_CORE_DEBUG", "debug"),
+        ("PYSQL_CORE_TRACE", "trace"),
+    ]
+    .iter()
+    {
+        match var(k) {
+            Ok(_) => {
+                set_var("RUST_LOG", v);
+                return;
+            }
+            Err(_) => {}
+        }
     }
 }
 
@@ -33,6 +55,7 @@ fn pysqlx_core(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySQLxInvalidParamError>()?;
     m.add_class::<PySQLxStatement>()?;
 
+    activate_log();
     pyo3_log::init();
 
     Ok(())

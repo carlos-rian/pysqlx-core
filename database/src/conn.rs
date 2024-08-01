@@ -7,6 +7,8 @@ use quaint::connector::IsolationLevel;
 use quaint::prelude::*;
 use quaint::single::Quaint;
 
+use crate::tokio_runtime;
+
 #[pyclass]
 #[derive(Debug, Clone)]
 pub struct Connection {
@@ -112,49 +114,69 @@ impl Connection {
     #[pyo3(signature=(stmt))]
     pub async fn query_typed(&self, stmt: PySQLxStatement) -> PyResult<PySQLxResponse> {
         let slf = self.clone();
-        let (sql, params) = (stmt.get_sql(), stmt.get_params());
-        let res = match slf._query_typed(sql.as_str(), params.as_slice()).await {
-            Ok(r) => r,
-            Err(e) => return Err(e.to_pyerr()),
-        };
+        tokio_runtime()
+            .spawn(async move {
+                let (sql, params) = stmt.prepared_sql();
+                let res = match slf._query_typed(sql.as_str(), params.as_slice()).await {
+                    Ok(r) => r,
+                    Err(e) => return Err(e.to_pyerr()),
+                };
 
-        Python::with_gil(|_py| Ok(res))
+                Python::with_gil(|_py| Ok(res))
+            })
+            .await
+            .unwrap()
     }
 
     #[pyo3(signature=(stmt))]
     pub async fn execute(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        let (sql, params) = (stmt.get_sql(), stmt.get_params());
-        let res = match slf._execute(sql.as_str(), params.as_slice()).await {
-            Ok(r) => r,
-            Err(e) => return Err(e.to_pyerr()),
-        };
+        tokio_runtime()
+            .spawn(async move {
+                let (sql, params) = stmt.prepared_sql();
+                let res = match slf._execute(sql.as_str(), params.as_slice()).await {
+                    Ok(r) => r,
+                    Err(e) => return Err(e.to_pyerr()),
+                };
 
-        Python::with_gil(|py| Ok(res.to_object(py)))
+                Python::with_gil(|py| Ok(res.to_object(py)))
+            })
+            .await
+            .unwrap()
     }
 
     #[pyo3(signature=(stmt))]
     pub async fn query_all(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        let (sql, params) = (stmt.get_sql(), stmt.get_params());
-        let res = match slf._query_all(sql.as_str(), params.as_slice()).await {
-            Ok(r) => r,
-            Err(e) => return Err(e.to_pyerr()),
-        };
+        tokio_runtime()
+            .spawn(async move {
+                let (sql, p) = stmt.prepared_sql();
+                let res = match slf._query_all(sql.as_str(), p.as_slice()).await {
+                    Ok(r) => r,
+                    Err(e) => return Err(e.to_pyerr()),
+                };
 
-        Python::with_gil(|py| Ok(res.to_object(py)))
+                Python::with_gil(|py| Ok(res.to_object(py)))
+            })
+            .await
+            .unwrap()
     }
 
     #[pyo3(signature=(stmt))]
     pub async fn query_one(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        let (sql, params) = (stmt.get_sql(), stmt.get_params());
-        let res = match slf._quert_one(sql.as_str(), params.as_slice()).await {
-            Ok(r) => r,
-            Err(e) => return Err(e.to_pyerr()),
-        };
+        tokio_runtime()
+            .spawn(async move {
+                let (sql, params) = (stmt.get_sql(), stmt.get_params());
+                let res = match slf._quert_one(sql.as_str(), params.as_slice()).await {
+                    Ok(r) => r,
+                    Err(e) => return Err(e.to_pyerr()),
+                };
 
-        Python::with_gil(|py| Ok(res.to_object(py)))
+                Python::with_gil(|py| Ok(res.to_object(py)))
+            })
+            .await
+            .unwrap()
     }
 
     pub fn is_healthy(&self) -> bool {
@@ -168,29 +190,44 @@ impl Connection {
     #[pyo3(signature=(stmt))]
     pub async fn raw_cmd(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        let (sql, _) = (stmt.get_sql(), stmt.get_params());
-        match slf._raw_cmd(sql.as_str()).await {
-            Ok(_) => Python::with_gil(|py| Ok(py.None())),
-            Err(e) => Err(e.to_pyerr()),
-        }
+        tokio_runtime()
+            .spawn(async move {
+                let (sql, _) = (stmt.get_sql(), stmt.get_params());
+                match slf._raw_cmd(sql.as_str()).await {
+                    Ok(_) => Python::with_gil(|py| Ok(py.None())),
+                    Err(e) => Err(e.to_pyerr()),
+                }
+            })
+            .await
+            .unwrap()
     }
 
     #[pyo3(signature=(isolation_level))]
     pub async fn set_isolation_level(&self, isolation_level: String) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        match slf._set_isolation_level(isolation_level).await {
-            Ok(_) => Python::with_gil(|py| Ok(py.None())),
-            Err(e) => Err(e.to_pyerr()),
-        }
+        tokio_runtime()
+            .spawn(async move {
+                match slf._set_isolation_level(isolation_level).await {
+                    Ok(_) => Python::with_gil(|py| Ok(py.None())),
+                    Err(e) => Err(e.to_pyerr()),
+                }
+            })
+            .await
+            .unwrap()
     }
 
     #[pyo3(signature=(isolation_level = None))]
     pub async fn start_transaction(&self, isolation_level: Option<String>) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        match slf._start_transaction(isolation_level).await {
-            Ok(_) => Python::with_gil(|py| Ok(py.None())),
-            Err(e) => Err(e.to_pyerr()),
-        }
+        tokio_runtime()
+            .spawn(async move {
+                match slf._start_transaction(isolation_level).await {
+                    Ok(_) => Python::with_gil(|py| Ok(py.None())),
+                    Err(e) => Err(e.to_pyerr()),
+                }
+            })
+            .await
+            .unwrap()
     }
 }
 

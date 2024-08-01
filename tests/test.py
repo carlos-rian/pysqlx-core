@@ -43,7 +43,7 @@ async def sqlite():
         )
         assert row_affected == 1
 
-    result = await conn.query(
+    result = await conn.query_typed(
         PySQLxStatement(provider="sqlite", sql="SELECT * FROM users")
     )
     pprint(result.get_all())

@@ -25,8 +25,8 @@ python-source = "pysqlx_core"
 
 [dependencies]
 pyo3 = { version = "0.22", features = ["extension-module", "experimental-async"] }
-env_logger = "0.11.5"
-pyo3-log = "0.11.0"
+pyo3-log = "0.11"
+tokio = "1.29"
 
 # my packages
 py_types = { path = "py_types"}
