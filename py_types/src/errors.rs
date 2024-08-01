@@ -22,8 +22,8 @@ impl ToPyObject for DBError {
     }
 }
 
-impl<'a> FromPyObject<'a> for DBError {
-    fn extract(ob: &PyAny) -> PyResult<Self> {
+/*impl FromPyObject<'_> for DBError {
+    fn extract(ob: &Bound<'_, &PyAny>) -> PyResult<Self> {
         let s = ob.extract::<String>()?;
         match s.as_str() {
             "QueryError" => Ok(DBError::QueryError),
@@ -38,7 +38,7 @@ impl<'a> FromPyObject<'a> for DBError {
             ))),
         }
     }
-}
+}*/
 
 impl Display for DBError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -62,9 +62,7 @@ pub struct PySQLxError {
     pub error: DBError,
 }
 
-#[pymethods]
 impl PySQLxError {
-    #[new]
     pub fn py_new(code: String, message: String, error: DBError) -> Self {
         Self {
             code,
@@ -72,7 +70,10 @@ impl PySQLxError {
             error,
         }
     }
+}
 
+#[pymethods]
+impl PySQLxError {
     pub fn __str__(&self) -> String {
         format!(
             "PySQLxError(code='{}', message='{}', error='{}')",

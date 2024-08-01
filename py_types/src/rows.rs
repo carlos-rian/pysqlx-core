@@ -72,7 +72,7 @@ impl PySQLxResult {
         let first_row = self.rows().get(0);
         match first_row {
             Some(row) => row.to_object(py),
-            None => PyDict::new(py).to_object(py),
+            None => PyDict::new_bound(py).to_object(py),
         }
     }
 

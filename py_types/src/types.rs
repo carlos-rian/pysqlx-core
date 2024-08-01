@@ -1,8 +1,7 @@
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use pyo3::prelude::*;
-use pyo3::types::{PyAny, PyDict, PyType};
-use pyo3::types::{PyBytes, PyModule, PyTuple};
-use pyo3::{intern, pyclass, PyObject, PyResult, Python, ToPyObject};
+use pyo3::types::{PyAny, PyAnyMethods, PyBytes, PyDict, PyModule, PyTuple, PyType, PyTypeMethods};
+use pyo3::{intern, pyclass, Bound, PyObject, PyResult, Python, ToPyObject};
 use quaint::ast::EnumVariant;
 use quaint::{Value, ValueType};
 use serde::{Deserialize, Serialize};
@@ -14,6 +13,10 @@ use uuid::Uuid;
 use crate::errors::PySQLxInvalidParamError;
 // this type is a placeholder for the actual type
 type PyValueArray = Vec<PySQLxValue>;
+
+fn get_python_type_name(value: &Bound<'_, PyAny>) -> String {
+    value.get_type().qualname().unwrap().to_string()
+}
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[serde(untagged)]
@@ -111,7 +114,7 @@ impl<'a> ToPyObject for PySQLxValue {
                 for item in l {
                     list.push(item.to_object(py));
                 }
-                PyTuple::new(py, &list).to_object(py)
+                PyTuple::new_bound(py, &list).to_object(py)
             }
             PySQLxValue::Int(i) => i.to_object(py),
             PySQLxValue::Array(l) => {
@@ -119,7 +122,7 @@ impl<'a> ToPyObject for PySQLxValue {
                 for item in l {
                     list.push(item.to_object(py));
                 }
-                PyTuple::new(py, &list).to_object(py)
+                PyTuple::new_bound(py, &list).to_object(py)
             }
             PySQLxValue::Json(s) => PySQLxStatement::json_value_to_pyobject(py, s).unwrap(),
             PySQLxValue::Xml(s) => s.to_object(py),
@@ -128,7 +131,7 @@ impl<'a> ToPyObject for PySQLxValue {
             PySQLxValue::Date(s) => s.to_object(py),
             PySQLxValue::DateTime(s) => s.to_object(py),
             PySQLxValue::Float(f) => f.to_object(py),
-            PySQLxValue::Bytes(b) => PyBytes::new(py, b).to_object(py),
+            PySQLxValue::Bytes(b) => PyBytes::new_bound(py, b).to_object(py),
             PySQLxValue::Null => py.None(),
         }
     }
@@ -192,7 +195,7 @@ impl PySQLxStatement {
             JsonValue::Bool(b) => Ok(b.to_object(py)),
             JsonValue::Null => Ok(py.None()),
             JsonValue::Object(map) => {
-                let dict = PyDict::new(py);
+                let dict = PyDict::new_bound(py);
                 for (key, value) in map {
                     dict.set_item(key, Self::json_value_to_pyobject(py, value)?)?;
                 }
@@ -209,76 +212,80 @@ impl PySQLxStatement {
     }
 
     fn convert_to_py_uuid(py: Python, r_uuid: String) -> PyResult<PyObject> {
-        let uuid_module = PyModule::import(py, "uuid")?;
-        let py_uuid = uuid_module.getattr("UUID")?.call1((r_uuid,))?;
+        let uuid_module = PyModule::import_bound(py, "uuid")?;
+        let py_uuid = uuid_module
+            .getattr("UUID")
+            .unwrap()
+            .call1((r_uuid,))
+            .unwrap();
         Ok(py_uuid.to_object(py))
     }
 
-    fn convert_to_rs_uuid(py: Python, value: PyObject) -> Uuid {
-        let py_uuid = &value.extract::<String>(py).unwrap();
+    fn convert_to_rs_uuid(value: &Bound<'_, PyAny>) -> Uuid {
+        let py_uuid = value.to_string();
         Uuid::parse_str(&py_uuid).unwrap()
     }
 
     fn convert_json_pyobject_to_serde_value(
         py: Python,
-        value: PyObject,
+        value: &Bound<'_, PyAny>,
     ) -> Result<JsonValue, PySQLxInvalidParamError> {
         // the could be a PyDict, PyList, bool, int, float, str or None
-        match value.as_ref(py).get_type().name().unwrap() {
+        match get_python_type_name(value).as_str() {
             "dict" => {
-                let dict = value.extract::<HashMap<String, PyObject>>(py).unwrap();
+                let dict = value.extract::<HashMap<String, Bound<PyAny>>>().unwrap();
                 let mut map = serde_json::Map::new();
                 for (key, value) in dict {
-                    let v = Self::convert_json_pyobject_to_serde_value(py, value).unwrap();
+                    let v = Self::convert_json_pyobject_to_serde_value(py, &value).unwrap();
                     map.insert(key, v);
                 }
                 Ok(JsonValue::Object(map))
             }
             "list" | "tuple" => {
-                let list = value.extract::<Vec<PyObject>>(py).unwrap();
+                let list = value.extract::<Vec<Bound<PyAny>>>().unwrap();
                 let mut vec = Vec::new();
                 for item in list {
-                    vec.push(Self::convert_json_pyobject_to_serde_value(py, item).unwrap());
+                    vec.push(Self::convert_json_pyobject_to_serde_value(py, &item).unwrap());
                 }
                 Ok(JsonValue::Array(vec))
             }
-            "bool" => Ok(JsonValue::Bool(value.extract::<bool>(py).unwrap())),
+            "bool" => Ok(JsonValue::Bool(value.extract::<bool>().unwrap())),
             "int" => Ok(JsonValue::Number(serde_json::Number::from(
-                value.extract::<i64>(py).unwrap(),
+                value.extract::<i64>().unwrap(),
             ))),
             "float" => Ok(JsonValue::Number(
-                serde_json::Number::from_f64(value.extract::<f64>(py).unwrap()).unwrap(),
+                serde_json::Number::from_f64(value.extract::<f64>().unwrap()).unwrap(),
             )),
-            "str" => Ok(JsonValue::String(value.extract::<String>(py).unwrap())),
+            "str" => Ok(JsonValue::String(value.extract::<String>().unwrap())),
             "date" => {
-                let date: NaiveDate = value.extract::<NaiveDate>(py).unwrap();
+                let date: NaiveDate = value.extract::<NaiveDate>().unwrap();
                 Ok(JsonValue::String(date.to_string()))
             }
             "time" => {
-                let time: NaiveTime = value.extract::<NaiveTime>(py).unwrap();
+                let time: NaiveTime = value.extract::<NaiveTime>().unwrap();
                 Ok(JsonValue::String(time.to_string()))
             }
             "datetime" => {
-                let datetime: DateTime<Utc> = Self::convert_to_datetime(py, value);
+                let datetime: DateTime<Utc> = Self::convert_to_datetime(value);
                 Ok(JsonValue::String(datetime.to_rfc3339()))
             }
             "uuid" => {
-                let rs_uuid = Self::convert_to_rs_uuid(py, value);
+                let rs_uuid = Self::convert_to_rs_uuid(value);
                 Ok(JsonValue::String(rs_uuid.to_string()))
             }
             "bytes" => {
-                let bytes = value.extract::<Vec<u8>>(py).unwrap();
+                let bytes = value.extract::<Vec<u8>>().unwrap();
                 Ok(JsonValue::String(base64::encode(bytes)))
             }
             "decimal" => {
-                let decimal = value.extract::<String>(py).unwrap();
+                let decimal = value.extract::<String>().unwrap();
                 Ok(JsonValue::String(decimal))
             }
             "enum" => {
                 let enum_value = value
-                    .getattr(py, intern!(py, "value"))
+                    .getattr(intern!(py, "value"))
                     .unwrap()
-                    .extract::<String>(py)
+                    .extract::<String>()
                     .unwrap();
                 Ok(JsonValue::String(enum_value))
             }
@@ -291,31 +298,31 @@ impl PySQLxStatement {
         }
     }
 
-    fn convert_to_datetime(py: Python, value: PyObject) -> DateTime<Utc> {
-        match value.extract::<DateTime<Utc>>(py) {
+    fn convert_to_datetime(value: &Bound<'_, PyAny>) -> DateTime<Utc> {
+        match value.extract::<DateTime<Utc>>() {
             //datetime with timezone
             Ok(v) => v,
             Err(_) => {
-                let naive_dt = value.extract::<NaiveDateTime>(py).unwrap();
+                let naive_dt = value.extract::<NaiveDateTime>().unwrap();
                 //datetime without timezone
                 DateTime::<Utc>::from_utc(naive_dt, Utc)
             }
         }
     }
 
-    fn is_number_instance(obj: &PyAny) -> bool {
-        match obj.get_type().name() {
-            Ok(name) => name == "int" || name == "float",
-            Err(_) => false,
+    fn is_number_instance(value: &Bound<'_, PyAny>) -> bool {
+        match get_python_type_name(value).as_str() {
+            "int" | "float" => true,
+            _ => false,
         }
     }
 
     fn convert_enum_to_string(
         py: Python,
-        value: PyObject,
+        value: &Bound<'_, PyAny>,
     ) -> Result<String, PySQLxInvalidParamError> {
-        let enum_value = value.as_ref(py).getattr(intern!(py, "value")).unwrap();
-        let enum_name = value.as_ref(py).getattr(intern!(py, "name")).unwrap();
+        let enum_name = value.as_ref().getattr(intern!(py, "name")).unwrap();
+        let enum_value = value.as_ref().getattr(intern!(py, "value")).unwrap();
 
         log::debug!(
             "converting Enum(name={}({:?}), value={}({:?})",
@@ -347,15 +354,11 @@ impl PySQLxStatement {
     fn convert_pyobject_to_pysqlx_value(
         py: Python,
         kind: PySQLxParamKind,
-        value: PyObject,
+        value: &Bound<'_, PyAny>,
     ) -> Result<PySQLxValue, PySQLxInvalidParamError> {
         match kind {
-            PySQLxParamKind::Boolean => {
-                Ok(PySQLxValue::Boolean(value.extract::<bool>(py).unwrap()))
-            }
-            PySQLxParamKind::String => {
-                Ok(PySQLxValue::String(value.extract::<String>(py).unwrap()))
-            }
+            PySQLxParamKind::Boolean => Ok(PySQLxValue::Boolean(value.extract::<bool>().unwrap())),
+            PySQLxParamKind::String => Ok(PySQLxValue::String(value.extract::<String>().unwrap())),
             PySQLxParamKind::Enum => Ok(PySQLxValue::Enum(
                 match Self::convert_enum_to_string(py, value) {
                     Ok(v) => v,
@@ -363,10 +366,10 @@ impl PySQLxStatement {
                 },
             )),
             PySQLxParamKind::EnumArray => {
-                let list = value.extract::<Vec<PyObject>>(py).unwrap();
+                let list = value.extract::<Vec<Bound<PyAny>>>().unwrap();
                 let mut enum_list = Vec::new();
                 for item in list {
-                    enum_list.push(match Self::convert_enum_to_string(py, item.clone_ref(py)) {
+                    enum_list.push(match Self::convert_enum_to_string(py, &item) {
                         Ok(v) => v,
                         Err(e) => return Err(e),
                     });
@@ -374,13 +377,13 @@ impl PySQLxStatement {
 
                 Ok(PySQLxValue::EnumArray(enum_list))
             }
-            PySQLxParamKind::Int => Ok(PySQLxValue::Int(value.extract::<i64>(py).unwrap())),
+            PySQLxParamKind::Int => Ok(PySQLxValue::Int(value.extract::<i64>().unwrap())),
             PySQLxParamKind::Array => {
-                let list = value.extract::<Vec<PyObject>>(py).unwrap();
+                let list = value.extract::<Vec<Bound<PyAny>>>().unwrap();
                 let mut pysqlx_list = Vec::new();
                 for item in list {
                     pysqlx_list.push(
-                        match Self::convert_pyobject_to_pysqlx_value(py, kind.clone(), item) {
+                        match Self::convert_pyobject_to_pysqlx_value(py, kind.clone(), &item) {
                             Ok(v) => v,
                             Err(e) => return Err(e),
                         },
@@ -394,18 +397,18 @@ impl PySQLxStatement {
                     Err(e) => return Err(e),
                 },
             )),
-            PySQLxParamKind::Xml => Ok(PySQLxValue::Xml(value.extract::<String>(py).unwrap())),
+            PySQLxParamKind::Xml => Ok(PySQLxValue::Xml(value.extract::<String>().unwrap())),
             PySQLxParamKind::Uuid => {
-                let rs_uuid = Self::convert_to_rs_uuid(py, value);
+                let rs_uuid = Self::convert_to_rs_uuid(value);
                 Ok(PySQLxValue::Uuid(rs_uuid))
             }
-            PySQLxParamKind::Time => Ok(PySQLxValue::Time(value.extract::<NaiveTime>(py).unwrap())),
-            PySQLxParamKind::Date => Ok(PySQLxValue::Date(value.extract::<NaiveDate>(py).unwrap())),
+            PySQLxParamKind::Time => Ok(PySQLxValue::Time(value.extract::<NaiveTime>().unwrap())),
+            PySQLxParamKind::Date => Ok(PySQLxValue::Date(value.extract::<NaiveDate>().unwrap())),
             PySQLxParamKind::DateTime => {
-                Ok(PySQLxValue::DateTime(Self::convert_to_datetime(py, value)))
+                Ok(PySQLxValue::DateTime(Self::convert_to_datetime(value)))
             }
-            PySQLxParamKind::Float => Ok(PySQLxValue::Float(value.extract::<f64>(py).unwrap())),
-            PySQLxParamKind::Bytes => Ok(PySQLxValue::Bytes(value.extract::<Vec<u8>>(py).unwrap())),
+            PySQLxParamKind::Float => Ok(PySQLxValue::Float(value.extract::<f64>().unwrap())),
+            PySQLxParamKind::Bytes => Ok(PySQLxValue::Bytes(value.extract::<Vec<u8>>().unwrap())),
             PySQLxParamKind::Null => Ok(PySQLxValue::Null),
             PySQLxParamKind::UnsupportedType(t) => Err(PySQLxInvalidParamError::py_new(
                 t,
@@ -417,12 +420,12 @@ impl PySQLxStatement {
 
     fn convert_to_pysqlx_value(
         py: Python,
-        values: &HashMap<String, PyObject>,
+        values: &HashMap<String, Bound<PyAny>>,
     ) -> Result<HashMap<String, PySQLxValue>, PySQLxInvalidParamError> {
         let mut params = HashMap::new();
         for (key, value) in values {
             let kind = PySQLxParamKind::from(py, value);
-            match Self::convert_pyobject_to_pysqlx_value(py, kind, value.clone_ref(py)) {
+            match Self::convert_pyobject_to_pysqlx_value(py, kind, value) {
                 Ok(v) => {
                     params.insert(key.clone(), v);
                 }
@@ -475,7 +478,7 @@ impl PySQLxStatement {
     pub fn prepare_sql_typed<'a>(
         py: Python<'a>,
         sql: &String,
-        params: &HashMap<String, PyObject>,
+        params: &HashMap<String, Bound<PyAny>>,
         provider: &'a String,
     ) -> Result<(String, Vec<PySQLxValue>), PySQLxInvalidParamError> {
         if params.is_empty() {
@@ -484,7 +487,7 @@ impl PySQLxStatement {
         let mut new_sql = sql.clone();
         let mut new_params = Vec::new();
 
-        let converted_params = match Self::convert_to_pysqlx_value(py, &params) {
+        let converted_params = match Self::convert_to_pysqlx_value(py, params) {
             Ok(v) => v,
             Err(e) => return Err(e),
         };
@@ -514,11 +517,12 @@ impl PySQLxStatement {
 #[pymethods]
 impl PySQLxStatement {
     #[new]
+    #[pyo3(signature = (sql, provider, params = None))]
     fn py_new(
         py: Python,
         sql: String,
         provider: String,
-        params: Option<HashMap<String, PyObject>>,
+        params: Option<HashMap<String, Bound<PyAny>>>,
     ) -> PyResult<Self> {
         let (new_sql, new_params) =
             match Self::prepare_sql_typed(py, &sql, &params.unwrap_or(HashMap::new()), &provider) {
@@ -554,16 +558,12 @@ pub enum PySQLxParamKind {
 }
 
 impl PySQLxParamKind {
-    fn get_type_name(py: Python, value: &PyObject) -> String {
-        value.as_ref(py).get_type().name().unwrap().to_string()
-    }
-
-    fn is_enum_instance(py: Python, obj: PyObject) -> bool {
-        let enum_mod = PyModule::import(py, "enum").unwrap();
+    fn is_enum_instance(py: Python, obj: &Bound<'_, PyAny>) -> bool {
+        let enum_mod = PyModule::import_bound(py, "enum").unwrap();
         let enum_class = enum_mod.getattr("Enum").unwrap();
 
         if let Ok(enum_class) = enum_class.downcast::<PyType>() {
-            match obj.as_ref(py).is_instance(enum_class) {
+            match obj.as_ref().is_instance(enum_class) {
                 Ok(is_instance) => is_instance,
                 Err(_) => false,
             }
@@ -572,10 +572,10 @@ impl PySQLxParamKind {
         }
     }
 
-    fn validate_tuple_is_same_type(py: Python, tuple: &Vec<PyObject>) -> (bool, String) {
-        let kind = Self::get_type_name(py, &tuple[0]);
+    fn validate_tuple_is_same_type(tuple: &Vec<Bound<'_, PyAny>>) -> (bool, String) {
+        let kind = get_python_type_name(&tuple[0]);
         for (idx, item) in tuple.iter().enumerate().skip(1) {
-            let item_kind = Self::get_type_name(py, &item);
+            let item_kind = get_python_type_name(&item);
             if kind != item_kind {
                 //return (false, format!("the tuple must have the same type, the first item is a {} and the current item is a {}", kind, item_kind));
                 return (false, format!("The tuple must have the same type, the first item is a {} and the current item position {} is a {}", kind, idx, item_kind));
@@ -584,26 +584,26 @@ impl PySQLxParamKind {
         (true, String::new())
     }
 
-    fn from(py: Python, value: &PyObject) -> Self {
+    fn from(py: Python, value: &Bound<'_, PyAny>) -> Self {
         // kind string is python class Type name
-        match Self::get_type_name(py, value).as_str() {
+        match get_python_type_name(value).as_str() {
             "bool" => PySQLxParamKind::Boolean,
             "str" => PySQLxParamKind::String,
             "int" => PySQLxParamKind::Int,
             "tuple" => {
                 // check if the tuple is empty
-                let tuple = value.extract::<Vec<PyObject>>(py).unwrap();
+                let tuple = value.extract::<Vec<Bound<PyAny>>>().unwrap();
                 if tuple.is_empty() {
                     return PySQLxParamKind::Array;
                 }
 
                 // check if the tuple has the same type
-                let (is_same_type, msg) = Self::validate_tuple_is_same_type(py, &tuple);
+                let (is_same_type, msg) = Self::validate_tuple_is_same_type(&tuple);
                 if !is_same_type {
                     return PySQLxParamKind::UnsupportedType(msg);
                 }
 
-                if Self::is_enum_instance(py, tuple[0].clone_ref(py)) {
+                if Self::is_enum_instance(py, &tuple[0]) {
                     return PySQLxParamKind::EnumArray;
                 }
 
@@ -621,7 +621,7 @@ impl PySQLxParamKind {
             "none" => PySQLxParamKind::Null,
             "enum" => PySQLxParamKind::Enum,
             t => {
-                if Self::is_enum_instance(py, value.clone_ref(py)) {
+                if Self::is_enum_instance(py, &value) {
                     PySQLxParamKind::Enum
                 } else {
                     PySQLxParamKind::UnsupportedType(t.to_string())
