@@ -114,7 +114,7 @@ async def psql():
         )
         assert row_affected == 1
 
-    result = await conn.query(
+    result = await conn.query_typed(
         PySQLxStatement(provider="postgresql", sql="SELECT * FROM users")
     )
     pprint(result.get_all())

@@ -1,6 +1,6 @@
 use convert::convert_result_set;
 use convert::convert_result_set_as_list;
-use py_types::{py_error, DBError, PySQLxError, PySQLxResult, PySQLxStatement};
+use py_types::{py_error, DBError, PySQLxError, PySQLxResponse, PySQLxStatement};
 use py_types::{PySQLxRow, PySQLxRows};
 use pyo3::prelude::*;
 use quaint::connector::IsolationLevel;
@@ -13,9 +13,11 @@ pub struct Connection {
     conn: Quaint,
 }
 
+pub type PySQLxResult<T> = Result<T, PySQLxError>;
+
 impl Connection {
     // create a new connection using the given url
-    pub async fn new(uri: String) -> Result<Self, PySQLxError> {
+    pub async fn new(uri: String) -> PySQLxResult<Self> {
         let conn = match Quaint::new(uri.as_str()).await {
             Ok(r) => r,
             Err(e) => return Err(py_error(e, DBError::ConnectError)),
@@ -24,29 +26,21 @@ impl Connection {
     }
 
     // Execute a query given as SQL, interpolating the given parameters. return a PySQLXResult
-    async fn _query(&self, sql: &str, params: &[Value<'_>]) -> Result<PySQLxResult, PySQLxError> {
+    async fn _query_typed(&self, sql: &str, params: &[Value<'_>]) -> PySQLxResult<PySQLxResponse> {
         match self.conn.query_raw(sql, params).await {
             Ok(r) => Ok(convert_result_set(r)),
             Err(e) => Err(py_error(e, DBError::QueryError)),
         }
     }
     // Execute a query given as SQL, interpolating the given parameters. return a list of rows
-    async fn _query_as_list(
-        &self,
-        sql: &str,
-        params: &[Value<'_>],
-    ) -> Result<PySQLxRows, PySQLxError> {
+    async fn _query_all(&self, sql: &str, params: &[Value<'_>]) -> PySQLxResult<PySQLxRows> {
         match self.conn.query_raw(sql, params).await {
             Ok(r) => Ok(convert_result_set_as_list(r)),
             Err(e) => Err(py_error(e, DBError::QueryError)),
         }
     }
     // Execute a query given as SQL, interpolating the given parameters. return a dict of rows
-    async fn _query_first_as_dict(
-        &self,
-        sql: &str,
-        params: &[Value<'_>],
-    ) -> Result<PySQLxRow, PySQLxError> {
+    async fn _quert_one(&self, sql: &str, params: &[Value<'_>]) -> PySQLxResult<PySQLxRow> {
         match self.conn.query_raw(sql, params).await {
             Ok(r) => {
                 let rows = convert_result_set_as_list(r);
@@ -59,21 +53,21 @@ impl Connection {
         }
     }
     // Execute a query given as SQL, interpolating the given parameters and returning the number of affected rows.
-    async fn _execute(&self, sql: &str, params: &[Value<'_>]) -> Result<u64, PySQLxError> {
+    async fn _execute(&self, sql: &str, params: &[Value<'_>]) -> PySQLxResult<u64> {
         match self.conn.execute_raw(sql, params).await {
             Ok(r) => Ok(r),
             Err(e) => Err(py_error(e, DBError::ExecuteError)),
         }
     }
     // Run a command in the database, for queries that can't be run using prepared statements.
-    async fn _raw_cmd(&self, sql: &str) -> Result<(), PySQLxError> {
+    async fn _raw_cmd(&self, sql: &str) -> PySQLxResult<()> {
         match self.conn.raw_cmd(sql).await {
             Ok(_) => Ok(()),
             Err(e) => Err(py_error(e, DBError::RawCmdError)),
         }
     }
     // return the isolation level
-    fn get_isolation_level(&self, isolation_level: String) -> Result<IsolationLevel, PySQLxError> {
+    fn get_isolation_level(&self, isolation_level: String) -> PySQLxResult<IsolationLevel> {
         match isolation_level.to_uppercase().as_str() {
             "READUNCOMMITTED" => Ok(IsolationLevel::ReadUncommitted),
             "READCOMMITTED" => Ok(IsolationLevel::ReadCommitted),
@@ -91,7 +85,7 @@ impl Connection {
     }
 
     // Sets the transaction isolation level to given value. Implementers have to make sure that the passed isolation level is valid for the underlying database.
-    async fn _set_isolation_level(&self, isolation_level: String) -> Result<(), PySQLxError> {
+    async fn _set_isolation_level(&self, isolation_level: String) -> PySQLxResult<()> {
         let level = self.get_isolation_level(isolation_level)?;
         match self.conn.set_tx_isolation_level(level).await {
             Ok(_) => Ok(()),
@@ -100,7 +94,7 @@ impl Connection {
     }
 
     // Start a new transaction.
-    async fn _start_transaction(&self, isolation_level: Option<String>) -> Result<(), PySQLxError> {
+    async fn _start_transaction(&self, isolation_level: Option<String>) -> PySQLxResult<()> {
         let level = match isolation_level {
             Some(l) => Some(self.get_isolation_level(l)?),
             None => None,
@@ -111,99 +105,56 @@ impl Connection {
             Err(e) => Err(py_error(e, DBError::StartTransactionError)),
         }
     }
-
-    // provider
-    pub fn provider(&self) -> String {
-        self.conn
-            .connection_info()
-            .sql_family()
-            .to_string()
-            .to_lowercase()
-    }
 }
 
 #[pymethods]
 impl Connection {
-    pub async fn query<'a>(
-        &self,
-        py: Python<'a>,
-        statement: PySQLxStatement,
-    ) -> PyResult<&'a PyAny> {
+    #[pyo3(signature=(stmt))]
+    pub async fn query_typed(&self, stmt: PySQLxStatement) -> PyResult<PySQLxResponse> {
         let slf = self.clone();
-        match slf
-            ._query(
-                statement.get_sql().as_str(),
-                statement.get_params().as_slice(),
-            )
-            .await
-        {
-            Ok(r) => Ok(r),
-            Err(e) => Err(e.to_pyerr()),
-        }
+        let (sql, params) = (stmt.get_sql(), stmt.get_params());
+        let res = match slf._query_typed(sql.as_str(), params.as_slice()).await {
+            Ok(r) => r,
+            Err(e) => return Err(e.to_pyerr()),
+        };
+
+        Python::with_gil(|_py| Ok(res))
     }
 
-    pub fn execute<'a>(&self, py: Python<'a>, statement: PySQLxStatement) -> PyResult<&'a PyAny> {
+    #[pyo3(signature=(stmt))]
+    pub async fn execute(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf
-                ._execute(
-                    statement.get_sql().as_str(),
-                    statement.get_params().as_slice(),
-                )
-                .await
-            {
-                Ok(r) => Python::with_gil(|py| Ok(r.to_object(py))),
-                Err(e) => Err(e.to_pyerr()),
-            }
-        })
+        let (sql, params) = (stmt.get_sql(), stmt.get_params());
+        let res = match slf._execute(sql.as_str(), params.as_slice()).await {
+            Ok(r) => r,
+            Err(e) => return Err(e.to_pyerr()),
+        };
+
+        Python::with_gil(|py| Ok(res.to_object(py)))
     }
 
-    pub fn query_as_list<'a>(
-        &self,
-        py: Python<'a>,
-        statement: PySQLxStatement,
-    ) -> PyResult<&'a PyAny> {
+    #[pyo3(signature=(stmt))]
+    pub async fn query_all(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let rows = match slf
-                ._query_as_list(
-                    statement.get_sql().as_str(),
-                    statement.get_params().as_slice(),
-                )
-                .await
-            {
-                Ok(r) => r,
-                Err(e) => return Err(e.to_pyerr()),
-            };
-            Python::with_gil(|py| {
-                let pyrows = rows.to_object(py);
-                Ok(pyrows)
-            })
-        })
+        let (sql, params) = (stmt.get_sql(), stmt.get_params());
+        let res = match slf._query_all(sql.as_str(), params.as_slice()).await {
+            Ok(r) => r,
+            Err(e) => return Err(e.to_pyerr()),
+        };
+
+        Python::with_gil(|py| Ok(res.to_object(py)))
     }
 
-    pub fn query_first_as_dict<'a>(
-        &self,
-        py: Python<'a>,
-        statement: PySQLxStatement,
-    ) -> PyResult<&'a PyAny> {
+    #[pyo3(signature=(stmt))]
+    pub async fn query_one(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            let row = match slf
-                ._query_first_as_dict(
-                    statement.get_sql().as_str(),
-                    statement.get_params().as_slice(),
-                )
-                .await
-            {
-                Ok(r) => r,
-                Err(e) => return Err(e.to_pyerr()),
-            };
-            Python::with_gil(|py| {
-                let pyrow = row.to_object(py);
-                Ok(pyrow)
-            })
-        })
+        let (sql, params) = (stmt.get_sql(), stmt.get_params());
+        let res = match slf._quert_one(sql.as_str(), params.as_slice()).await {
+            Ok(r) => r,
+            Err(e) => return Err(e.to_pyerr()),
+        };
+
+        Python::with_gil(|py| Ok(res.to_object(py)))
     }
 
     pub fn is_healthy(&self) -> bool {
@@ -214,42 +165,32 @@ impl Connection {
         self.conn.requires_isolation_first()
     }
 
-    pub fn raw_cmd<'a>(&mut self, py: Python<'a>, sql: String) -> PyResult<&'a PyAny> {
+    #[pyo3(signature=(stmt))]
+    pub async fn raw_cmd(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf._raw_cmd(sql.as_str()).await {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e.to_pyerr()),
-            }
-        })
+        let (sql, _) = (stmt.get_sql(), stmt.get_params());
+        match slf._raw_cmd(sql.as_str()).await {
+            Ok(_) => Python::with_gil(|py| Ok(py.None())),
+            Err(e) => Err(e.to_pyerr()),
+        }
     }
 
-    pub fn set_isolation_level<'a>(
-        &mut self,
-        py: Python<'a>,
-        isolation_level: String,
-    ) -> PyResult<&'a PyAny> {
+    #[pyo3(signature=(isolation_level))]
+    pub async fn set_isolation_level(&self, isolation_level: String) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf._set_isolation_level(isolation_level).await {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e.to_pyerr()),
-            }
-        })
+        match slf._set_isolation_level(isolation_level).await {
+            Ok(_) => Python::with_gil(|py| Ok(py.None())),
+            Err(e) => Err(e.to_pyerr()),
+        }
     }
 
-    pub fn start_transaction<'a>(
-        &mut self,
-        py: Python<'a>,
-        isolation_level: Option<String>,
-    ) -> PyResult<&'a PyAny> {
+    #[pyo3(signature=(isolation_level = None))]
+    pub async fn start_transaction(&self, isolation_level: Option<String>) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf._start_transaction(isolation_level).await {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e.to_pyerr()),
-            }
-        })
+        match slf._start_transaction(isolation_level).await {
+            Ok(_) => Python::with_gil(|py| Ok(py.None())),
+            Err(e) => Err(e.to_pyerr()),
+        }
     }
 }
 
@@ -265,7 +206,7 @@ mod tests {
             .await
             .unwrap();
         let res = conn
-            ._query("SELECT ? as number", &[Value::from(1)])
+            ._query_typed("SELECT ? as number", &[Value::from(1)])
             .await
             .unwrap();
         assert_eq!(res.rows().len(), 1);
@@ -280,7 +221,7 @@ mod tests {
             .unwrap();
 
         let res = conn
-            ._query("SELECT ?, ?", &[Value::from(1), Value::from(2)])
+            ._query_typed("SELECT ?, ?", &[Value::from(1), Value::from(2)])
             .await
             .unwrap();
 
@@ -296,7 +237,10 @@ mod tests {
         assert_eq!(res.types().get("col_0").unwrap(), "int");
         assert_eq!(res.types().get("col_1").unwrap(), "int");
 
-        let res = conn._query("SELECT -1.3, -453.32", &[]).await.unwrap();
+        let res = conn
+            ._query_typed("SELECT -1.3, -453.32", &[])
+            .await
+            .unwrap();
 
         assert_eq!(
             res.rows().get(0).unwrap().get("col_1_3").unwrap().clone(),
@@ -321,7 +265,7 @@ mod tests {
         let conn = Connection::new("file:///tmp/db.db".to_string())
             .await
             .unwrap();
-        let res = conn._query("SELECT * FROM InvalidTable", &[]).await;
+        let res = conn._query_typed("SELECT * FROM InvalidTable", &[]).await;
         assert!(res.is_err())
     }
 
@@ -369,10 +313,7 @@ mod tests {
             .unwrap();
         assert_eq!(res, 1);
 
-        let res = conn
-            ._query_as_list("SELECT * FROM test", &[])
-            .await
-            .unwrap();
+        let res = conn._query_all("SELECT * FROM test", &[]).await.unwrap();
         assert_eq!(res[0].get("id").unwrap(), &PySQLxValue::Int(1));
     }
 
@@ -381,7 +322,7 @@ mod tests {
         let conn = Connection::new("file:///tmp/db.db".to_string())
             .await
             .unwrap();
-        let res = conn._query_as_list("SELECT * FROM InvalidTable", &[]).await;
+        let res = conn._query_all("SELECT * FROM InvalidTable", &[]).await;
         assert!(res.is_err())
     }
 
@@ -402,10 +343,7 @@ mod tests {
             .unwrap();
         assert_eq!(res, 1);
 
-        let res = conn
-            ._query_first_as_dict("SELECT * FROM test", &[])
-            .await
-            .unwrap();
+        let res = conn._quert_one("SELECT * FROM test", &[]).await.unwrap();
         assert_eq!(res.get("id").unwrap(), &PySQLxValue::Int(1));
     }
 
@@ -421,7 +359,7 @@ mod tests {
         assert_eq!(res, 0);
 
         let res = conn
-            ._query_first_as_dict("SELECT * FROM test WHERE id = ?", &[Value::from(0)])
+            ._quert_one("SELECT * FROM test WHERE id = ?", &[Value::from(0)])
             .await
             .unwrap();
         assert_eq!(res.len(), 0);
@@ -432,9 +370,7 @@ mod tests {
         let conn = Connection::new("file:///tmp/db.db".to_string())
             .await
             .unwrap();
-        let res = conn
-            ._query_first_as_dict("SELECT * FROM InvalidTable", &[])
-            .await;
+        let res = conn._quert_one("SELECT * FROM InvalidTable", &[]).await;
         assert!(res.is_err())
     }
 

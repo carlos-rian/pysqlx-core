@@ -1,10 +1,9 @@
 use database::Connection;
-use py_types::{PySQLxError, PySQLxInvalidParamError, PySQLxResult, PySQLxStatement};
+use py_types::{PySQLxError, PySQLxInvalidParamError, PySQLxResponse, PySQLxStatement};
 
-use env_logger;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
-use std::env::{set_var, var};
+use pyo3_log;
 
 pub fn get_version() -> String {
     let version = env!("CARGO_PKG_VERSION").to_string();
@@ -17,45 +16,24 @@ pub fn get_version() -> String {
 }
 
 #[pyfunction]
-fn new(py: Python, uri: String) -> PyResult<&PyAny> {
-    pyo3_asyncio::tokio::future_into_py(py, async move {
-        match Connection::new(uri).await {
-            Ok(r) => Ok(r),
-            Err(e) => Err(e.to_pyerr()),
-        }
-    })
-}
-
-fn activate_log() {
-    for (k, v) in vec![
-        ("PYSQL_CORE_TRACE", "trace"),
-        ("PYSQL_CORE_DEBUG", "debug"),
-        ("PYSQL_CORE_INFO", "info"),
-    ]
-    .iter()
-    {
-        match var(k) {
-            Ok(_) => {
-                set_var("RUST_LOG", v);
-                env_logger::init();
-                return;
-            }
-            Err(_) => {}
-        }
+async fn new(uri: String) -> PyResult<Connection> {
+    match Connection::new(uri).await {
+        Ok(r) => Ok(r),
+        Err(e) => Err(e.to_pyerr()),
     }
 }
 
 #[pymodule]
-fn pysqlx_core(_py: Python, m: &PyModule) -> PyResult<()> {
+fn pysqlx_core(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", get_version())?;
     m.add_function(wrap_pyfunction!(new, m)?)?;
     m.add_class::<Connection>()?;
-    m.add_class::<PySQLxResult>()?;
+    m.add_class::<PySQLxResponse>()?;
     m.add_class::<PySQLxError>()?;
     m.add_class::<PySQLxInvalidParamError>()?;
     m.add_class::<PySQLxStatement>()?;
 
-    activate_log();
+    pyo3_log::init();
 
     Ok(())
 }

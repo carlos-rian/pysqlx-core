@@ -12,13 +12,13 @@ pub type PySQLxColumnTypes = HashMap<String, String>;
 
 #[pyclass]
 #[derive(Debug, Clone, Deserialize, PartialEq)]
-pub struct PySQLxResult {
+pub struct PySQLxResponse {
     pub rows: PySQLxRows,
     pub column_types: PySQLxColumnTypes,
     pub last_insert_id: Option<u64>,
 }
 
-impl PySQLxResult {
+impl PySQLxResponse {
     pub fn push(&mut self, row: PySQLxRow) {
         self.rows.push(row);
     }
@@ -36,7 +36,7 @@ impl PySQLxResult {
     }
 }
 
-impl Display for PySQLxResult {
+impl Display for PySQLxResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -46,7 +46,7 @@ impl Display for PySQLxResult {
     }
 }
 
-impl Default for PySQLxResult {
+impl Default for PySQLxResponse {
     fn default() -> Self {
         let rows: PySQLxRows = Vec::new();
         let column_types: PySQLxColumnTypes = HashMap::new();
@@ -59,7 +59,7 @@ impl Default for PySQLxResult {
 }
 
 #[pymethods]
-impl PySQLxResult {
+impl PySQLxResponse {
     pub fn get_types(&self, py: Python) -> PyObject {
         self.types().to_object(py)
     }
@@ -100,7 +100,7 @@ mod tests {
 
     #[test]
     fn test_py_sqlx_result() {
-        let mut result = PySQLxResult::default();
+        let mut result = PySQLxResponse::default();
         let mut row = HashMap::new();
         row.insert("id".to_string(), PySQLxValue::Int(1));
         row.insert("name".to_string(), PySQLxValue::String("John".to_string()));

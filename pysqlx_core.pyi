@@ -10,7 +10,7 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import Literal
 
-__all__ = ("__version__", "new", "Connection", "PySQLxError", "PySQLxResult")
+__all__ = ("__version__", "new", "Connection", "PySQLxError", "PySQLxResponse")
 __version__: str
 
 IsolationLevel = Literal[
@@ -114,9 +114,9 @@ class PySQLxStatement:
         params: Union[Dict[str, SupportedValueType], None],
     ) -> Self: ...
 
-class PySQLxResult:
+class PySQLxResponse:
     """
-    PySQLxResult is a class that represents the result of a query.
+    PySQLxResponse is a class that represents the result of a query.
     It is returned by the `query` method of the `Connection` class.
     """
 
@@ -163,7 +163,7 @@ class Connection:
         # Insert a row and return quantity rows affected
         await db.execute(sql="INSERT INTO test (name) VALUES ('Carlos');")
 
-        # Select all rows, return a class PySQLxResult
+        # Select all rows, return a class PySQLxResponse
         result = await db.query(sql="SELECT * FROM test;")
         # get first row
         row = result.get_first() # Dict[str, Any]
@@ -181,19 +181,19 @@ class Connection:
     ```
     """
 
-    async def query(self, statement: PySQLxStatement) -> "PySQLxResult":
-        """Returns a `PySQLxResult` object representing the result of the query."""
+    async def query_typed(self, stmt: PySQLxStatement) -> "PySQLxResponse":
+        """Returns a `PySQLxResponse` object representing the result of the query."""
         raise PySQLxError()
-    async def execute(self, statement: PySQLxStatement) -> "int":
+    async def execute(self, stmt: PySQLxStatement) -> "int":
         """Executes a query and returns the number of rows affected."""
         raise PySQLxError()
-    async def query_as_list(self, statement: PySQLxStatement) -> "List[Dict[str, Any]]":
+    async def query_all(self, stmt: PySQLxStatement) -> "List[Dict[str, Any]]":
         """Returns a list of dictionaries representing the rows of the query result."""
         raise PySQLxError()
-    async def query_first_as_dict(self, statement: PySQLxStatement) -> "Dict[str, Any]":
+    async def query_one(self, stmt: PySQLxStatement) -> "Dict[str, Any]":
         """Returns the first row of the query result as a dictionary."""
         raise PySQLxError()
-    async def raw_cmd(self, sql: str) -> "None":
+    async def raw_cmd(self, stmt: PySQLxStatement) -> "None":
         """Run a command in the database, for queries that can't be run using prepared statements."""
         raise PySQLxError()
     def is_healthy(self) -> "bool":

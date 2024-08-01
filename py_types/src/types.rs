@@ -1,16 +1,19 @@
+use crate::errors::PySQLxInvalidParamError;
+use crate::param::Params;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use log::debug;
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyAnyMethods, PyBytes, PyDict, PyModule, PyTuple, PyType, PyTypeMethods};
 use pyo3::{intern, pyclass, Bound, PyObject, PyResult, Python, ToPyObject};
 use quaint::ast::EnumVariant;
 use quaint::{Value, ValueType};
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use uuid::Uuid;
-
-use crate::errors::PySQLxInvalidParamError;
 // this type is a placeholder for the actual type
 type PyValueArray = Vec<PySQLxValue>;
 
@@ -137,6 +140,13 @@ impl<'a> ToPyObject for PySQLxValue {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+struct SQLPosition {
+    idx: i8,
+    new_key: String,
+    old_key: String,
+}
+
 // convert PySQLxValue to quaint::Value
 impl PySQLxValue {
     pub fn to_value(self) -> Value<'static> {
@@ -180,6 +190,21 @@ pub struct PySQLxStatement {
 }
 
 impl PySQLxStatement {
+    fn generate_random_string(length: usize, exist_keys: &Vec<String>) -> String {
+        // generate random string with length to replace the parameter in the query
+        let rand_string: String = thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(length)
+            .map(char::from)
+            .collect();
+        // check if the random string is already exist in the keys
+        if exist_keys.contains(&rand_string) {
+            // if exist, generate again with length + 1
+            return PySQLxStatement::generate_random_string(length + 1, &exist_keys);
+        }
+        format!(":{}", rand_string)
+    }
+
     fn json_value_to_pyobject(py: Python, value: &JsonValue) -> PyResult<PyObject> {
         match value {
             JsonValue::String(s) => Ok(s.to_object(py)),
@@ -436,35 +461,41 @@ impl PySQLxStatement {
         Ok(params)
     }
 
-    fn find_sql_param_position_based_on_key(
-        sql: &String,
-        param_keys: Vec<String>,
-    ) -> Vec<(i8, String)> {
-        // Find the position of the parameters in the SQL query
-        // i8 is the sequence of the parameter in the query
-        // for example, if the query is "SELECT * FROM table WHERE id = :x AND name = :y"
-        // the position of (0, "x") and (1, "y")
-        // if the param repeated in the query, the position will be different
-        // for example, if the query is "SELECT * FROM table WHERE id = :x AND name = :x"
-        // the position of (0, "x") and (1, "x")
-        // if the param is repeated and the query is "SELECT * FROM table WHERE id = :x AND name = :y AND id = :x"
-        // the position of (0, "x"), (1, "y"), and (2, "x")
-        let mut param_positions: Vec<(i8, String)> = Vec::new();
-        // start, end and key
-        let mut position: Vec<(usize, usize, String)> = Vec::new();
+    fn mapped_sql(sql: &str, mut param_keys: Vec<String>) -> (String, Vec<(i8, SQLPosition)>) {
+        let mut param_positions: Vec<(i8, SQLPosition)> = Vec::new();
+        param_keys.sort_by(|a, b| b.len().cmp(&a.len()));
+        let mut position: Vec<(usize, usize, String, String)> = Vec::new();
+        let mut exist_keys: Vec<String> = Vec::new();
+        let mut new_sql = sql.to_string();
+
         for key in param_keys {
             let k = format!(":{}", key.as_str());
-            let matches = sql.match_indices(k.as_str());
-            for (start, _) in matches {
-                let end = start + key.len();
-                position.push((start, end, key.clone()));
+            let temp = new_sql.clone();
+            let matches = temp.match_indices(k.as_str());
+            for (start, x) in matches {
+                debug!("key found: {}:{} -> {}", start, start + x.len(), k);
+                let new_key = PySQLxStatement::generate_random_string(7, &exist_keys);
+                exist_keys.push(new_key.clone());
+
+                new_sql = new_sql.replacen(&k, &new_key, 1);
+
+                let end = start + new_key.len();
+                position.push((start, end, k.clone(), new_key))
             }
         }
-        position.sort_by(|a: &(usize, usize, String), b: &(usize, usize, String)| a.0.cmp(&b.0));
-        for (idx, value) in position.iter().enumerate() {
-            param_positions.push((idx as i8, value.2.clone()));
+        position.sort_by(|a, b| a.0.cmp(&b.0));
+        for (idx, (_a, _b, old, new)) in position.iter().enumerate() {
+            param_positions.push((
+                idx as i8,
+                SQLPosition {
+                    idx: idx as i8,
+                    old_key: old.clone(),
+                    new_key: new.clone(),
+                },
+            ));
         }
-        param_positions
+        debug!("generated new sql with random keys: {}", new_sql);
+        (new_sql, param_positions)
     }
 
     fn provider_param(param: &String, idx: i8) -> String {
@@ -484,24 +515,28 @@ impl PySQLxStatement {
         if params.is_empty() {
             return Ok((sql.to_string(), Vec::new()));
         }
-        let mut new_sql = sql.clone();
-        let mut new_params = Vec::new();
 
         let converted_params = match Self::convert_to_pysqlx_value(py, params) {
             Ok(v) => v,
             Err(e) => return Err(e),
         };
-        let param_positions =
-            Self::find_sql_param_position_based_on_key(sql, params.keys().cloned().collect());
+        let (mut new_sql, param_positions) =
+            Self::mapped_sql(sql.as_str(), params.keys().cloned().collect());
+        let mut new_params = Vec::new();
 
-        for (idx, key) in param_positions {
-            let value = converted_params.get(&key).unwrap();
+        for (idx, sql_pos) in param_positions {
+            let value = converted_params.get(&sql_pos.old_key).unwrap();
             new_sql = new_sql.replace(
-                &format!(":{}", key),
+                sql_pos.new_key.as_str(),
                 Self::provider_param(provider, idx).as_str(),
             );
             new_params.push(value.clone());
         }
+        debug!(
+            "db.statement = {}, db.params = {}",
+            new_sql,
+            Params(&new_params.as_slice())
+        );
         Ok((new_sql, new_params))
     }
 
