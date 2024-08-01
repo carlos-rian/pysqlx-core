@@ -124,20 +124,22 @@ impl Connection {
 
 #[pymethods]
 impl Connection {
-    pub fn query<'a>(&self, py: Python<'a>, statement: PySQLxStatement) -> PyResult<&'a PyAny> {
+    pub async fn query<'a>(
+        &self,
+        py: Python<'a>,
+        statement: PySQLxStatement,
+    ) -> PyResult<&'a PyAny> {
         let slf = self.clone();
-        pyo3_asyncio::tokio::future_into_py(py, async move {
-            match slf
-                ._query(
-                    statement.get_sql().as_str(),
-                    statement.get_params().as_slice(),
-                )
-                .await
-            {
-                Ok(r) => Ok(r),
-                Err(e) => Err(e.to_pyerr()),
-            }
-        })
+        match slf
+            ._query(
+                statement.get_sql().as_str(),
+                statement.get_params().as_slice(),
+            )
+            .await
+        {
+            Ok(r) => Ok(r),
+            Err(e) => Err(e.to_pyerr()),
+        }
     }
 
     pub fn execute<'a>(&self, py: Python<'a>, statement: PySQLxStatement) -> PyResult<&'a PyAny> {
