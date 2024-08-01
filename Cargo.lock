@@ -1864,6 +1864,7 @@ dependencies = [
  "log",
  "pyo3",
  "quaint",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "uuid",
