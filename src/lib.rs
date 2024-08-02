@@ -28,26 +28,15 @@ async fn new(uri: String) -> PyResult<Connection> {
 }
 
 fn activate_log() {
-    for (k, v) in vec![
-        ("PYSQL_CORE_INFO", "info"),
-        ("PYSQL_CORE_DEBUG", "debug"),
-        ("PYSQL_CORE_TRACE", "trace"),
-    ]
-    .iter()
-    {
-        match var(k) {
-            Ok(_) => {
-                set_var("RUST_LOG", v);
-                return;
-            }
-            Err(_) => {}
-        }
+    if var("PYSQL_CORE_TRACE").is_ok() {
+        set_var("RUST_LOG", "trace");
     }
 }
 
 #[pymodule]
 fn pysqlx_core(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", get_version())?;
+
     m.add_function(wrap_pyfunction!(new, m)?)?;
     m.add_class::<Connection>()?;
     m.add_class::<PySQLxResponse>()?;
