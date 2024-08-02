@@ -2,13 +2,8 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, List, Self, Union
-import sys
 from uuid import UUID
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
+from typing import Literal
 
 __all__ = ("__version__", "new", "Connection", "PySQLxError", "PySQLxResponse")
 __version__: str
