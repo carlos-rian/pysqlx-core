@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from pysqlx_core import new, PySQLxStatement
-import asyncio
+import asyncio, trio, uvloop
 from pprint import pprint
 
 
@@ -129,4 +129,9 @@ async def main():
 
 
 if __name__ == "__main__":
+    # asyncio.run(main())
+
+    uvloop.install()
     asyncio.run(main())
+
+    # trio.run(main)
