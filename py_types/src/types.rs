@@ -405,7 +405,10 @@ impl PySQLxStatement {
             }
             PySQLxParamKind::Int => Ok(PySQLxValue::Int(value.extract::<i64>().unwrap())),
             PySQLxParamKind::Array => {
-                let list = value.extract::<Bound<PyTuple>>().unwrap();
+                let list = match value.extract::<Bound<PyTuple>>() {
+                    Ok(v) => v,
+                    Err(_) => value.extract::<Vec<Bound<PyAny>>>().unwrap(),
+                };
                 let mut pysqlx_list = Vec::new();
                 for item in list {
                     pysqlx_list.push(
