@@ -392,7 +392,7 @@ impl PySQLxStatement {
                 },
             )),
             PySQLxParamKind::EnumArray => {
-                let list = value.extract::<Vec<Bound<PyAny>>>().unwrap();
+                let list = value.extract::<Bound<PyTuple>>().unwrap();
                 let mut enum_list = Vec::new();
                 for item in list {
                     enum_list.push(match Self::convert_enum_to_string(py, &item) {
@@ -405,7 +405,7 @@ impl PySQLxStatement {
             }
             PySQLxParamKind::Int => Ok(PySQLxValue::Int(value.extract::<i64>().unwrap())),
             PySQLxParamKind::Array => {
-                let list = value.extract::<Vec<Bound<PyAny>>>().unwrap();
+                let list = value.extract::<Bound<PyTuple>>().unwrap();
                 let mut pysqlx_list = Vec::new();
                 for item in list {
                     pysqlx_list.push(
@@ -614,16 +614,17 @@ impl PySQLxParamKind {
         }
     }
 
-    fn validate_tuple_is_same_type(tuple: &Vec<Bound<'_, PyAny>>) -> (bool, String) {
-        let kind = get_python_type_name(&tuple[0]);
+    fn validate_tuple_is_same_type(py: Python, tuple: &Bound<PyTuple>) -> (bool, String, bool) {
+        let first_item = tuple.get_item(0).unwrap();
+        let kind = get_python_type_name(&first_item);
         for (idx, item) in tuple.iter().enumerate().skip(1) {
             let item_kind = get_python_type_name(&item);
             if kind != item_kind {
                 //return (false, format!("the tuple must have the same type, the first item is a {} and the current item is a {}", kind, item_kind));
-                return (false, format!("The tuple must have the same type, the first item is a {} and the current item position {} is a {}", kind, idx, item_kind));
+                return (false, format!("The tuple must have the same type, the first item is a {} and the current item position {} is a {}", kind, idx, item_kind), false);
             }
         }
-        (true, String::new())
+        (true, String::new(), Self::is_enum_instance(py, &first_item))
     }
 
     fn from(py: Python, value: &Bound<'_, PyAny>) -> Self {
@@ -634,18 +635,19 @@ impl PySQLxParamKind {
             "int" => PySQLxParamKind::Int,
             "tuple" => {
                 // check if the tuple is empty
-                let tuple = value.extract::<Vec<Bound<PyAny>>>().unwrap();
+                let tuple = value.extract::<Bound<PyTuple>>().unwrap();
                 if tuple.is_empty() {
                     return PySQLxParamKind::Array;
                 }
 
                 // check if the tuple has the same type
-                let (is_same_type, msg) = Self::validate_tuple_is_same_type(&tuple);
+                let (is_same_type, msg, is_enum) = Self::validate_tuple_is_same_type(py, &tuple);
+
                 if !is_same_type {
                     return PySQLxParamKind::UnsupportedType(msg);
                 }
 
-                if Self::is_enum_instance(py, &tuple[0]) {
+                if is_enum {
                     return PySQLxParamKind::EnumArray;
                 }
 
@@ -675,6 +677,7 @@ impl PySQLxParamKind {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use std::{borrow::Cow, str::FromStr};
 
     use super::*;
@@ -800,14 +803,29 @@ mod tests {
         assert_eq!(pyvalue, PySQLxValue::Null);
     }
 
-    /*#[test] // this test is not working because of the Python::with_gil
+    #[test] // this test is not working because of the Python::with_gil
     fn test_pyobject_to_pysqlx_value() {
         pyo3::prepare_freethreaded_python();
         Python::with_gil(|py| {
-            let value = true.to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "Boolean".to_string(), value);
-            assert_eq!(pyvalue, PySQLxValue::Boolean(true));
+            let value = py
+                .eval_bound("True", None, None)
+                .unwrap()
+                .extract()
+                .unwrap();
+            let mut hash_map = HashMap::new();
+            hash_map.insert("value".to_string(), value);
+            let stmt = PySQLxStatement::py_new(
+                py,
+                "SELECT * FROM table WHERE column = :value".to_string(),
+                "sqlite".to_string(),
+                Some(hash_map),
+            )
+            .unwrap();
+            assert_eq!(stmt.get_params(), vec!(Value::boolean(true)));
+        })
+    }
 
+    /*
             let value = "foo".to_object(py);
             let pyvalue = convert_to_pysqlx_value(py, "String".to_string(), value);
             assert_eq!(pyvalue, PySQLxValue::String("foo".to_string()));
