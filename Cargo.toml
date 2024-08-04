@@ -33,6 +33,9 @@ py_types = { path = "py_types"}
 convert = { path = "convert"}
 database = { path = "database"}
 
+[build-dependencies]
+pyo3-build-config = { version = "0.22" }
+
 [workspace]
 members = ["quaint", "convert/", "database/", "py_types/"]
 

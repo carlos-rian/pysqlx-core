@@ -19,3 +19,11 @@ quaint.workspace = true
 
 [dev-dependencies]
 bigdecimal = "0.3"
+
+[dev-dependencies.pyo3]
+version = "*"
+
+[features]
+extension-module = ["pyo3/extension-module"]
+default = ["extension-module"]
+
