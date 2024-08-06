@@ -8,5 +8,8 @@ pipx ensurepath
 pipx install uniffi-bindgen
 pipx install cargo-deny
 
+pipx install poetry
+poetry shell --no-interaction && poetry install --no-interaction
+
 rustup target add wasm32-wasi
 curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin

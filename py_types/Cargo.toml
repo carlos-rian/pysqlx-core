@@ -35,6 +35,3 @@ version = "*"
 extension-module = ["pyo3/extension-module"]
 default = ["extension-module"]
 auto-initialize = ["pyo3/auto-initialize"]
-
-[tool.maturin]
-cargo-extra-args = ["--features", "pyo3/extension-module"]

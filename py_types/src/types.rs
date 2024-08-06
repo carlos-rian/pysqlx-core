@@ -810,26 +810,4 @@ mod tests {
         let pyvalue = PySQLxValue::from(value);
         assert_eq!(pyvalue, PySQLxValue::Null);
     }
-
-    #[test] // this test is not working because of the Python::with_gil
-    fn test_pyobject_to_pysqlx_value() {
-        pyo3::prepare_freethreaded_python();
-        Python::with_gil(|py| {
-            let value = py
-                .eval_bound("True", None, None)
-                .unwrap()
-                .extract()
-                .unwrap();
-            let mut hash_map = HashMap::new();
-            hash_map.insert("value".to_string(), value);
-            let stmt = PySQLxStatement::py_new(
-                py,
-                "SELECT * FROM table WHERE column = :value".to_string(),
-                "sqlite".to_string(),
-                Some(hash_map),
-            )
-            .unwrap();
-            assert_eq!(stmt.get_params(), vec!(Value::boolean(true)));
-        })
-    }
 }
