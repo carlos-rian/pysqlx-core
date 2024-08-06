@@ -1,13 +1,14 @@
-use std::env::set_var;
-use std::env::var;
-
 use database::tokio_runtime;
 use database::Connection;
+use log::debug;
+//use log::{debug, info, LevelFilter};
 use py_types::{PySQLxError, PySQLxInvalidParamError, PySQLxResponse, PySQLxStatement};
 
+//use env_logger;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
 use pyo3_log;
+//use pyo3_log::{Caching, Logger};
 
 pub fn get_version() -> String {
     let version = env!("CARGO_PKG_VERSION").to_string();
@@ -21,15 +22,10 @@ pub fn get_version() -> String {
 
 #[pyfunction]
 async fn new(uri: String) -> PyResult<Connection> {
+    debug!("new connection to {}", uri);
     match tokio_runtime().spawn(Connection::new(uri)).await.unwrap() {
         Ok(r) => Ok(r),
         Err(e) => Err(e.to_pyerr()),
-    }
-}
-
-fn activate_log() {
-    if var("PYSQL_CORE_TRACE").is_ok() {
-        set_var("RUST_LOG", "trace");
     }
 }
 
@@ -44,8 +40,18 @@ fn pysqlx_core(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PySQLxInvalidParamError>()?;
     m.add_class::<PySQLxStatement>()?;
 
-    activate_log();
-    pyo3_log::init();
+    /*
+    let _handle = Logger::new(py, Caching::LoggersAndLevels)?
+        .filter(LevelFilter::Trace)
+        .filter_target("py_types::types".to_owned(), LevelFilter::Debug)
+        .filter_target("src".to_owned(), LevelFilter::Debug)
+        .install()
+        .expect("Someone installed a logger before us :-(");
 
+    debug!("Logger installed");
+    info!("Logger installed");
+     */
+    //env_logger::init();
+    pyo3_log::init();
     Ok(())
 }
