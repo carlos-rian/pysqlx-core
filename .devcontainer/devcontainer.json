@@ -1,0 +1,35 @@
+
+{
+    "name": "maturin",
+    "image": "mcr.microsoft.com/devcontainers/rust:bullseye",
+    "postCreateCommand": "bash .devcontainer/post_create.sh",
+    "customizations": {
+      "vscode": {
+        "extensions": [
+            "ms-python.black-formatter",
+            "charliermarsh.ruff",
+            "donjayamanne.githistory",
+            "fill-labs.dependi",
+            "github.copilot-chat",
+            "github.copilot",
+            "github.vscode-github-actions",
+            "hashicorp.terraform",
+            "ms-python.debugpy",
+            "ms-python.python",
+            "ms-vscode.makefile-tools",
+            "rust-lang.rust-analyzer",
+            "serayuzgur.crates",
+            "tamasfe.even-better-toml",
+            "vadimcn.vscode-lldb"
+        ],
+        "settings": {
+          "editor.formatOnSave": true
+        }
+      }
+    },
+    "features": {
+      "ghcr.io/devcontainers/features/sshd:1": {
+        "version": "latest"
+      }
+    }
+  }
