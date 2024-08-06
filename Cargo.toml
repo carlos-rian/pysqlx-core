@@ -22,11 +22,14 @@ crate-type = ["rlib", "cdylib"]
 
 [package.metadata.maturin]
 python-source = "pysqlx_core"
+bindings = "pyo3"
 
 [dependencies]
 pyo3 = { version = "0.22", features = ["extension-module", "experimental-async"] }
 pyo3-log = "0.11"
+log = "0.4"
 tokio = "1.29"
+env_logger = "0.11"
 
 # my packages
 py_types = { path = "py_types"}
