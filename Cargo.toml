@@ -19,6 +19,7 @@ include = [
 name = "pysqlx_core"
 crate-type = ["cdylib", "rlib"]
 
+
 [features]
 # must be enabled when building with `cargo build`, maturin enables this automatically
 extension-module = ["pyo3/extension-module"]
@@ -27,6 +28,7 @@ extension-module = ["pyo3/extension-module"]
 [package.metadata.maturin]
 python-source = "pysqlx_core"
 bindings = "pyo3"
+
 
 [dependencies]
 pyo3 = { version = "0.22", features = [
@@ -46,8 +48,10 @@ database = { path = "database" }
 [build-dependencies]
 pyo3-build-config = { version = "0.22" }
 
+
 [workspace]
 members = ["quaint", "convert/", "database/", "py_types/"]
+
 
 [workspace.dependencies.quaint]
 path = "quaint"
@@ -60,6 +64,7 @@ features = [
   "postgresql",
   "sqlite",
 ]
+
 
 [profile.release]
 opt-level = 3

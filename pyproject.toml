@@ -8,7 +8,7 @@ build-backend = 'maturin'
 [project]
 name = "pysqlx-core"
 requires-python = ">=3.8"
-authors = [{name = 'Carlos Rian', email = 'crian.rian@gmail.com'}]
+authors = [{ name = 'Carlos Rian', email = 'crian.rian@gmail.com' }]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Programming Language :: Rust",
@@ -17,7 +17,6 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -84,20 +83,19 @@ authors = ["Carlos Rian <crian.rian@gmail.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-#typing-extensions = {version = "^4.6.0", markers = "python_version < '3.8.0'"}
 
 [tool.poetry.group.dev.dependencies]
-isort = {version = "^5.10.1", extras = ["colors"]}
+maturin = { version = "^1.7.0", extras = ["patchelf"] }
+isort = { version = "^5.10.1", extras = ["colors"] }
 black = [
-    {version = "^22.10.0", markers = "python_version < '3.8.0'"},
-    {version = "^24.4.2", markers = "python_version >= '3.8.0'"},
+    { version = "^22.10.0", markers = "python_version < '3.8.0'" },
+    { version = "^24.4.2", markers = "python_version >= '3.8.0'" },
 ]
 httpx = [
-    {version = "^0.23.0", markers = "python_version < '3.8.0'"},
-    {version = "^0.27.0", markers = "python_version >= '3.8.0'"},
+    { version = "^0.23.0", markers = "python_version < '3.8.0'" },
+    { version = "^0.27.0", markers = "python_version >= '3.8.0'" },
 ]
 toml = "^0.10.2"
-maturin = "^1.7.0"
 taskipy = "^1.13.0"
 patchelf = "^0.17.2.1"
 trio = "^0.26.0"

@@ -311,6 +311,7 @@ files = [
 ]
 
 [package.dependencies]
+patchelf = {version = "*", optional = true, markers = "extra == \"patchelf\""}
 tomli = {version = ">=1.1.0", markers = "python_version < \"3.11\""}
 
 [package.extras]
@@ -588,4 +589,4 @@ test = ["Cython (>=0.29.36,<0.30.0)", "aiohttp (==3.9.0b0)", "aiohttp (>=3.8.1)"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "dd65914899366e32b87a59b1aaf7299d2360a557e1a927cb49fc3479d3d53036"
+content-hash = "9d3a7422ae9980fb465d99780050614bc9dfe468c593b5c58332ab490d55eeee"
