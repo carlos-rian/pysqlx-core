@@ -1,7 +1,7 @@
 use crate::errors::PySQLxInvalidParamError;
 use crate::param::Params;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
-use log::debug;
+use log::{debug, info};
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyAnyMethods, PyBytes, PyDict, PyModule, PyTuple, PyType, PyTypeMethods};
 use pyo3::{intern, pyclass, Bound, PyObject, PyResult, Python, ToPyObject};
@@ -14,11 +14,15 @@ use serde_json::Value as JsonValue;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use uuid::Uuid;
+
 // this type is a placeholder for the actual type
 type PyValueArray = Vec<PySQLxValue>;
 
 fn get_python_type_name(value: &Bound<'_, PyAny>) -> String {
-    value.get_type().qualname().unwrap().to_string()
+    let t = value.get_type().qualname().unwrap().to_string();
+    debug!("PYTHON TYPE -> {}", t);
+    info!("PYTHON TYPE -> {}", t);
+    t
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -405,14 +409,15 @@ impl PySQLxStatement {
             }
             PySQLxParamKind::Int => Ok(PySQLxValue::Int(value.extract::<i64>().unwrap())),
             PySQLxParamKind::Array => {
-                let list = match value.extract::<Bound<PyTuple>>() {
-                    Ok(v) => v,
-                    Err(_) => value.extract::<Vec<Bound<PyAny>>>().unwrap(),
-                };
+                let list = value.extract::<Vec<Bound<PyAny>>>().unwrap();
                 let mut pysqlx_list = Vec::new();
                 for item in list {
                     pysqlx_list.push(
-                        match Self::convert_pyobject_to_pysqlx_value(py, kind.clone(), &item) {
+                        match Self::convert_pyobject_to_pysqlx_value(
+                            py,
+                            PySQLxParamKind::from(py, &item),
+                            &item,
+                        ) {
                             Ok(v) => v,
                             Err(e) => return Err(e),
                         },
@@ -632,7 +637,8 @@ impl PySQLxParamKind {
 
     fn from(py: Python, value: &Bound<'_, PyAny>) -> Self {
         // kind string is python class Type name
-        match get_python_type_name(value).as_str() {
+        info!("{:?}", value);
+        match get_python_type_name(value).to_lowercase().as_str() {
             "bool" => PySQLxParamKind::Boolean,
             "str" => PySQLxParamKind::String,
             "int" => PySQLxParamKind::Int,
@@ -680,7 +686,6 @@ impl PySQLxParamKind {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
     use std::{borrow::Cow, str::FromStr};
 
     use super::*;
@@ -827,78 +832,4 @@ mod tests {
             assert_eq!(stmt.get_params(), vec!(Value::boolean(true)));
         })
     }
-
-    /*
-            let value = "foo".to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "String".to_string(), value);
-            assert_eq!(pyvalue, PySQLxValue::String("foo".to_string()));
-
-            let value = "red".to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "Enum".to_string(), value);
-            assert_eq!(pyvalue, PySQLxValue::Enum("red".to_string()));
-
-            let value = vec!["red", "green"].to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "EnumArray".to_string(), value);
-            assert_eq!(
-                pyvalue,
-                PySQLxValue::EnumArray(vec!["red".to_string(), "green".to_string()])
-            );
-
-            let value = 1.to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "Int".to_string(), value);
-            assert_eq!(pyvalue, PySQLxValue::Int(1));
-
-            let value = vec![1, 2].to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "Array".to_string(), value);
-            assert_eq!(
-                pyvalue,
-                PySQLxValue::Array(vec![PySQLxValue::Int(1), PySQLxValue::Int(2)])
-            );
-
-            let value = json!({"name": "foo"}).to_string().to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "Json".to_string(), value);
-            assert_eq!(
-                pyvalue,
-                PySQLxValue::Json(serde_json::json!({"name":"foo"}))
-            );
-
-            let value = "<body>foo</body>".to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "Xml".to_string(), value);
-            assert_eq!(pyvalue, PySQLxValue::Xml("<body>foo</body>".to_string()));
-
-            let value = Uuid::new_v4().to_string().to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "Uuid".to_string(), value);
-            assert!(matches!(pyvalue, PySQLxValue::Uuid(_)));
-
-            let value = NaiveTime::from_hms_opt(12, 1, 2).to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "Time".to_string(), value);
-            assert_eq!(
-                pyvalue,
-                PySQLxValue::Time(NaiveTime::from_hms_opt(12, 1, 2).expect("invalid"))
-            );
-
-            let value = NaiveDate::from_ymd_opt(2022, 1, 1).to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "Date".to_string(), value);
-            assert_eq!(
-                pyvalue,
-                PySQLxValue::Date(NaiveDate::from_ymd_opt(2022, 1, 1).expect("invalid"))
-            );
-
-            let value = Utc::now().to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "DateTime".to_string(), value);
-            assert_eq!(pyvalue, PySQLxValue::DateTime(Utc::now()));
-
-            let value = 1.0.to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "Float".to_string(), value);
-            assert_eq!(pyvalue, PySQLxValue::Float(1.0));
-
-            let value = vec![1, 2, 3].to_object(py);
-            let pyvalue = convert_to_pysqlx_value(py, "Bytes".to_string(), value);
-            assert_eq!(pyvalue, PySQLxValue::Bytes(vec![1, 2, 3]));
-
-            let value = py.None();
-            let pyvalue = convert_to_pysqlx_value(py, "Null".to_string(), value);
-            assert_eq!(pyvalue, PySQLxValue::Null);
-        })
-    }*/
 }
