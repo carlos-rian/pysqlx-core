@@ -22,24 +22,6 @@ impl ToPyObject for DBError {
     }
 }
 
-/*impl FromPyObject<'_> for DBError {
-    fn extract(ob: &Bound<'_, &PyAny>) -> PyResult<Self> {
-        let s = ob.extract::<String>()?;
-        match s.as_str() {
-            "QueryError" => Ok(DBError::QueryError),
-            "ExecuteError" => Ok(DBError::ExecuteError),
-            "RawCmdError" => Ok(DBError::RawCmdError),
-            "ConnectError" => Ok(DBError::ConnectError),
-            "IsoLevelError" => Ok(DBError::IsoLevelError),
-            "StartTransactionError" => Ok(DBError::StartTransactionError),
-            _ => Err(PyTypeError::new_err(format!(
-                "Cannot convert {} to DBError",
-                s
-            ))),
-        }
-    }
-}*/
-
 impl Display for DBError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let v = match self {
@@ -99,13 +81,6 @@ impl PySQLxError {
 }
 
 impl PySQLxError {
-    pub fn new(code: String, message: String, error: DBError) -> Self {
-        Self {
-            code,
-            message,
-            error,
-        }
-    }
     pub fn to_pyerr(&self) -> PyErr {
         PyErr::new::<PySQLxError, _>((
             self.code.clone(),
@@ -144,6 +119,7 @@ impl PySQLxInvalidParamError {
         ))
     }
 }
+
 #[pymethods]
 impl PySQLxInvalidParamError {
     #[new]
