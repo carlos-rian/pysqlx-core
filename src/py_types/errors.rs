@@ -5,6 +5,7 @@ use pyo3::prelude::*;
 use quaint::error::Error as QuaintError;
 use serde::Deserialize;
 
+#[pyclass(eq, eq_int)]
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 #[serde(untagged)]
 pub enum DBError {
@@ -44,7 +45,9 @@ pub struct PySQLxError {
     pub error: DBError,
 }
 
+#[pymethods]
 impl PySQLxError {
+    #[new]
     pub fn py_new(code: String, message: String, error: DBError) -> Self {
         Self {
             code,
@@ -52,10 +55,6 @@ impl PySQLxError {
             error,
         }
     }
-}
-
-#[pymethods]
-impl PySQLxError {
     pub fn __str__(&self) -> String {
         format!(
             "PySQLxError(code='{}', message='{}', error='{}')",
@@ -82,11 +81,7 @@ impl PySQLxError {
 
 impl PySQLxError {
     pub fn to_pyerr(&self) -> PyErr {
-        PyErr::new::<PySQLxError, _>((
-            self.code.clone(),
-            self.message.clone(),
-            self.error.to_string(),
-        ))
+        PyErr::new::<PySQLxError, _>((self.code.clone(), self.message.clone(), self.error.clone()))
     }
 }
 
