@@ -23,9 +23,7 @@ async def sqlite():
         )
     """,
     )
-    await conn.execute(
-        PySQLxStatement(provider="sqlite", sql="DROP TABLE IF EXISTS users")
-    )
+    await conn.execute(PySQLxStatement(provider="sqlite", sql="DROP TABLE IF EXISTS users"))
     await conn.execute(tb)
     params = [
         ("John Do", datetime.now(), True, 1, 1.1),
@@ -45,9 +43,7 @@ async def sqlite():
         )
         assert row_affected == 1
 
-    result = await conn.query_typed(
-        PySQLxStatement(provider="sqlite", sql="SELECT * FROM users")
-    )
+    result = await conn.query_typed(PySQLxStatement(provider="sqlite", sql="SELECT * FROM users"))
     pprint(result.get_all())
     pprint(result.get_first())
     pprint(result.get_last_insert_id())
@@ -89,33 +85,38 @@ def typ():
         "type_bytes": b"\xde\xad\xbe\xef",
         "type_array_text": ["name", "age"],
         "type_array_integer": [1, 2, 3],
-        "type_array_date": (
-            date(2022, 10, 27),
-            date(2022, 10, 27),
-        ),
-        "type_array_uuid": (
-            UUID("7b97c8a6-7e5a-4412-a57d-78565a136582"),
-            UUID("7b97c8a6-7e5a-4412-a57d-78565a136583"),
-        ),
+        "type_array_date": (date(2022, 10, 27), date(2022, 10, 27)),
+        "type_array_uuid": (UUID("7b97c8a6-7e5a-4412-a57d-78565a136582"), UUID("7b97c8a6-7e5a-4412-a57d-78565a136583")),
     }
 
 
 async def psql():
+
+    p = PySQLxStatement(
+        provider="postgresql",
+        sql="""
+                INSERT INTO pysqlx_table (
+                    type_int, type_smallint, type_bigint, type_serial, type_smallserial, type_bigserial, type_numeric, type_float, type_double, type_money, 
+                    type_char, type_varchar, type_text, type_boolean, type_date, type_time, type_datetime, type_datetimetz, type_enum, type_uuid, type_json, 
+                    type_jsonb, type_xml, type_inet, type_bytes, type_array_text, type_array_integer, type_array_date, type_array_uuid)
+                VALUES (
+                    :type_int, :type_smallint, :type_bigint, :type_serial, :type_smallserial, :type_bigserial, :type_numeric, :type_float, :type_double, :type_money, 
+                    :type_char, :type_varchar, :type_text, :type_boolean, :type_date, :type_time, :type_datetime, :type_datetimetz, :type_enum, :type_uuid, :type_json, 
+                    :type_jsonb, :type_xml, :type_inet, :type_bytes, :type_array_text, :type_array_integer, :type_array_date, :type_array_uuid
+                );
+                """,
+        params=typ(),
+    )
+    print(p)
+
     conn = await new("postgresql://postgres:Build!Test321@localhost:4442/engine")
 
-    await conn.execute(
-        PySQLxStatement(provider="postgresql", sql="DROP TABLE IF EXISTS pysqlx_table")
-    )
+    await conn.execute(PySQLxStatement(provider="postgresql", sql="DROP TABLE IF EXISTS pysqlx_table"))
 
     # create enum type
+    await conn.execute(PySQLxStatement(provider="postgresql", sql="DROP TYPE IF EXISTS colors;"))
     await conn.execute(
-        PySQLxStatement(provider="postgresql", sql="DROP TYPE IF EXISTS colors;")
-    )
-    await conn.execute(
-        PySQLxStatement(
-            provider="postgresql",
-            sql="CREATE TYPE colors AS ENUM ('blue', 'red', 'gray', 'black');",
-        )
+        PySQLxStatement(provider="postgresql", sql="CREATE TYPE colors AS ENUM ('blue', 'red', 'gray', 'black');")
     )
 
     await conn.execute(
@@ -177,9 +178,7 @@ async def psql():
     )
     assert row_affected == 1
 
-    result = await conn.query_typed(
-        PySQLxStatement(provider="postgresql", sql="SELECT * FROM users")
-    )
+    result = await conn.query_typed(PySQLxStatement(provider="postgresql", sql="SELECT * FROM users"))
     pprint(result.get_all())
     pprint(result.get_first())
     pprint(result.get_last_insert_id())

@@ -585,6 +585,26 @@ impl PySQLxStatement {
             params: new_params,
         })
     }
+
+    pub fn __repr__(&self) -> String {
+        format!(
+            "PySQLxStatement(sql={}, params={})",
+            self.sql,
+            Params(self.params.as_slice())
+        )
+    }
+
+    pub fn __str__(&self) -> String {
+        self.__repr__()
+    }
+
+    pub fn sql(&self) -> String {
+        self.sql.clone()
+    }
+
+    pub fn params(&self, py: Python) -> Py<PyAny> {
+        self.params.as_slice().to_object(py)
+    }
 }
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]

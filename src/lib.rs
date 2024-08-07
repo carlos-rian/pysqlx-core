@@ -1,14 +1,14 @@
 use database::tokio_runtime;
 use database::Connection;
 use log::debug;
-//use log::{debug, info, LevelFilter};
 use py_types::{PySQLxError, PySQLxInvalidParamError, PySQLxResponse, PySQLxStatement};
 
-//use env_logger;
+use env_logger;
 use pyo3::prelude::*;
 use pyo3::wrap_pyfunction;
-use pyo3_log;
-//use pyo3_log::{Caching, Logger};
+// use pyo3_log;
+// use pyo3_log::{Caching, Logger};
+//use log::{debug, info, LevelFilter};
 
 pub fn get_version() -> String {
     let version = env!("CARGO_PKG_VERSION").to_string();
@@ -22,6 +22,7 @@ pub fn get_version() -> String {
 
 #[pyfunction]
 async fn new(uri: String) -> PyResult<Connection> {
+    env_logger::init();
     debug!("new connection to {}", uri);
     match tokio_runtime().spawn(Connection::new(uri)).await.unwrap() {
         Ok(r) => Ok(r),
@@ -51,7 +52,7 @@ fn pysqlx_core(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     debug!("Logger installed");
     info!("Logger installed");
      */
-    //env_logger::init();
-    pyo3_log::init();
+    // env_logger::init();
+    // pyo3_log::init();
     Ok(())
 }
