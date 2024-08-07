@@ -42,7 +42,7 @@ impl Connection {
         }
     }
     // Execute a query given as SQL, interpolating the given parameters. return a dict of rows
-    async fn _quert_one(&self, sql: &str, params: &[Value<'_>]) -> PySQLxResult<PySQLxRow> {
+    async fn _query_one(&self, sql: &str, params: &[Value<'_>]) -> PySQLxResult<PySQLxRow> {
         match self.conn.query_raw(sql, params).await {
             Ok(r) => {
                 let rows = convert_result_set_as_list(r);
@@ -77,7 +77,7 @@ impl Connection {
             "SNAPSHOT" => Ok(IsolationLevel::Snapshot),
             "SERIALIZABLE" => Ok(IsolationLevel::Serializable),
             _ => {
-                return Err(PySQLxError::new(
+                return Err(PySQLxError::py_new(
                     "PY001IL".to_string(),
                     "invalid isolation level".to_string(),
                     DBError::IsoLevelError,
@@ -168,7 +168,7 @@ impl Connection {
         tokio_runtime()
             .spawn(async move {
                 let (sql, params) = (stmt.get_sql(), stmt.get_params());
-                let res = match slf._quert_one(sql.as_str(), params.as_slice()).await {
+                let res = match slf._query_one(sql.as_str(), params.as_slice()).await {
                     Ok(r) => r,
                     Err(e) => return Err(e.to_pyerr()),
                 };
@@ -380,7 +380,7 @@ mod tests {
             .unwrap();
         assert_eq!(res, 1);
 
-        let res = conn._quert_one("SELECT * FROM test", &[]).await.unwrap();
+        let res = conn._query_one("SELECT * FROM test", &[]).await.unwrap();
         assert_eq!(res.get("id").unwrap(), &PySQLxValue::Int(1));
     }
 
@@ -396,7 +396,7 @@ mod tests {
         assert_eq!(res, 0);
 
         let res = conn
-            ._quert_one("SELECT * FROM test WHERE id = ?", &[Value::from(0)])
+            ._query_one("SELECT * FROM test WHERE id = ?", &[Value::from(0)])
             .await
             .unwrap();
         assert_eq!(res.len(), 0);
@@ -407,7 +407,7 @@ mod tests {
         let conn = Connection::new("file:///tmp/db.db".to_string())
             .await
             .unwrap();
-        let res = conn._quert_one("SELECT * FROM InvalidTable", &[]).await;
+        let res = conn._query_one("SELECT * FROM InvalidTable", &[]).await;
         assert!(res.is_err())
     }
 
