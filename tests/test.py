@@ -5,6 +5,12 @@ from pysqlx_core import new, PySQLxStatement
 import asyncio
 import uvloop
 from pprint import pprint
+import logging
+from decimal import Decimal
+
+Decimal()
+
+logging.basicConfig(level=logging.DEBUG)
 
 
 async def sqlite():
@@ -79,35 +85,18 @@ def typ():
         "type_enum": EnumColors.BLUE,
         "type_uuid": UUID("19b3d203-e4b7-4b7b-8bf2-476abea92b04"),
         "type_json": {"cep": "01001-000"},
-        "type_jsonb": {"cep": "01001-000"},
+        "type_jsonb": b'{"cep": "01001-000"}',
         "type_xml": "<note><to>Tove</to></note>",
-        "type_inet": "192.168.0.1/24",
-        "type_bytes": b"\xde\xad\xbe\xef",
-        "type_array_text": ["name", "age"],
-        "type_array_integer": [1, 2, 3],
+        "type_inet": "192.168.0.1",
+        "type_bytes": b"DEADBEEF",
+        "type_array_text": ("name", "age"),
+        "type_array_integer": (1, 2, 3),
         "type_array_date": (date(2022, 10, 27), date(2022, 10, 27)),
         "type_array_uuid": (UUID("7b97c8a6-7e5a-4412-a57d-78565a136582"), UUID("7b97c8a6-7e5a-4412-a57d-78565a136583")),
     }
 
 
 async def psql():
-
-    p = PySQLxStatement(
-        provider="postgresql",
-        sql="""
-                INSERT INTO pysqlx_table (
-                    type_int, type_smallint, type_bigint, type_serial, type_smallserial, type_bigserial, type_numeric, type_float, type_double, type_money, 
-                    type_char, type_varchar, type_text, type_boolean, type_date, type_time, type_datetime, type_datetimetz, type_enum, type_uuid, type_json, 
-                    type_jsonb, type_xml, type_inet, type_bytes, type_array_text, type_array_integer, type_array_date, type_array_uuid)
-                VALUES (
-                    :type_int, :type_smallint, :type_bigint, :type_serial, :type_smallserial, :type_bigserial, :type_numeric, :type_float, :type_double, :type_money, 
-                    :type_char, :type_varchar, :type_text, :type_boolean, :type_date, :type_time, :type_datetime, :type_datetimetz, :type_enum, :type_uuid, :type_json, 
-                    :type_jsonb, :type_xml, :type_inet, :type_bytes, :type_array_text, :type_array_integer, :type_array_date, :type_array_uuid
-                );
-                """,
-        params=typ(),
-    )
-    print(p)
 
     conn = await new("postgresql://postgres:Build!Test321@localhost:4442/engine")
 
@@ -159,23 +148,76 @@ async def psql():
         )
     )
 
-    row_affected = await conn.execute(
-        PySQLxStatement(
-            provider="postgresql",
-            sql="""
+    p = PySQLxStatement(
+        provider="postgresql",
+        sql="""
                 INSERT INTO pysqlx_table (
-                    type_int, type_smallint, type_bigint, type_serial, type_smallserial, type_bigserial, type_numeric, type_float, type_double, type_money, 
-                    type_char, type_varchar, type_text, type_boolean, type_date, type_time, type_datetime, type_datetimetz, type_enum, type_uuid, type_json, 
-                    type_jsonb, type_xml, type_inet, type_bytes, type_array_text, type_array_integer, type_array_date, type_array_uuid)
+                    type_int,
+                    type_smallint,
+                    type_bigint,
+                    type_serial,
+                    type_smallserial,
+                    type_bigserial,
+                    type_numeric,
+                    type_float,
+                    type_double,
+                    type_money,
+                    type_char,
+                    type_varchar,
+                    type_text,
+                    type_boolean,
+                    type_date,
+                    type_time,
+                    type_datetime,
+                    type_datetimetz,
+                    type_enum,
+                    type_uuid,
+                    type_json,
+                    type_jsonb,
+                    type_xml,
+                    type_inet,
+                    type_bytes,
+                    type_array_text,
+                    type_array_integer,
+                    type_array_date,
+                    type_array_uuid    
+                )
                 VALUES (
-                    :type_int, :type_smallint, :type_bigint, :type_serial, :type_smallserial, :type_bigserial, :type_numeric, :type_float, :type_double, :type_money, 
-                    :type_char, :type_varchar, :type_text, :type_boolean, :type_date, :type_time, :type_datetime, :type_datetimetz, :type_enum, :type_uuid, :type_json, 
-                    :type_jsonb, :type_xml, :type_inet, :type_bytes, :type_array_text, :type_array_integer, :type_array_date, :type_array_uuid
+                    :type_int,
+                    :type_smallint,
+                    :type_bigint,
+                    :type_serial,
+                    :type_smallserial,
+                    :type_bigserial,
+                    :type_numeric,
+                    :type_float,
+                    :type_double,
+                    :type_money,
+                    :type_char,
+                    :type_varchar,
+                    :type_text,
+                    :type_boolean,
+                    :type_date,
+                    :type_time,
+                    :type_datetime,
+                    :type_datetimetz,
+                    :type_enum,
+                    :type_uuid,
+                    :type_json,
+                    :type_jsonb,
+                    :type_xml,
+                    :type_inet,
+                    :type_bytes,
+                    :type_array_text,
+                    :type_array_integer,
+                    :type_array_date,
+                    :type_array_uuid
                 );
                 """,
-            params=typ(),
-        )
+        params=typ(),
     )
+
+    row_affected = await conn.execute(p)
     assert row_affected == 1
 
     result = await conn.query_typed(PySQLxStatement(provider="postgresql", sql="SELECT * FROM users"))
