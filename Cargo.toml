@@ -23,6 +23,11 @@ crate-type = ["cdylib", "rlib"]
 [features]
 # must be enabled when building with `cargo build`, maturin enables this automatically
 extension-module = ["pyo3/extension-module"]
+vendored-openssl = ["quaint/vendored-openssl"]
+
+
+[workspace]
+members = ["quaint"]
 
 
 [package.metadata.maturin]
@@ -33,24 +38,28 @@ bindings = "pyo3"
 [dependencies]
 pyo3 = { version = "0.22", features = [
   "extension-module",
+  "chrono",
+  "serde",
   "experimental-async",
 ] }
 pyo3-log = "0.11"
-log = "0.4"
 tokio = "1.29"
 env_logger = "0.11"
+chrono = { version = "0.4" }
+serde = { version = "1.0", features = ["derive"] }
+uuid = { version = "1.3", features = ["serde", "v4"] }
+serde_json = "1.0"
+base64 = { version = "0.12.3" }
+rand = "0.8"
+openssl = { version = "0.10", features = ["vendored"] }
+log = "0.4"
 
-# my packages
-py_types = { path = "py_types" }
-convert = { path = "convert" }
-database = { path = "database" }
+quaint.workspace = true
 
-[build-dependencies]
-pyo3-build-config = { version = "0.22" }
-
-
-[workspace]
-members = ["quaint", "convert/", "database/", "py_types/"]
+[dev-dependencies]
+bigdecimal = "0.3"
+libc = "0.2.0"
+tokio = { version = "1.29", features = ["macros"] }
 
 
 [workspace.dependencies.quaint]
@@ -64,7 +73,6 @@ features = [
   "postgresql",
   "sqlite",
 ]
-
 
 [profile.release]
 opt-level = 3

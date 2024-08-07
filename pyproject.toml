@@ -102,6 +102,6 @@ trio = "^0.26.0"
 uvloop = "^0.19.0"
 
 [tool.taskipy.tasks]
-test = "cargo test -p database -p convert -p py_types"
+test = "cargo test -p pysqlx-core"
 dev = "maturin develop"
 build = "maturin build"

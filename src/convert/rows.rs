@@ -2,8 +2,8 @@ use quaint::{connector::ResultSet, prelude::ResultRow};
 
 use std::collections::HashMap;
 
-use crate::columns::{check_column_name, get_column_types};
-use py_types::{PySQLxColumnTypes, PySQLxResponse, PySQLxRow, PySQLxRows, PySQLxValue};
+use super::columns::{check_column_name, get_column_types};
+use crate::py_types::{PySQLxColumnTypes, PySQLxResponse, PySQLxRow, PySQLxRows, PySQLxValue};
 
 pub fn convert_result_set(result_set: ResultSet) -> PySQLxResponse {
     let mut py_result = PySQLxResponse::default();

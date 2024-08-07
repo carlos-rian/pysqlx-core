@@ -418,15 +418,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "510ca239cf13b7f8d16a2b48f263de7b4f8c566f0af58d901031473c76afb1e3"
 
 [[package]]
-name = "convert"
-version = "0.1.0"
-dependencies = [
- "py_types",
- "quaint",
- "tokio",
-]
-
-[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -570,21 +561,6 @@ dependencies = [
  "darling_core",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "database"
-version = "0.1.0"
-dependencies = [
- "convert",
- "log",
- "openssl",
- "py_types",
- "pyo3",
- "quaint",
- "serde",
- "tokio",
- "uuid",
 ]
 
 [[package]]
@@ -1919,24 +1895,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "py_types"
-version = "0.1.0"
-dependencies = [
- "base64 0.12.3",
- "bigdecimal",
- "chrono",
- "libc",
- "log",
- "pyo3",
- "pyo3-log",
- "quaint",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "uuid",
-]
-
-[[package]]
 name = "pyo3"
 version = "0.22.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2016,15 +1974,21 @@ dependencies = [
 name = "pysqlx-core"
 version = "0.1.49"
 dependencies = [
- "convert",
- "database",
+ "base64 0.12.3",
+ "bigdecimal",
+ "chrono",
  "env_logger",
+ "libc",
  "log",
- "py_types",
+ "openssl",
  "pyo3",
- "pyo3-build-config",
  "pyo3-log",
+ "quaint",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
  "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -2488,15 +2452,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43b2853a4d09f215c24cc5489c992ce46052d359b5109343cbafbf26bc62f8a3"
 
 [[package]]
-name = "signal-hook-registry"
-version = "1.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8229b473baa5980ac72ef434c4415e70c4b5e71b423043adb4ba059f89c99a1"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "simdutf8"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2782,9 +2737,7 @@ dependencies = [
  "libc",
  "mio",
  "num_cpus",
- "parking_lot",
  "pin-project-lite",
- "signal-hook-registry",
  "socket2",
  "tokio-macros",
  "windows-sys 0.48.0",

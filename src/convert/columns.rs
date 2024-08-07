@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use py_types::PySQLxColumnTypes;
+use crate::py_types::PySQLxColumnTypes;
 use quaint::prelude::ResultSet;
 use quaint::{Value, ValueType};
 

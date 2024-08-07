@@ -36,6 +36,8 @@ vendored-openssl = [
   "mysql_async/vendored-openssl",
 ]
 
+bigdecimal = ["tiberius/bigdecimal"]
+
 postgresql = [
   "native-tls",
   "tokio-postgres",

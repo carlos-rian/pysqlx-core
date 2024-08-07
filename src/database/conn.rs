@@ -1,7 +1,7 @@
-use convert::convert_result_set;
-use convert::convert_result_set_as_list;
-use py_types::{py_error, DBError, PySQLxError, PySQLxResponse, PySQLxStatement};
-use py_types::{PySQLxRow, PySQLxRows};
+use crate::convert::convert_result_set;
+use crate::convert::convert_result_set_as_list;
+use crate::py_types::{py_error, DBError, PySQLxError, PySQLxResponse, PySQLxStatement};
+use crate::py_types::{PySQLxRow, PySQLxRows};
 use pyo3::prelude::*;
 use quaint::connector::IsolationLevel;
 use quaint::prelude::*;
@@ -233,7 +233,7 @@ impl Connection {
 
 #[cfg(test)]
 mod tests {
-    use py_types::PySQLxValue;
+    use crate::py_types::PySQLxValue;
 
     use super::*;
 

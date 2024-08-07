@@ -1,5 +1,5 @@
-use crate::errors::PySQLxInvalidParamError;
-use crate::param::Params;
+use super::errors::PySQLxInvalidParamError;
+use super::param::Params;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use log::{debug, info};
 use pyo3::prelude::*;
