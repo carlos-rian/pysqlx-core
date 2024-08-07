@@ -51,7 +51,7 @@ fn pysqlx_core(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     debug!("Logger installed");
     info!("Logger installed");
      */
-    // env_logger::init();
+    env_logger::init();
     // pyo3_log::init();
     Ok(())
 }
