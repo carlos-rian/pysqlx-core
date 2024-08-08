@@ -4,7 +4,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use super::types::PySQLxValue;
+use super::value::PySQLxValue;
 
 pub type PySQLxRow = HashMap<String, PySQLxValue>;
 pub type PySQLxRows = Vec<PySQLxRow>;

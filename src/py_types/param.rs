@@ -1,6 +1,6 @@
 use std::fmt::{self, Display};
 
-use super::types::PySQLxValue;
+use super::value::PySQLxValue;
 
 pub(crate) struct Params<'a>(pub(crate) &'a [PySQLxValue]);
 

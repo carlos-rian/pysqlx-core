@@ -8,7 +8,6 @@ from pprint import pprint
 import logging
 from decimal import Decimal
 
-Decimal()
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -73,7 +72,7 @@ def typ():
         "type_numeric": 130.3064,  # float (numeric)
         "type_float": 2159.912,  # float (float)
         "type_double": 1577.3155,  # float (double)
-        "type_money": 6803.77,  # float (money), parsed from string '$6,803.77'
+        "type_money": Decimal("6803.77"),  # float (money), parsed from string '$6,803.77'
         "type_char": "C",  # str (char)
         "type_varchar": "ATYOLOUREPOJRSNOWKMULTTRHJPTCWOIYHQVVIXVUFZNCMEFJTRLCJZMKNJVAUYIEZYKVPWCWGGRDBUKKEDQHSEYPACMNGBOLHLC",  # str (varchar)
         "type_text": "text",  # str (text)
@@ -85,7 +84,7 @@ def typ():
         "type_enum": EnumColors.BLUE,
         "type_uuid": UUID("19b3d203-e4b7-4b7b-8bf2-476abea92b04"),
         "type_json": {"cep": "01001-000"},
-        "type_jsonb": b'{"cep": "01001-000"}',
+        "type_jsonb": {"cep": "01001-000"},
         "type_xml": "<note><to>Tove</to></note>",
         "type_inet": "192.168.0.1",
         "type_bytes": b"DEADBEEF",
@@ -220,7 +219,7 @@ async def psql():
     row_affected = await conn.execute(p)
     assert row_affected == 1
 
-    result = await conn.query_typed(PySQLxStatement(provider="postgresql", sql="SELECT * FROM users"))
+    result = await conn.query_typed(PySQLxStatement(provider="postgresql", sql="SELECT * FROM pysqlx_table"))
     pprint(result.get_all())
     pprint(result.get_first())
     pprint(result.get_last_insert_id())
