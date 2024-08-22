@@ -1,14 +1,39 @@
-from typing import Any, Dict, List, Union
-from typing_extensions import Literal
+from datetime import date, datetime, time
+from decimal import Decimal
+from enum import Enum
+from typing import Any, Dict, List, Self, Union
+from uuid import UUID
+from typing import Literal
 
-__all__ = ("__version__", "new", "Connection", 'PySQLXError', "PySQLXResult")
+__all__ = ("__version__", "new", "Connection", "PySQLxError", "PySQLxResponse")
 __version__: str
 
-IsolationLevel = Literal["ReadUncommitted", "ReadCommitted", "RepeatableRead", "Snapshot", "Serializable"]
+IsolationLevel = Literal[
+    "ReadUncommitted", "ReadCommitted", "RepeatableRead", "Snapshot", "Serializable"
+]
 
-class PySQLXError(Exception):
+class EnumArray(tuple): ...
+
+SupportedValueType = Union[
+    bool,
+    str,
+    int,
+    Dict[str, Any],
+    List[Dict[str, Any]],
+    UUID,
+    time,
+    date,
+    datetime,
+    float,
+    bytes,
+    Decimal,
+    Enum,
+    None,
+]
+
+class PySQLxError(Exception):
     """
-    ## PySQLXError
+    ## PySQLxError
 
     ### Base class for all exceptions raised by pysqlx.
 
@@ -46,21 +71,98 @@ class PySQLXError(Exception):
         """
         ...
 
-class PySQLXResult:
+class PySQLxInvalidParamError(TypeError):
+    field: str
+    typ_from: str
+    typ_to: str
+    details: str
+
+    def field(self) -> str:
+        """
+        Return the field of the error
+        """
+
+    def typ_from(self) -> str:
+        """
+        Return the typ_from of the error
+        """
+        ...
+
+    def typ_to(self) -> str:
+        """
+        Return the typ_to of the error
+        """
+        ...
+
+    def details(self) -> str:
+        """
+        Return the details of the error
+        """
+        ...
+
+class PySQLxInvalidProviderError(TypeError):
+    field: str
+    provider: str
+    typ: str
+
+    def field(self) -> str:
+        """
+        Return the field of the error
+        """
+
+    def provider(self) -> str:
+        """
+        Return the provider of the error
+        """
+        ...
+
+    def typ(self) -> str:
+        """
+        Return the typ of the error
+        """
+        ...
+
+class PySQLxStatement:
     """
-    PySQLXResult is a class that represents the result of a query.
+    ## PySQLxStatement
+
+    Represents a prepared statement. The class prepares the statement and binds the parameters to use in the Connection class.
+
+    """
+
+    def __init__(
+        self,
+        provider: str,
+        sql: str,
+        params: Union[Dict[str, SupportedValueType], None],
+    ) -> Self: ...
+    def sql(self) -> str:
+        """Returns the SQL statement."""
+        ...
+
+    def params(self) -> Union[Dict[str, SupportedValueType], None]:
+        """Returns the parameters of the SQL statement."""
+        ...
+
+class PySQLxResponse:
+    """
+    PySQLxResponse is a class that represents the result of a query.
     It is returned by the `query` method of the `Connection` class.
     """
 
     def get_types(self) -> "Dict[str, str]":
         """Returns a dictionary of column names and their types used to generate Pydantic BaseModel."""
-        raise PySQLXError()
+        raise PySQLxError()
     def get_all(self) -> "List[Dict[str, Any]]":
         """Returns a list of dictionaries representing the rows of the query result."""
-        raise PySQLXError()
+        raise PySQLxError()
     def get_first(self) -> "Dict[str, Any]":
         """Returns the first row of the query result as a dictionary."""
-        raise PySQLXError()
+        raise PySQLxError()
+    def get_last_insert_id(self) -> "Union[int, None]":
+        """Returns the last inserted id."""
+        ...
+
     def __len__(self) -> int:
         """Returns the number of rows in the query result."""
         ...
@@ -91,7 +193,7 @@ class Connection:
         # Insert a row and return quantity rows affected
         await db.execute(sql="INSERT INTO test (name) VALUES ('Carlos');")
 
-        # Select all rows, return a class PySQLXResult
+        # Select all rows, return a class PySQLxResponse
         result = await db.query(sql="SELECT * FROM test;")
         # get first row
         row = result.get_first() # Dict[str, Any]
@@ -109,21 +211,21 @@ class Connection:
     ```
     """
 
-    async def query(self, sql: str) -> "PySQLXResult":
-        """Returns a `PySQLXResult` object representing the result of the query."""
-        raise PySQLXError()
-    async def execute(self, sql: str) -> "int":
+    async def query_typed(self, stmt: PySQLxStatement) -> "PySQLxResponse":
+        """Returns a `PySQLxResponse` object representing the result of the query."""
+        raise PySQLxError()
+    async def execute(self, stmt: PySQLxStatement) -> "int":
         """Executes a query and returns the number of rows affected."""
-        raise PySQLXError()
-    async def query_as_list(self, sql: str) -> "List[Dict[str, Any]]":
+        raise PySQLxError()
+    async def query_all(self, stmt: PySQLxStatement) -> "List[Dict[str, Any]]":
         """Returns a list of dictionaries representing the rows of the query result."""
-        raise PySQLXError()
-    async def query_first_as_dict(self, sql: str) -> "Dict[str, Any]":
+        raise PySQLxError()
+    async def query_one(self, stmt: PySQLxStatement) -> "Dict[str, Any]":
         """Returns the first row of the query result as a dictionary."""
-        raise PySQLXError()
-    async def raw_cmd(self, sql: str) -> "None":
+        raise PySQLxError()
+    async def raw_cmd(self, stmt: PySQLxStatement) -> "None":
         """Run a command in the database, for queries that can't be run using prepared statements."""
-        raise PySQLXError()
+        raise PySQLxError()
     def is_healthy(self) -> "bool":
         """Returns false, if connection is considered to not be in a working state"""
         ...
@@ -140,6 +242,7 @@ class Connection:
         * [SQLite documentation]: (https://www.sqlite.org/isolation.html)
         """
         ...
+
     async def set_isolation_level(self, isolation_level: "IsolationLevel") -> "None":
         """
         Sets the isolation level of the connection.
@@ -151,11 +254,14 @@ class Connection:
         * [MySQL documentation]: (https://dev.mysql.com/doc/refman/8.0/en/innodb-transaction-isolation-levels.html)
         * [SQLite documentation]: (https://www.sqlite.org/isolation.html)
         """
-        raise PySQLXError()
-    async def start_transaction(self, isolation_level: "Union[IsolationLevel, None]") -> "None":
-        """Starts a transaction with BEGIN. by default, does not set the isolation level."""
-        raise PySQLXError()
+        raise PySQLxError()
 
-async def new(uri: str) -> 'Connection':
+    async def start_transaction(
+        self, isolation_level: "Union[IsolationLevel, None]"
+    ) -> "None":
+        """Starts a transaction with BEGIN. by default, does not set the isolation level."""
+        raise PySQLxError()
+
+async def new(uri: str) -> "Connection":
     """Creates a new connection to the database. Returns a `Connection` object."""
-    raise PySQLXError()
+    raise PySQLxError()

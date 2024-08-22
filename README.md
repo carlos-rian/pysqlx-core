@@ -27,7 +27,7 @@ This core is not so friendly, but maybe you want to use it, feel free to suggest
 
 ### Supported Python versions
 
-* [__`Python >= 3.7`__](https://www.python.org/)
+* [__`Python >= 3.8`__](https://www.python.org/)
 
 ### Supported operating systems
 
@@ -61,28 +61,45 @@ async def main(sql):
     db = await pysqlx_core.new(uri="postgresql://postgres:postgrespw@localhost:49153")
     
     # Create a table
-    await db.execute(sql="""
-        CREATE TABLE IF NOT EXISTS test (
-            id SERIAL PRIMARY KEY,
-            name VARCHAR(255) NOT NULL
-        );
-        """
-    )
+    stmt = pysqlx_core.PySQLxStatement(
+        provider="postgresql", 
+        sql="""
+            CREATE TABLE IF NOT EXISTS test (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+            );
+        """)
+    await db.execute(stmt=stmt)
 
     # Insert a row and return quantity rows affected
-    await db.execute(sql="INSERT INTO test (name) VALUES ('Carlos');")
+    insert = pysqlx_core.PySQLxStatement(
+        provider="postgresql", 
+        sql="INSERT INTO test (name) VALUES (:name);",
+        params={"name": "Carlos"}
+    )
+    await db.execute(stmt=insert)
 
-    # Select all rows, return a class PySQLXResult
-    result = await db.query(sql="SELECT * FROM test;")
+    # can you see the sql and params pre builded
+    print("SQL:", insert.sql())
+    # output: INSERT INTO test (name) VALUES ($1);
+    print("PARAMS:", insert.params())
+    # output: ['Carlos']
+
+    # Select all rows, return a class PySQLxResponse
+    result = await db.query_typed(stmt=pysqlx_core.PySQLxStatement(
+            provider="postgresql", 
+            sql="SELECT * FROM test;"
+        )
+    )
     # get first row
     row = result.get_first() # Dict[str, Any] 
     # get all rows
     rows = result.get_all() # List[Dict[str, Any]]
-    #return the db types to Pydantic BaseModel
-    types = result.get_model() # Dict[str, str] 
+    # return the db 'types' to Pydantic BaseModel
+    types = result.get_types() # Dict[str, str] 
 
     # Select all rows, return how List[Dict[str, Any]]
-    rows = await db.query_as_list(sql="SELECT * FROM test;")
+    rows = await db.query_all(pysqlx_core.PySQLxStatement(provider="postgresql", sql="SELECT * FROM test;"))
 
     # close? no need 👌-> auto-close when finished programmer or go out of context..
     

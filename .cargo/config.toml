@@ -1,0 +1,18 @@
+
+[build]
+rustflags = [
+  "-C", "link-args=-Wl,-rpath,/mnt/c/Users/CarlosRianQuartile/Documents/repo/my-repos/pysqlx-core/.venv/bin/python",
+]
+
+# see https://pyo3.rs/main/building_and_distribution.html#macos
+[target.x86_64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]
+
+[target.aarch64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]

@@ -8,7 +8,7 @@ where
     F: FnOnce() -> U + 'a,
     U: Future<Output = crate::Result<T>>,
 {
-    let span = info_span!("quaint:query", "db.statement" = %query);
+    let span = info_span!("pysql_core:query", "db.statement" = %query, "db.params" = %Params(params));
     do_query(tag, query, params, f).instrument(span).await
 }
 

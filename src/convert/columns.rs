@@ -1,8 +1,68 @@
 use std::collections::HashMap;
 
-use py_types::PyColumnTypes;
+use crate::py_types::PySQLxColumnTypes;
 use quaint::prelude::ResultSet;
 use quaint::{Value, ValueType};
+
+/*
+use pyo3::prelude::*;
+fn get_type_2(py: Python, value: &Value) -> Bound<'_, PyAny> {
+    match value.typed.clone() {
+        ValueType::Boolean(_) => py.eval_bound("bool", None, None).unwrap(),
+        ValueType::Enum(_, _) => py.eval_bound("str", None, None).unwrap(),
+        ValueType::EnumArray(_, _) => py
+            .eval_bound(
+                r#"
+            def sequence():
+                from typing import Sequence, Optional
+                return Optional[Sequence[str]]
+            sequence()
+            "#,
+                None,
+                None,
+            )
+            .unwrap(),
+        ValueType::Text(_) | ValueType::Char(_) | ValueType::Xml(_) => {
+            py.eval_bound("str", None, None).unwrap()
+        }
+        ValueType::Int32(_) | ValueType::Int64(_) => py.eval_bound("int", None, None).unwrap(),
+        ValueType::Array(v) => {
+            let sub_type = get_type_2(py, &v[0]);
+            py.eval_bound(
+                r#"
+            def sequence():
+                from typing import Sequence, Optional
+                return Optional[Sequence[sub_type]]
+            sequence()
+            "#,
+                None,
+                None,
+            )
+            .unwrap()
+        }
+        ValueType::Json(_) => py
+            .eval_bound(
+                r#"
+            def json():
+                from typing import Union, Dict, List
+                return Union[Dict, List]
+            json()
+            "#,
+                None,
+                None,
+            )
+            .unwrap(),
+        ValueType::Uuid(_) => "uuid".to_string(),
+        ValueType::Time(_) => "time".to_string(),
+        ValueType::Date(_) => "date".to_string(),
+        ValueType::DateTime(_) => "datetime".to_string(),
+        ValueType::Float(_) => "float".to_string(),
+        ValueType::Double(_) => "float".to_string(),
+        ValueType::Bytes(_) => "bytes".to_string(),
+        ValueType::Numeric(_) => "decimal".to_string(),
+    }
+}
+*/
 
 fn get_type(value: &Value) -> String {
     match value.typed.clone() {
@@ -50,7 +110,7 @@ fn check_column_is_number(column: &String) -> bool {
 }
 
 pub fn check_column_name(column: &String, index: usize) -> String {
-    if column.len() == 0 || column == "" || column == "?column?" {
+    if column.len() == 0 || column == "" || column == "?column?" || column == "?" {
         format!("col_{}", index)
     } else if check_column_is_number(column) {
         format!("col_{}", column.replace("-", "_").replace(".", "_")).replace("__", "_")
@@ -59,8 +119,8 @@ pub fn check_column_name(column: &String, index: usize) -> String {
     }
 }
 
-pub fn get_column_types(columns: &Vec<String>, row: &ResultSet) -> PyColumnTypes {
-    let mut data: PyColumnTypes = HashMap::new();
+pub fn get_column_types(columns: &Vec<String>, row: &ResultSet) -> PySQLxColumnTypes {
+    let mut data: PySQLxColumnTypes = HashMap::new();
     let mut count: i32 = 1;
 
     if let Some(first) = row.first() {

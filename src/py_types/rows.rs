@@ -4,57 +4,62 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::fmt::Display;
 
-use crate::types::PyValue;
+use super::value::PySQLxValue;
 
-pub type PyRow = HashMap<String, PyValue>;
-pub type PyRows = Vec<PyRow>;
-pub type PyColumnTypes = HashMap<String, String>;
+pub type PySQLxRow = HashMap<String, PySQLxValue>;
+pub type PySQLxRows = Vec<PySQLxRow>;
+pub type PySQLxColumnTypes = HashMap<String, String>;
 
 #[pyclass]
 #[derive(Debug, Clone, Deserialize, PartialEq)]
-pub struct PySQLXResult {
-    pub rows: PyRows,
-    pub column_types: PyColumnTypes,
+pub struct PySQLxResponse {
+    pub rows: PySQLxRows,
+    pub column_types: PySQLxColumnTypes,
+    pub last_insert_id: Option<u64>,
 }
 
-impl PySQLXResult {
-    pub fn push(&mut self, row: PyRow) {
+impl PySQLxResponse {
+    pub fn push(&mut self, row: PySQLxRow) {
         self.rows.push(row);
     }
 
-    pub fn types(&self) -> &PyColumnTypes {
+    pub fn types(&self) -> &PySQLxColumnTypes {
         &self.column_types
     }
 
-    pub fn rows(&self) -> &PyRows {
+    pub fn rows(&self) -> &PySQLxRows {
         &self.rows
     }
 
-    pub fn set_column_types(&mut self, column_types: PyColumnTypes) {
+    pub fn set_column_types(&mut self, column_types: PySQLxColumnTypes) {
         self.column_types = column_types;
     }
 }
 
-impl Display for PySQLXResult {
+impl Display for PySQLxResponse {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "PySQLXResult(rows: [...], column_types: {:?})",
-            self.column_types
+            "PySQLXResult(rows: [...], column_types: {:?}, last_insert_id: {:?})",
+            self.column_types, self.last_insert_id
         )
     }
 }
 
-impl Default for PySQLXResult {
+impl Default for PySQLxResponse {
     fn default() -> Self {
-        let rows: PyRows = Vec::new();
-        let column_types: PyColumnTypes = HashMap::new();
-        Self { rows, column_types }
+        let rows: PySQLxRows = Vec::new();
+        let column_types: PySQLxColumnTypes = HashMap::new();
+        Self {
+            rows,
+            column_types,
+            last_insert_id: None,
+        }
     }
 }
 
 #[pymethods]
-impl PySQLXResult {
+impl PySQLxResponse {
     pub fn get_types(&self, py: Python) -> PyObject {
         self.types().to_object(py)
     }
@@ -67,8 +72,12 @@ impl PySQLXResult {
         let first_row = self.rows().get(0);
         match first_row {
             Some(row) => row.to_object(py),
-            None => PyDict::new(py).to_object(py),
+            None => PyDict::new_bound(py).to_object(py),
         }
+    }
+
+    pub fn get_last_insert_id(&self) -> Option<u64> {
+        self.last_insert_id
     }
 
     pub fn __len__(&self) -> usize {
@@ -91,18 +100,18 @@ mod tests {
 
     #[test]
     fn test_py_sqlx_result() {
-        let mut result = PySQLXResult::default();
+        let mut result = PySQLxResponse::default();
         let mut row = HashMap::new();
-        row.insert("id".to_string(), PyValue::Int(1));
-        row.insert("name".to_string(), PyValue::String("John".to_string()));
+        row.insert("id".to_string(), PySQLxValue::Int(1));
+        row.insert("name".to_string(), PySQLxValue::String("John".to_string()));
         result.push(row);
         let mut row = HashMap::new();
-        row.insert("id".to_string(), PyValue::Int(2));
-        row.insert("name".to_string(), PyValue::String("Jane".to_string()));
+        row.insert("id".to_string(), PySQLxValue::Int(2));
+        row.insert("name".to_string(), PySQLxValue::String("Jane".to_string()));
         result.push(row);
         let mut row = HashMap::new();
-        row.insert("id".to_string(), PyValue::Int(3));
-        row.insert("name".to_string(), PyValue::String("Jack".to_string()));
+        row.insert("id".to_string(), PySQLxValue::Int(3));
+        row.insert("name".to_string(), PySQLxValue::String("Jack".to_string()));
         result.push(row);
         let mut column_types = HashMap::new();
         column_types.insert("id".to_string(), "int".to_string());
