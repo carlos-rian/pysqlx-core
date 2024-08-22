@@ -161,7 +161,8 @@ impl PySQLxStatement {
     fn mapped_sql(sql: &str, mut param_keys: Vec<String>) -> (String, Vec<(i8, SQLPosition)>) {
         let mut param_positions: Vec<(i8, SQLPosition)> = Vec::new();
         param_keys.sort_by(|a, b| b.len().cmp(&a.len()));
-        let mut position: Vec<(usize, usize, String, String, String)> = Vec::new();
+
+        let mut positions: Vec<(usize, String, String, String)> = Vec::new();
         let mut exist_keys: Vec<String> = Vec::new();
         let mut new_sql = sql.to_string();
 
@@ -169,27 +170,36 @@ impl PySQLxStatement {
             let old_key = format!(":{}", key.as_str());
             let temp = new_sql.clone();
             let matches = temp.match_indices(old_key.as_str());
-            for (start, x) in matches {
+            for (start, mat) in matches {
                 let new_key = PySQLxStatement::generate_random_string(7, &exist_keys);
+
                 exist_keys.push(new_key.clone());
+
                 new_sql = new_sql.replacen(&old_key, &new_key, 1);
 
-                let n_start = new_sql.find(new_key.as_str()).unwrap_or_default();
-                let n_end = n_start + new_key.len();
+                let position = (start, key.clone(), old_key.clone(), new_key);
                 debug!(
-                    "old pos: {}:{} - new pos: {}:{} -> new: {} - old: {}",
-                    start,
-                    start + x.len(),
-                    n_start,
-                    n_end,
-                    new_key,
-                    old_key
+                    "replacing old_key: {} -> new_key: {} -> start: {} -> end: {}",
+                    position.2,
+                    position.3,
+                    position.0,
+                    position.0 + mat.len()
                 );
-                position.push((n_start, n_end, key.clone(), old_key.clone(), new_key))
+                positions.push(position);
             }
         }
-        position.sort_by(|a, b| a.0.cmp(&b.0));
-        for (idx, (_a, _b, key, old, new)) in position.iter().enumerate() {
+        // remap the position based on the new key
+        // change the start position based on the new key
+        positions = positions
+            .iter()
+            .map(|v| {
+                let new_start = new_sql.find(&v.3).unwrap();
+                (new_start, v.1.clone(), v.2.clone(), v.3.clone())
+            })
+            .collect();
+
+        positions.sort_by(|a, b| a.0.cmp(&b.0));
+        for (idx, (_a, key, old, new)) in positions.iter().enumerate() {
             param_positions.push((
                 idx as i8,
                 SQLPosition {
@@ -242,11 +252,12 @@ impl PySQLxStatement {
             new_sql = new_sql.replace(sql_pos.new_key.as_str(), arg.as_str());
             new_params.push(value.clone());
             debug!(
-                "replacing new_key: {} -> arg: {} -> value: {} -> old_key: {}",
+                "replacing new_key: {} -> arg: {} -> old_key: {}{}-> value: {}",
                 sql_pos.new_key,
                 arg,
+                sql_pos.old_key,
+                " ".repeat(30 - sql_pos.old_key.len()),
                 value.clone().to_value(),
-                sql_pos.old_key
             );
         }
         info!(
