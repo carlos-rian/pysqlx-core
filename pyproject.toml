@@ -77,7 +77,7 @@ color_output = true
 
 [tool.poetry]
 name = "pysqlx-core"
-version = "0.1.6"
+version = "0.1.50"
 description = "Python Async SQL Engines"
 authors = ["Carlos Rian <crian.rian@gmail.com>"]
 package-mode = false
@@ -100,7 +100,7 @@ toml = "^0.10.2"
 taskipy = "^1.13.0"
 patchelf = "^0.17.2.1"
 trio = "^0.26.0"
-uvloop = "^0.19.0"
+uvloop = "^0.20.0"
 
 [tool.taskipy.tasks]
 test = "cargo test -p pysqlx-core"
