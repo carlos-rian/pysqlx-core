@@ -654,15 +654,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a246d82be1c9d791c5dfde9a2bd045fc3cbba3fa2b11ad558f27d01712f00569"
 
 [[package]]
-name = "encoding_rs"
-version = "0.8.34"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b45de904aa0b010bce2ab45264d0631681847fa7b6f2eaa7dab7619943bc4f59"
-dependencies = [
- "cfg-if",
-]
-
-[[package]]
 name = "enumflags2"
 version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2048,8 +2039,7 @@ dependencies = [
  "serde_json",
  "sqlformat",
  "thiserror",
- "tiberius 0.11.8",
- "tiberius 0.12.3",
+ "tiberius",
  "tokio",
  "tokio-postgres",
  "tokio-util 0.6.10",
@@ -2654,34 +2644,6 @@ dependencies = [
  "enumflags2",
  "futures",
  "futures-sink",
- "futures-util",
- "num-traits",
- "once_cell",
- "pin-project-lite",
- "pretty-hex",
- "thiserror",
- "tokio",
- "tokio-util 0.7.8",
- "tracing",
- "uuid",
- "winauth",
-]
-
-[[package]]
-name = "tiberius"
-version = "0.12.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1446cb4198848d1562301a3340424b4f425ef79f35ef9ee034769a9dd92c10d"
-dependencies = [
- "async-trait",
- "asynchronous-codec",
- "bigdecimal",
- "byteorder",
- "bytes",
- "chrono",
- "connection-string",
- "encoding_rs",
- "enumflags2",
  "futures-util",
  "num-traits",
  "once_cell",
