@@ -187,7 +187,7 @@ jobs:
           args: >
             --release
             --out dist
-            --interpreter ${{ matrix.interpreter || 3.8 3.9 3.10 3.11 3.12 }} ${{ matrix.extra-build-args }}
+            --interpreter ${{ matrix.interpreter || '3.8 3.9 3.10 3.11 3.12' }} ${{ matrix.extra-build-args }}
           rust-toolchain: stable
           sccache: true
           docker-options: -e CI
