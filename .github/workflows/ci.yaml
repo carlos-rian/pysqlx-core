@@ -95,13 +95,13 @@ jobs:
 
           - os: windows
             ls: dir
-            interpreter: ${{ env.PYTHON_VERSIONS }}
+            interpreter: '$PYTHON_VERSIONS'
 
           - os: windows
             ls: dir
             target: i686
             python-architecture: x86
-            interpreter: ${{ env.PYTHON_VERSIONS }}
+            interpreter: '$PYTHON_VERSIONS'
           
           # depends from libz, not working on windows correctly.
           #- os: windows
@@ -111,7 +111,7 @@ jobs:
 
           - os: macos
             target: aarch64
-            interpreter: ${{ env.PYTHON_VERSIONS }}
+            interpreter: '$PYTHON_VERSIONS'
 
           - os: ubuntu
             platform: linux
@@ -124,7 +124,7 @@ jobs:
           - os: ubuntu
             platform: linux
             target: armv7
-            interpreter: ${{ env.PYTHON_VERSIONS }}
+            interpreter: '$PYTHON_VERSIONS'
           # musllinux
           - os: ubuntu
             platform: linux
@@ -139,12 +139,12 @@ jobs:
           - os: ubuntu
             platform: linux
             target: ppc64le
-            interpreter: ${{ env.PYTHON_VERSIONS }}
+            interpreter: '$PYTHON_VERSIONS'
 
           - os: ubuntu
             platform: linux
             target: s390x
-            interpreter: ${{ env.PYTHON_VERSIONS }}
+            interpreter: '$PYTHON_VERSIONS'
 
         exclude:
           # Optimized PGO builds for x86_64 manylinux and windows follow a different matrix,
