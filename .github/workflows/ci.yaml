@@ -51,7 +51,7 @@ jobs:
           components: llvm-tools
 
       - name: run test
-        run: cargo test -p database -p convert -p py_types
+        run: cargo test -p pysqlx-core
   
   build-sdist:
     name: build sdist
