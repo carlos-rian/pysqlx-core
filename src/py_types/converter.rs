@@ -58,20 +58,25 @@ impl PySQLxParamKind {
             let item_kind = get_python_type_name(&item);
             if kind != item_kind {
                 //return (false, format!("the tuple must have the same type, the first item is a {} and the current item is a {}", kind, item_kind));
-                return (false, format!("The tuple must have the same type, the first item is a {} and the current item position {} is a {}", kind, idx, item_kind), false);
+                return (false, format!("The tuple (array) must have the same type, the first item is a {} and the current item position {} is a {}", kind, idx, item_kind), false);
             }
         }
         (true, String::new(), Self::is_enum_instance(py, &first_item))
     }
 
-    fn from(py: Python, value: &Bound<'_, PyAny>) -> Self {
+    fn from(py: Python, value: &Bound<'_, PyAny>, provider: &str) -> Self {
         // kind string is python class Type name
         info!("{:?}", value);
-        match get_python_type_name(value).to_lowercase().as_str() {
+        match get_python_type_name(value).as_str() {
             "bool" => PySQLxParamKind::Boolean,
             "str" => PySQLxParamKind::String,
             "int" => PySQLxParamKind::Int,
             "tuple" => {
+                if provider != "postgresql" {
+                    return PySQLxParamKind::UnsupportedType(
+                        "The tuple (array) is only supported in PostgreSQL".to_string(),
+                    );
+                }
                 // check if the tuple is empty
                 let tuple = value.extract::<Bound<PyTuple>>().unwrap();
                 if tuple.is_empty() {
@@ -93,15 +98,15 @@ impl PySQLxParamKind {
             }
             "dict" | "list" => PySQLxParamKind::Json,
             "xml" => PySQLxParamKind::Xml,
-            "uuid" => PySQLxParamKind::Uuid,
             "time" => PySQLxParamKind::Time,
             "date" => PySQLxParamKind::Date,
             "datetime" => PySQLxParamKind::DateTime,
             "float" => PySQLxParamKind::Float,
             "bytes" => PySQLxParamKind::Bytes,
-            "decimal" => PySQLxParamKind::Numeric,
-            "none" => PySQLxParamKind::Null,
-            "enum" => PySQLxParamKind::Enum,
+            "UUID" => PySQLxParamKind::Uuid,
+            "Decimal" => PySQLxParamKind::Numeric,
+            "NoneType" => PySQLxParamKind::Null,
+            "Enum" => PySQLxParamKind::Enum,
             t => {
                 if Self::is_enum_instance(py, &value) {
                     PySQLxParamKind::Enum
@@ -243,6 +248,7 @@ impl Converters {
                 value_type.to_string(),
                 "json".to_string(),
                 "Unsupported type".to_string(),
+                None,
             )),
         }
     }
@@ -296,6 +302,7 @@ impl Converters {
                     If the python enum.value is a number (int, float), we will use the enum.name.
                     Otherwise, an error will be raised."#
                     .to_string(),
+                None,
             ))
         }
     }
@@ -304,6 +311,7 @@ impl Converters {
         py: Python,
         kind: PySQLxParamKind,
         value: &Bound<'_, PyAny>,
+        provider: &str,
     ) -> Result<PySQLxValue, PySQLxInvalidParamError> {
         match kind {
             PySQLxParamKind::Boolean => Ok(PySQLxValue::Boolean(value.extract::<bool>().unwrap())),
@@ -334,8 +342,9 @@ impl Converters {
                     pysqlx_list.push(
                         match Self::convert_pyobject_to_pysqlx_value(
                             py,
-                            PySQLxParamKind::from(py, &item),
+                            PySQLxParamKind::from(py, &item, provider),
                             &item,
+                            provider,
                         ) {
                             Ok(v) => v,
                             Err(e) => return Err(e),
@@ -370,6 +379,7 @@ impl Converters {
                 t,
                 "str|int|float|etc".to_string(),
                 "Unsupported type, check the documentation".to_string(),
+                None,
             )),
         }
     }
@@ -377,15 +387,19 @@ impl Converters {
     pub fn convert_to_pysqlx_value(
         py: Python,
         values: &HashMap<String, Bound<PyAny>>,
+        provider: &str,
     ) -> Result<HashMap<String, PySQLxValue>, PySQLxInvalidParamError> {
         let mut params = HashMap::new();
         for (key, value) in values {
-            let kind = PySQLxParamKind::from(py, value);
-            match Self::convert_pyobject_to_pysqlx_value(py, kind, value) {
+            let kind = PySQLxParamKind::from(py, value, provider);
+            match Self::convert_pyobject_to_pysqlx_value(py, kind, value, provider) {
                 Ok(v) => {
                     params.insert(key.clone(), v);
                 }
-                Err(e) => return Err(e),
+                Err(mut e) => {
+                    e.set_field(Some(key.clone()));
+                    return Err(e);
+                }
             }
         }
 
