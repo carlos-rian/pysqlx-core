@@ -28,7 +28,9 @@ async def sqlite():
         )
     """,
     )
-    await conn.execute(PySQLxStatement(provider="sqlite", sql="DROP TABLE IF EXISTS users"))
+    await conn.execute(
+        PySQLxStatement(provider="sqlite", sql="DROP TABLE IF EXISTS users")
+    )
     await conn.execute(tb)
     params = [
         ("John Do", datetime.now(), True, 1, 1.1),
@@ -48,7 +50,9 @@ async def sqlite():
         )
         assert row_affected == 1
 
-    result = await conn.query_typed(PySQLxStatement(provider="sqlite", sql="SELECT * FROM users"))
+    result = await conn.query_typed(
+        PySQLxStatement(provider="sqlite", sql="SELECT * FROM users")
+    )
     pprint(result.get_all())
     pprint(result.get_first())
     pprint(result.get_last_insert_id())
@@ -63,7 +67,7 @@ def typ():
         BLACK = "black"
 
     return {
-        "type_int": 1957483605,  # int
+        "type_int": None,
         "type_smallint": 3618,  # int (smallint)
         "type_bigint": -3762183126230668,  # int (bigint)
         "type_serial": 36,  # int (serial)
@@ -72,7 +76,9 @@ def typ():
         "type_numeric": 130.3064,  # float (numeric)
         "type_float": 2159.912,  # float (float)
         "type_double": 1577.3155,  # float (double)
-        "type_money": Decimal("6803.77"),  # float (money), parsed from string '$6,803.77'
+        "type_money": Decimal(
+            "6803.77"
+        ),  # float (money), parsed from string '$6,803.77'
         "type_char": "C",  # str (char)
         "type_varchar": "ATYOLOUREPOJRSNOWKMULTTRHJPTCWOIYHQVVIXVUFZNCMEFJTRLCJZMKNJVAUYIEZYKVPWCWGGRDBUKKEDQHSEYPACMNGBOLHLC",  # str (varchar)
         "type_text": "text",  # str (text)
@@ -91,20 +97,29 @@ def typ():
         "type_array_text": ("name", "age"),
         "type_array_integer": (1, 2, 3),
         "type_array_date": (date(2022, 10, 27), date(2022, 10, 27)),
-        "type_array_uuid": (UUID("7b97c8a6-7e5a-4412-a57d-78565a136582"), UUID("7b97c8a6-7e5a-4412-a57d-78565a136583")),
+        "type_array_uuid": (
+            UUID("7b97c8a6-7e5a-4412-a57d-78565a136582"),
+            UUID("7b97c8a6-7e5a-4412-a57d-78565a136583"),
+        ),
     }
 
 
 async def psql():
-
     conn = await new("postgresql://postgres:Build!Test321@localhost:4442/engine")
 
-    await conn.execute(PySQLxStatement(provider="postgresql", sql="DROP TABLE IF EXISTS pysqlx_table"))
+    await conn.execute(
+        PySQLxStatement(provider="postgresql", sql="DROP TABLE IF EXISTS pysqlx_table")
+    )
 
     # create enum type
-    await conn.execute(PySQLxStatement(provider="postgresql", sql="DROP TYPE IF EXISTS colors;"))
     await conn.execute(
-        PySQLxStatement(provider="postgresql", sql="CREATE TYPE colors AS ENUM ('blue', 'red', 'gray', 'black');")
+        PySQLxStatement(provider="postgresql", sql="DROP TYPE IF EXISTS colors;")
+    )
+    await conn.execute(
+        PySQLxStatement(
+            provider="postgresql",
+            sql="CREATE TYPE colors AS ENUM ('blue', 'red', 'gray', 'black');",
+        )
     )
 
     await conn.execute(
@@ -219,14 +234,88 @@ async def psql():
     row_affected = await conn.execute(p)
     assert row_affected == 1
 
-    result = await conn.query_typed(PySQLxStatement(provider="postgresql", sql="SELECT * FROM pysqlx_table"))
+    result = await conn.query_typed(
+        PySQLxStatement(provider="postgresql", sql="SELECT * FROM pysqlx_table")
+    )
     pprint(result.get_all())
     pprint(result.get_first())
     pprint(result.get_last_insert_id())
     pprint(len(result))
 
 
+async def mysql():
+    sql = """	
+    INSET INTO pysqlx_table (
+        type_int,
+        type_smallint,
+        type_bigint,
+        type_numeric,
+        type_float,
+        type_double,
+        type_decimal,
+        type_char,
+        type_varchar,
+        type_nvarchar,
+        type_text,
+        type_boolean,
+        type_date,
+        type_time,
+        type_timestamp,
+        type_datetime,
+        type_enum,
+        type_json,
+        type_bytes
+    )
+    VALUES (
+        :type_int,
+        :type_smallint,
+        :type_bigint,
+        :type_numeric,
+        :type_float,
+        :type_double,
+        :type_decimal,
+        :type_char,
+        :type_varchar,
+        :type_nvarchar,
+        :type_text,
+        :type_boolean,
+        :type_date,
+        :type_time,
+        :type_timestamp,
+        :type_datetime,
+        :type_enum,
+        :type_json,
+        :type_bytes
+        );
+    """
+    params = {
+        "type_int": 1,
+        "type_smallint": 2,
+        "type_bigint": 3,
+        "type_numeric": 14.8389,
+        "type_float": 13343400,
+        "type_double": 1.6655444,
+        "type_decimal": Decimal("19984"),
+        "type_char": "r",
+        "type_varchar": "hfhfjjieurjnnd",
+        "type_nvarchar": "$~k;dldëjdjd",
+        "type_text": "hefbvrnjnvorvnojqnour3nbrububutbu9eruinrvouinbrfaoiunbsfobnfsokbf",
+        "type_boolean": True,
+        "type_date": date(2022, 1, 1),
+        "type_time": time(12, 10, 11),
+        "type_timestamp": datetime(2022, 12, 20, 8, 59, 55),
+        "type_datetime": datetime(2022, 12, 20, 9, 0),
+        "type_enum": "black",
+        "type_json": ["name", "age"],
+        "type_bytes": b"super bytes",
+    }
+
+    stmt = PySQLxStatement(provider="mysql", sql=sql, params=params)
+    print(stmt)
+
+
 async def main():
+    await mysql()
     await psql()
     await sqlite()
 

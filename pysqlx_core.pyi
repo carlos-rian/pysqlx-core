@@ -71,10 +71,16 @@ class PySQLxError(Exception):
         """
         ...
 
-class PySQLxInvalidParamError(Exception):
+class PySQLxInvalidParamError(TypeError):
+    field: str
     typ_from: str
     typ_to: str
     details: str
+
+    def field(self) -> str:
+        """
+        Return the field of the error
+        """
 
     def typ_from(self) -> str:
         """
@@ -94,6 +100,28 @@ class PySQLxInvalidParamError(Exception):
         """
         ...
 
+class PySQLxInvalidProviderError(TypeError):
+    field: str
+    provider: str
+    typ: str
+
+    def field(self) -> str:
+        """
+        Return the field of the error
+        """
+
+    def provider(self) -> str:
+        """
+        Return the provider of the error
+        """
+        ...
+
+    def typ(self) -> str:
+        """
+        Return the typ of the error
+        """
+        ...
+
 class PySQLxStatement:
     """
     ## PySQLxStatement
@@ -108,6 +136,13 @@ class PySQLxStatement:
         sql: str,
         params: Union[Dict[str, SupportedValueType], None],
     ) -> Self: ...
+    def sql(self) -> str:
+        """Returns the SQL statement."""
+        ...
+
+    def params(self) -> Union[Dict[str, SupportedValueType], None]:
+        """Returns the parameters of the SQL statement."""
+        ...
 
 class PySQLxResponse:
     """
@@ -207,6 +242,7 @@ class Connection:
         * [SQLite documentation]: (https://www.sqlite.org/isolation.html)
         """
         ...
+
     async def set_isolation_level(self, isolation_level: "IsolationLevel") -> "None":
         """
         Sets the isolation level of the connection.
@@ -219,6 +255,7 @@ class Connection:
         * [SQLite documentation]: (https://www.sqlite.org/isolation.html)
         """
         raise PySQLxError()
+
     async def start_transaction(
         self, isolation_level: "Union[IsolationLevel, None]"
     ) -> "None":
