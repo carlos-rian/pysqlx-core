@@ -100,6 +100,7 @@ pub fn py_error(err: QuaintError, typ: DBError) -> PySQLxError {
 #[pyclass(name = "PySQLxInvalidParamError", extends = PyTypeError)]
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct PySQLxInvalidParamError {
+    field: Option<String>,
     typ_from: String,
     typ_to: String,
     details: String,
@@ -108,18 +109,30 @@ pub struct PySQLxInvalidParamError {
 impl PySQLxInvalidParamError {
     pub fn to_pyerr(&self) -> PyErr {
         PyErr::new::<PySQLxInvalidParamError, _>((
+            self.field.clone(),
             self.typ_from.clone(),
             self.typ_to.clone(),
             self.details.clone(),
         ))
+    }
+
+    pub fn set_field(&mut self, field: Option<String>) {
+        self.field = field;
     }
 }
 
 #[pymethods]
 impl PySQLxInvalidParamError {
     #[new]
-    pub fn py_new(typ_from: String, typ_to: String, details: String) -> Self {
+    #[pyo3(signature = (typ_from, typ_to, details, field = None))]
+    pub fn py_new(
+        typ_from: String,
+        typ_to: String,
+        details: String,
+        field: Option<String>,
+    ) -> Self {
         Self {
+            field,
             typ_from,
             typ_to,
             details,
@@ -128,13 +141,17 @@ impl PySQLxInvalidParamError {
 
     pub fn __str__(&self) -> String {
         format!(
-            "PySQLxInvalidParamError(typ_from='{}', typ_to='{}', details='{}')",
-            self.typ_from, self.typ_to, self.details
+            "PySQLxInvalidParamError(field='{:?}', typ_from='{}', typ_to='{}', details='{}')",
+            self.field, self.typ_from, self.typ_to, self.details
         )
     }
 
     pub fn __repr__(&self) -> String {
         self.__str__()
+    }
+
+    pub fn field(&self) -> Option<String> {
+        self.field.clone()
     }
 
     pub fn typ_from(&self) -> String {
