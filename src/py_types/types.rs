@@ -170,14 +170,22 @@ impl PySQLxStatement {
             let temp = new_sql.clone();
             let matches = temp.match_indices(old_key.as_str());
             for (start, x) in matches {
-                debug!("key found: {}:{} -> {}", start, start + x.len(), old_key);
                 let new_key = PySQLxStatement::generate_random_string(7, &exist_keys);
                 exist_keys.push(new_key.clone());
-
                 new_sql = new_sql.replacen(&old_key, &new_key, 1);
 
-                let end = start + new_key.len();
-                position.push((start, end, key.clone(), old_key.clone(), new_key))
+                let n_start = new_sql.find(new_key.as_str()).unwrap_or_default();
+                let n_end = n_start + new_key.len();
+                debug!(
+                    "old pos: {}:{} - new pos: {}:{} -> new: {} - old: {}",
+                    start,
+                    start + x.len(),
+                    n_start,
+                    n_end,
+                    new_key,
+                    old_key
+                );
+                position.push((n_start, n_end, key.clone(), old_key.clone(), new_key))
             }
         }
         position.sort_by(|a, b| a.0.cmp(&b.0));
@@ -203,7 +211,9 @@ impl PySQLxStatement {
         match param.as_str() {
             "postgresql" => format!("${}", idx + 1),
             "sqlserver" => format!("@P{}", idx + 1),
-            _ => "?".to_string(), // "sqlite" | "mysql"
+            "sqlite" => format!("?"),
+            "mysql" => format!("?"),
+            _ => panic!("Unsupported provider"),
         }
     }
 
@@ -217,10 +227,11 @@ impl PySQLxStatement {
             return Ok((sql.to_string(), Vec::new()));
         }
 
-        let converted_params = match Converters::convert_to_pysqlx_value(py, params) {
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        };
+        let converted_params =
+            match Converters::convert_to_pysqlx_value(py, params, provider.as_str()) {
+                Ok(v) => v,
+                Err(e) => return Err(e),
+            };
         let (mut new_sql, param_positions) =
             Self::mapped_sql(sql.as_str(), params.keys().cloned().collect());
         let mut new_params = Vec::new();
@@ -231,11 +242,11 @@ impl PySQLxStatement {
             new_sql = new_sql.replace(sql_pos.new_key.as_str(), arg.as_str());
             new_params.push(value.clone());
             debug!(
-                "old_key: {} \t -> replacing new_key: {} -> {} with {} ",
-                sql_pos.old_key,
+                "replacing new_key: {} -> arg: {} -> value: {} -> old_key: {}",
                 sql_pos.new_key,
                 arg,
-                value.clone().to_value()
+                value.clone().to_value(),
+                sql_pos.old_key
             );
         }
         info!(
