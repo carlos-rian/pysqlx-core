@@ -37,20 +37,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - id: cache-rust
-        name: cache rust
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: v3
-
       - name: install rust stable
-        id: rust-toolchain
         uses: dtolnay/rust-toolchain@stable
+
+      - name: cache rust
+        uses: Swatinem/rust-cache@v2
+
+      - name: set up python
+        uses: actions/setup-python@v5
         with:
-          components: llvm-tools
+          python-version: '3.11'
+
+      - run: pip install -e .
+        env:
+          RUST_BACKTRACE: 1
 
       - name: run test
-        run: cargo test -p pysqlx-core
+        run: |
+          cargo test -p pysqlx-core
+          echo "cargo test -p pysqlx-core -> ignore because the pyo3 test not working"
   
   build-sdist:
     name: build sdist
