@@ -74,14 +74,14 @@ async def main(sql):
     # Insert a row and return quantity rows affected
     insert = pysqlx_core.PySQLxStatement(
         provider="postgresql", 
-        sql="INSERT INTO test (name) VALUES (:name);"
+        sql="INSERT INTO test (name) VALUES (:name);",
         params={"name": "Carlos"}
     )
     await db.execute(stmt=insert)
 
     # can you see the sql and params pre builded
     print("SQL:", insert.sql())
-    # output: INSERT INTO test (name) VALUES (?);
+    # output: INSERT INTO test (name) VALUES ($1);
     print("PARAMS:", insert.params())
     # output: ['Carlos']
 
@@ -99,7 +99,7 @@ async def main(sql):
     types = result.get_types() # Dict[str, str] 
 
     # Select all rows, return how List[Dict[str, Any]]
-    rows = await db.get_all(sql="SELECT * FROM test;")
+    rows = await db.query_all(pysqlx_core.PySQLxStatement(provider="postgresql", sql="SELECT * FROM test;"))
 
     # close? no need 👌-> auto-close when finished programmer or go out of context..
     
