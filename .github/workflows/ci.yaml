@@ -33,8 +33,8 @@ env:
 jobs:
   rust-test:
     # ignore because the pyo3 test not working
-    if: ${{ env.CI_REMOTE_RUN == '1' }}
     runs-on: ubuntu-latest
+    if:  ${{ vars.CI_REMOTE_RUN == '1' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -60,7 +60,7 @@ jobs:
   
   build-sdist:
     name: build sdist
-    if: ${{ env.CI_REMOTE_RUN == '1' }}
+    if:  ${{ vars.CI_REMOTE_RUN == '1' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -89,7 +89,7 @@ jobs:
   
   build:
     name: build on ${{ matrix.platform || matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
-    if: ${{ env.CI_REMOTE_RUN == '1' }}
+    if:  ${{ vars.CI_REMOTE_RUN == '1' }}
     strategy:
       fail-fast: true
       max-parallel: 4
