@@ -211,17 +211,25 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu, windows]
-        target: [x86_64]
-        manylinux: [auto]
-        interpreter: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: [linux, windows, macos]
+        interpreter: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
         include:
-          - os: ubuntu
-            platform: linux
+          # standard runners with override for macos arm
+          - os: linux
+            runs-on: ubuntu-latest
           - os: windows
             ls: dir
+            runs-on: windows-latest
+          - os: macos
+            runs-on: macos-latest-xlarge
+        exclude:
+          # macos arm only supported from 3.10 and up
+          - os: macos
+            interpreter: '3.8'
+          - os: macos
+            interpreter: '3.9'
 
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.runs-on }}
     steps:
       - uses: actions/checkout@v4
 
@@ -229,7 +237,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.interpreter }}
-          architecture: ${{ matrix.python-architecture || 'x64' }}
+          allow-prereleases: true
       
       - name: install rust stable
         id: rust-toolchain
