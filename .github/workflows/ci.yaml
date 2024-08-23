@@ -28,11 +28,12 @@ on:
 env:
   PKG_CONFIG_ALLOW_CROSS: 1
   PY_SQLX_VERSION: 0.0.1 # change when the run "release - check package version"
+  CI_REMOTE_RUN: 0
 
 jobs:
   rust-test:
     # ignore because the pyo3 test not working
-    if: false
+    if: ${{ env.CI_REMOTE_RUN == '1' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,6 +60,7 @@ jobs:
   
   build-sdist:
     name: build sdist
+    if: ${{ env.CI_REMOTE_RUN == '1' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -87,6 +89,7 @@ jobs:
   
   build:
     name: build on ${{ matrix.platform || matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
+    if: ${{ env.CI_REMOTE_RUN == '1' }}
     strategy:
       fail-fast: true
       max-parallel: 4
@@ -193,7 +196,7 @@ jobs:
           args: >
             --release
             --out dist
-            --interpreter ${{ matrix.interpreter || '3.8 3.9 3.10 3.11 3.12 3.13' }} ${{ matrix.extra-build-args }}
+            --interpreter ${{ matrix.interpreter || '3.8 3.9 3.10 3.11 3.12 3.13' }}
           rust-toolchain: stable
           sccache: true
           docker-options: -e CI
@@ -210,31 +213,22 @@ jobs:
   build-pgo:
     name: build pgo-optimized on ${{ matrix.platform || matrix.os }} (${{ matrix.interpreter}} - ${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
     strategy:
-      max-parallel: 4
       fail-fast: true
       matrix:
-        os: [linux, windows, macos]
-        interpreter: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
+        os: [ubuntu, windows]
+        target: [x86_64]
+        manylinux: [auto]
+        interpreter: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
         include:
-          # standard runners with override for macos arm
-          - os: linux
-            runs-on: ubuntu-latest
+          - os: ubuntu
+            platform: linux
           - os: windows
             ls: dir
-            runs-on: windows-latest
-          - os: macos
-            runs-on: macos-latest-xlarge
-        exclude:
-          # macos arm only supported from 3.10 and up
-          - os: macos
-            interpreter: '3.8'
-          - os: macos
-            interpreter: '3.9'
 
-    runs-on: ${{ matrix.runs-on }}
+    runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v4
-
+         
       - name: set up python
         uses: actions/setup-python@v5
         with:
@@ -246,7 +240,6 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: llvm-tools
-
 
       - run: pip install -U toml httpx twine
 
@@ -268,9 +261,8 @@ jobs:
           args: >
             --release
             --out dist
-            --interpreter ${{ matrix.maturin-interpreter || matrix.interpreter }}
+            --interpreter ${{ matrix.interpreter }}
           rust-toolchain: stable
-          sccache: true
           docker-options: -e CI
 
       - run: ${{ matrix.ls || 'ls -lh' }} dist/

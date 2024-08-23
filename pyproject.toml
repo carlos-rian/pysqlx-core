@@ -59,6 +59,7 @@ Source = "https://github.com/carlos-rian/pysqlx-core"
 
 [tool.maturin]
 bindings = "pyo3"
+features = ["pyo3/extension-module"]
 
 
 [tool.black]
