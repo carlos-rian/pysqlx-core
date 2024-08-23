@@ -194,7 +194,8 @@ jobs:
             --out dist
             --interpreter ${{ matrix.interpreter || '3.8 3.9 3.10 3.11 3.12 3.13' }}
           rust-toolchain: stable
-          sccache: true
+          # sccache is not supported on Windows
+          sccache: ${{ matrix.os != 'windows' }} 
           docker-options: -e CI
 
       - run: ${{ matrix.ls || 'ls -lh' }} dist/
