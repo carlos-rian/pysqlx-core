@@ -89,7 +89,7 @@ jobs:
     name: build on ${{ matrix.platform || matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
     strategy:
       fail-fast: true
-      max-parallel: 6
+      max-parallel: 4
       matrix:
         os: [ubuntu, macos, windows]
         target: [x86_64, aarch64]
@@ -210,7 +210,7 @@ jobs:
   build-pgo:
     name: build pgo-optimized on ${{ matrix.platform || matrix.os }} (${{ matrix.interpreter}} - ${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
     strategy:
-      max-parallel: 6
+      max-parallel: 4
       fail-fast: true
       matrix:
         os: [linux, windows, macos]
