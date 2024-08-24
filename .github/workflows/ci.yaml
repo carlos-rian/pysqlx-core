@@ -87,7 +87,7 @@ jobs:
   build:
     name: build on ${{ matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
     strategy:
-      fail-fast: true
+      fail-fast: false
       matrix:
         os: [ubuntu, macos, windows]
         target: [x86_64, aarch64]
@@ -138,9 +138,9 @@ jobs:
         # x86_64 pypy builds are not PGO optimized
         # i686 not supported by pypy
         # aarch64 only 3.11 and up, also not PGO optimized
-        - os: windows
-          target: x86_64
-          interpreter: pypy3.9 pypy3.10
+        #- os: windows
+        #  target: x86_64
+        #  interpreter: pypy3.9 pypy3.10
         - os: windows
           target: i686
           python-architecture: x86
