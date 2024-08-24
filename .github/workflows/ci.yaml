@@ -202,7 +202,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: pypi_files
+          name: pypi_files_${{ matrix.os }}_${{ matrix.target }}_${{ matrix.interpreter || 'all' }}_${{ matrix.manylinux }}
           path: dist
   
   build-pgo:
@@ -267,7 +267,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: pypi_files
+          name: pypi_files_${{ matrix.os }}_${{ matrix.interpreter }}
           path: dist
 
   release:
@@ -297,9 +297,10 @@ jobs:
           python .github/release.py
 
       - name: download articart
-        uses: actions/download-artifact@v3
+        uses:  actions/download-artifact@v4
         with:
-          name: pypi_files
+          name: pypi_files_*
+          merge-multiple: true
           path: dist
 
       - run: twine check --strict dist/*
