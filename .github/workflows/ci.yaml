@@ -85,10 +85,9 @@ jobs:
           path: dist
   
   build:
-    name: build on ${{ matrix.platform || matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
+    name: build on ${{ matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
     strategy:
       fail-fast: true
-      max-parallel: 4
       matrix:
         os: [ubuntu, macos, windows]
         target: [x86_64, aarch64]
