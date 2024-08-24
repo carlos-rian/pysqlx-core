@@ -79,7 +79,7 @@ jobs:
           command: sdist
           args: --out dist
           rust-toolchain: stable
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: pypi_files
           path: dist
@@ -88,6 +88,7 @@ jobs:
     name: build on ${{ matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
     strategy:
       fail-fast: false
+      max-parallel: 14
       matrix:
         os: [ubuntu, macos, windows]
         target: [x86_64, aarch64]
@@ -199,7 +200,7 @@ jobs:
 
       - run: twine check --strict dist/*
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: pypi_files
           path: dist
@@ -208,6 +209,7 @@ jobs:
     name: build pgo-optimized on ${{ matrix.platform || matrix.os }} (${{ matrix.interpreter}} - ${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
     strategy:
       fail-fast: true
+      max-parallel: 12
       matrix:
         os: [ubuntu, windows]
         target: [x86_64]
@@ -263,7 +265,7 @@ jobs:
 
       - run: twine check --strict dist/*
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: pypi_files
           path: dist
