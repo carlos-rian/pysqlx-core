@@ -94,28 +94,36 @@ jobs:
         target: [x86_64, aarch64]
         manylinux: [auto]
         include:
-          - os: ubuntu
-            platform: linux
-
+          # windows;
+          # x86_64 pypy builds are not PGO optimized
+          # i686 not supported by pypy
+          # aarch64 only 3.11 and up, also not PGO optimized
           - os: windows
-            ls: dir
-            interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
-
-          - os: windows
-            ls: dir
             target: i686
             python-architecture: x86
             interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
+          # FIXME aarch64 builds broken, see https://github.com/PyO3/maturin/issues/2110
+          # - os: windows
+          #   target: aarch64
+          #   interpreter: 3.11 3.12 3.13
           
           # depends from libz, not working on windows correctly.
           #- os: windows
           #  ls: dir
           #  target: aarch64
           #  interpreter: 3.11 3.12
+          - os: macos
+            target: x86_64
+            interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
 
           - os: macos
             target: aarch64
             interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
+          
+
+          # manylinux
+          - os: ubuntu
+            platform: linux
 
           - os: ubuntu
             platform: linux
@@ -129,6 +137,17 @@ jobs:
             platform: linux
             target: armv7
             interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
+          
+          - os: ubuntu
+            platform: linux
+            target: ppc64le
+            interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
+
+          - os: ubuntu
+            platform: linux
+            target: s390x
+            interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
+
           # musllinux
           - os: ubuntu
             platform: linux
@@ -140,15 +159,7 @@ jobs:
             target: aarch64
             manylinux: musllinux_1_1
 
-          - os: ubuntu
-            platform: linux
-            target: ppc64le
-            interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
-
-          - os: ubuntu
-            platform: linux
-            target: s390x
-            interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
+          
 
         exclude:
           # Optimized PGO builds for x86_64 manylinux and windows follow a different matrix,
