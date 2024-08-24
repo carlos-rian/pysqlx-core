@@ -90,7 +90,7 @@ jobs:
       fail-fast: false
       max-parallel: 14
       matrix:
-        os: [ubuntu, macos, windows]
+        os: [linux, macos, windows]
         target: [x86_64, aarch64]
         manylinux: [auto]
         include:
@@ -206,20 +206,28 @@ jobs:
           path: dist
   
   build-pgo:
-    name: build pgo-optimized on ${{ matrix.platform || matrix.os }} (${{ matrix.interpreter}} - ${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
+    name: build pgo-optimized on build pgo-optimized on ${{ matrix.os }} / ${{ matrix.interpreter }}
     strategy:
       fail-fast: true
       max-parallel: 12
       matrix:
-        os: [ubuntu, windows]
-        target: [x86_64]
-        manylinux: [auto]
-        interpreter: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: [linux, windows, macos]
+        interpreter: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
         include:
-          - os: ubuntu
-            platform: linux
+          # standard runners with override for macos arm
+          - os: linux
+            runs-on: ubuntu-latest
           - os: windows
             ls: dir
+            runs-on: windows-latest
+          - os: macos
+            runs-on: macos-latest-xlarge
+        exclude:
+          # macos arm only supported from 3.10 and up
+          - os: macos
+            interpreter: '3.8'
+          - os: macos
+            interpreter: '3.9'
 
     runs-on: ${{ matrix.os }}-latest
     steps:
@@ -252,8 +260,8 @@ jobs:
       - name: build pgo-optimized wheel
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.target }}
-          manylinux: ${{ matrix.manylinux || 'auto' }}
+          #target: ${{ matrix.target }}
+          manylinux: 'auto'
           args: >
             --release
             --out dist
