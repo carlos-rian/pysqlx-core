@@ -81,7 +81,7 @@ jobs:
           rust-toolchain: stable
       - uses: actions/upload-artifact@v4
         with:
-          name: pypi_files
+          name: pypi_files_sdist
           path: dist
   
   build:
