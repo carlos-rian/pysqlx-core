@@ -232,7 +232,7 @@ def psql():
     row_affected = conn.execute_sync(p)
     assert row_affected == 1
 
-    result = conn.query_typed_sexecute_sync(
+    result = conn.query_typed_sync(
         PySQLxStatement(provider="postgresql", sql="SELECT * FROM pysqlx_table")
     )
     pprint(result.get_all())
