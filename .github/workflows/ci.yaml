@@ -90,39 +90,45 @@ jobs:
       fail-fast: false
       max-parallel: 14
       matrix:
-        os: [linux, macos, windows]
+        os: [ubuntu, macos, windows]
         target: [x86_64, aarch64]
         manylinux: [auto]
         include:
           # manylinux for various platforms, plus x86_64 pypy
-        - os: linux
+        - os: ubuntu
           manylinux: auto
           target: i686
-        - os: linux
+
+        - os: ubuntu
           manylinux: auto
           target: aarch64
-        - os: linux
+
+        - os: ubuntu
           manylinux: auto
           target: armv7
           interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
-        - os: linux
+
+        - os: ubuntu
           manylinux: auto
           target: ppc64le
           interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
-        - os: linux
+
+        - os: ubuntu
           manylinux: auto
           target: s390x
           interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
-        - os: linux
+
+        - os: ubuntu
           manylinux: auto
           target: x86_64
           interpreter: pypy3.9 pypy3.10
 
         # musllinux
-        - os: linux
+        - os: ubuntu
           manylinux: musllinux_1_1
           target: x86_64
-        - os: linux
+
+        - os: ubuntu
           manylinux: musllinux_1_1
           target: aarch64
 
@@ -131,6 +137,7 @@ jobs:
         # arm pypy and older pythons which can't be run on the arm hardware for PGO
         - os: macos
           target: x86_64
+
         - os: macos
           target: aarch64
           interpreter: 3.8 3.9 pypy3.9 pypy3.10
@@ -211,21 +218,25 @@ jobs:
       fail-fast: true
       max-parallel: 12
       matrix:
-        os: [linux, windows, macos]
+        os: [ubuntu, windows, macos]
         interpreter: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
         include:
           # standard runners with override for macos arm
-          - os: linux
+          - os: ubuntu
             runs-on: ubuntu-latest
+
           - os: windows
             ls: dir
             runs-on: windows-latest
+
           - os: macos
             runs-on: macos-latest-xlarge
+
         exclude:
           # macos arm only supported from 3.10 and up
           - os: macos
             interpreter: '3.8'
+            
           - os: macos
             interpreter: '3.9'
 
