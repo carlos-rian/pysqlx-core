@@ -20,10 +20,21 @@ pub fn get_version() -> String {
     version.replace("-alpha", "a").replace("-beta", "b")
 }
 
+// async new
 #[pyfunction]
 async fn new(uri: String) -> PyResult<Connection> {
     debug!("new connection to {}", uri);
     match tokio_runtime().spawn(Connection::new(uri)).await.unwrap() {
+        Ok(r) => Ok(r),
+        Err(e) => Err(e.to_pyerr()),
+    }
+}
+
+// sync new
+#[pyfunction]
+fn new_sync(uri: String) -> PyResult<Connection> {
+    debug!("new connection to {}", uri);
+    match tokio_runtime().block_on(Connection::new(uri)) {
         Ok(r) => Ok(r),
         Err(e) => Err(e.to_pyerr()),
     }
@@ -34,6 +45,7 @@ fn pysqlx_core(_py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", get_version())?;
 
     m.add_function(wrap_pyfunction!(new, m)?)?;
+    m.add_function(wrap_pyfunction!(new_sync, m)?)?;
     m.add_class::<Connection>()?;
     m.add_class::<PySQLxResponse>()?;
     m.add_class::<PySQLxError>()?;
