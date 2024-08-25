@@ -210,22 +210,7 @@ class Connection:
     asyncio.run(main())
     ```
     """
-
-    async def query_typed(self, stmt: PySQLxStatement) -> "PySQLxResponse":
-        """Returns a `PySQLxResponse` object representing the result of the query."""
-        raise PySQLxError()
-    async def execute(self, stmt: PySQLxStatement) -> "int":
-        """Executes a query and returns the number of rows affected."""
-        raise PySQLxError()
-    async def query_all(self, stmt: PySQLxStatement) -> "List[Dict[str, Any]]":
-        """Returns a list of dictionaries representing the rows of the query result."""
-        raise PySQLxError()
-    async def query_one(self, stmt: PySQLxStatement) -> "Dict[str, Any]":
-        """Returns the first row of the query result as a dictionary."""
-        raise PySQLxError()
-    async def raw_cmd(self, stmt: PySQLxStatement) -> "None":
-        """Run a command in the database, for queries that can't be run using prepared statements."""
-        raise PySQLxError()
+    # default
     def is_healthy(self) -> "bool":
         """Returns false, if connection is considered to not be in a working state"""
         ...
@@ -242,6 +227,27 @@ class Connection:
         * [SQLite documentation]: (https://www.sqlite.org/isolation.html)
         """
         ...
+
+    # async methods
+    async def query_typed(self, stmt: PySQLxStatement) -> "PySQLxResponse":
+        """Returns a `PySQLxResponse` object representing the result of the query."""
+        raise PySQLxError()
+
+    async def execute(self, stmt: PySQLxStatement) -> "int":
+        """Executes a query and returns the number of rows affected."""
+        raise PySQLxError()
+
+    async def query_all(self, stmt: PySQLxStatement) -> "List[Dict[str, Any]]":
+        """Returns a list of dictionaries representing the rows of the query result."""
+        raise PySQLxError()
+
+    async def query_one(self, stmt: PySQLxStatement) -> "Dict[str, Any]":
+        """Returns the first row of the query result as a dictionary."""
+        raise PySQLxError()
+
+    async def raw_cmd(self, stmt: PySQLxStatement) -> "None":
+        """Run a command in the database, for queries that can't be run using prepared statements."""
+        raise PySQLxError()
 
     async def set_isolation_level(self, isolation_level: "IsolationLevel") -> "None":
         """
@@ -262,6 +268,50 @@ class Connection:
         """Starts a transaction with BEGIN. by default, does not set the isolation level."""
         raise PySQLxError()
 
+    # sync methods
+    def query_typed_sync(self, stmt: PySQLxStatement) -> "PySQLxResponse":
+        """Returns a `PySQLxResponse` object representing the result of the query."""
+        raise PySQLxError()
+
+    def execute_sync(self, stmt: PySQLxStatement) -> "int":
+        """Executes a query and returns the number of rows affected."""
+        raise PySQLxError()
+
+    def query_all_sync(self, stmt: PySQLxStatement) -> "List[Dict[str, Any]]":
+        """Returns a list of dictionaries representing the rows of the query result."""
+        raise PySQLxError()
+
+    def query_one_sync(self, stmt: PySQLxStatement) -> "Dict[str, Any]":
+        """Returns the first row of the query result as a dictionary."""
+        raise PySQLxError()
+
+    def raw_cmd_sync(self, stmt: PySQLxStatement) -> "None":
+        """Run a command in the database, for queries that can't be run using prepared statements."""
+        raise PySQLxError()
+
+    def set_isolation_level_sync(self, isolation_level: "IsolationLevel") -> "None":
+        """
+        Sets the isolation level of the connection.
+        The isolation level is set before the transaction is started.
+        Is used to separate the transaction per level.
+
+        * [SQL Server documentation]: (https://docs.microsoft.com/en-us/sql/t-sql/statements/set-transaction-isolation-level-transact-sql?view=sql-server-ver15)
+        * [Postgres documentation]: (https://www.postgresql.org/docs/current/sql-set-transaction.html)
+        * [MySQL documentation]: (https://dev.mysql.com/doc/refman/8.0/en/innodb-transaction-isolation-levels.html)
+        * [SQLite documentation]: (https://www.sqlite.org/isolation.html)
+        """
+        raise PySQLxError()
+
+    def start_transaction_sync(
+        self, isolation_level: "Union[IsolationLevel, None]"
+    ) -> "None":
+        """Starts a transaction with BEGIN. by default, does not set the isolation level."""
+        raise PySQLxError()
+
 async def new(uri: str) -> "Connection":
+    """Creates a new connection to the database. Returns a `Connection` object."""
+    raise PySQLxError()
+
+def new_sync(uri: str) -> "Connection":
     """Creates a new connection to the database. Returns a `Connection` object."""
     raise PySQLxError()
