@@ -109,8 +109,17 @@ impl Connection {
     }
 }
 
+// default methods
 #[pymethods]
 impl Connection {
+    pub fn is_healthy(&self) -> bool {
+        self.conn.is_healthy()
+    }
+
+    pub fn requires_isolation_first(&self) -> bool {
+        self.conn.requires_isolation_first()
+    }
+    // async methods
     #[pyo3(signature=(stmt))]
     pub async fn query_typed(&self, stmt: PySQLxStatement) -> PyResult<PySQLxResponse> {
         let slf = self.clone();
@@ -179,14 +188,6 @@ impl Connection {
             .unwrap()
     }
 
-    pub fn is_healthy(&self) -> bool {
-        self.conn.is_healthy()
-    }
-
-    pub fn requires_isolation_first(&self) -> bool {
-        self.conn.requires_isolation_first()
-    }
-
     #[pyo3(signature=(stmt))]
     pub async fn raw_cmd(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
         let slf = self.clone();
@@ -228,6 +229,124 @@ impl Connection {
             })
             .await
             .unwrap()
+    }
+
+    // sync methods
+    #[pyo3(signature=(stmt))]
+    pub fn query_typed_sync(&self, stmt: PySQLxStatement) -> PyResult<PySQLxResponse> {
+        let slf = self.clone();
+        let (sql, params) = stmt.prepared_sql();
+        let res = tokio_runtime().block_on(async move {
+            match slf._query_typed(sql.as_str(), params.as_slice()).await {
+                Ok(r) => Ok(r),
+                Err(e) => Err(e),
+            }
+        });
+
+        match res {
+            Ok(r) => Ok(r),
+            Err(e) => Err(e.to_pyerr()),
+        }
+    }
+
+    #[pyo3(signature=(stmt))]
+    pub fn execute_sync(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
+        let slf = self.clone();
+        let (sql, params) = stmt.prepared_sql();
+        let res = tokio_runtime().block_on(async move {
+            match slf._execute(sql.as_str(), params.as_slice()).await {
+                Ok(r) => Ok(r),
+                Err(e) => Err(e),
+            }
+        });
+
+        match res {
+            Ok(r) => Python::with_gil(|py| Ok(r.to_object(py))),
+            Err(e) => Err(e.to_pyerr()),
+        }
+    }
+
+    #[pyo3(signature=(stmt))]
+    pub fn query_all_sync(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
+        let slf = self.clone();
+        let (sql, p) = stmt.prepared_sql();
+        let res = tokio_runtime().block_on(async move {
+            match slf._query_all(sql.as_str(), p.as_slice()).await {
+                Ok(r) => Ok(r),
+                Err(e) => Err(e),
+            }
+        });
+
+        match res {
+            Ok(r) => Python::with_gil(|py| Ok(r.to_object(py))),
+            Err(e) => Err(e.to_pyerr()),
+        }
+    }
+
+    #[pyo3(signature=(stmt))]
+    pub fn query_one_sync(&self, stmt: PySQLxStatement) -> PyResult<Py<PyAny>> {
+        let slf = self.clone();
+        let (sql, params) = (stmt.get_sql(), stmt.get_params());
+        let res = tokio_runtime().block_on(async move {
+            match slf._query_one(sql.as_str(), params.as_slice()).await {
+                Ok(r) => Ok(r),
+                Err(e) => Err(e),
+            }
+        });
+
+        match res {
+            Ok(r) => Python::with_gil(|py| Ok(r.to_object(py))),
+            Err(e) => Err(e.to_pyerr()),
+        }
+    }
+
+    #[pyo3(signature=(stmt))]
+    pub fn raw_cmd_sync(&self, stmt: PySQLxStatement) -> PyResult<()> {
+        let slf = self.clone();
+        let (sql, _) = (stmt.get_sql(), stmt.get_params());
+        let res = tokio_runtime().block_on(async move {
+            match slf._raw_cmd(sql.as_str()).await {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e),
+            }
+        });
+
+        match res {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.to_pyerr()),
+        }
+    }
+
+    #[pyo3(signature=(isolation_level))]
+    pub fn set_isolation_level_sync(&self, isolation_level: String) -> PyResult<()> {
+        let slf = self.clone();
+        let res = tokio_runtime().block_on(async move {
+            match slf._set_isolation_level(isolation_level).await {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e),
+            }
+        });
+
+        match res {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.to_pyerr()),
+        }
+    }
+
+    #[pyo3(signature=(isolation_level = None))]
+    pub fn start_transaction_sync(&self, isolation_level: Option<String>) -> PyResult<()> {
+        let slf = self.clone();
+        let res = tokio_runtime().block_on(async move {
+            match slf._start_transaction(isolation_level).await {
+                Ok(_) => Ok(()),
+                Err(e) => Err(e),
+            }
+        });
+
+        match res {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e.to_pyerr()),
+        }
     }
 }
 
