@@ -315,10 +315,10 @@ jobs:
         run: |
           python .github/release.py
 
-      - name: download articart
-        uses:  actions/download-artifact@v4
+      - name: get dist artifacts
+        uses: actions/download-artifact@v4
         with:
-          name: pypi_files_*
+          pattern: pypi_files_*
           merge-multiple: true
           path: dist
 
