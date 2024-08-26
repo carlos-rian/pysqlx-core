@@ -215,8 +215,8 @@ jobs:
   build-pgo:
     name: build pgo-optimized on build pgo-optimized on ${{ matrix.os }} / ${{ matrix.interpreter }}
     strategy:
-      fail-fast: true
-      max-parallel: 12
+      fail-fast: false
+      max-parallel: 16
       matrix:
         os: [ubuntu, windows, macos]
         interpreter: ['3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
