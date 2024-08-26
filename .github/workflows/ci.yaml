@@ -88,7 +88,7 @@ jobs:
     name: build on ${{ matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
     strategy:
       fail-fast: false
-      max-parallel: 14
+      max-parallel: 16
       matrix:
         os: [ubuntu, macos, windows]
         target: [x86_64, aarch64]
@@ -152,11 +152,12 @@ jobs:
         - os: windows
           target: i686
           python-architecture: x86
-          interpreter: 3.8 3.9 3.10 3.11 3.12 3.13
-        - os: windows
-          target: x86_64
-          interpreter: pypy3.9 pypy3.10
-          
+          interpreter: 3.8 3.9 3.10 3.11 3.12 # 3.13 not supported yet
+
+        # build on pgo optimized python
+        # - os: windows
+        #   target: x86_64
+        #   interpreter: 3.8 3.9 3.10 3.11 3.12 # 3.13 not supported yet
         # FIXME aarch64 builds broken, see https://github.com/PyO3/maturin/issues/2110
         # - os: windows
         #   target: aarch64
@@ -213,7 +214,7 @@ jobs:
           path: dist
   
   build-pgo:
-    name: build pgo-optimized on build pgo-optimized on ${{ matrix.os }} / ${{ matrix.interpreter }}
+    name: pgo build on ${{ matrix.os }} / ${{ matrix.interpreter }}
     strategy:
       fail-fast: false
       max-parallel: 16
