@@ -161,6 +161,6 @@ features = ["rt-multi-thread", "macros", "sync"]
 optional = true
 
 [dependencies.tokio-util]
-version = "0.6"
+version = "0.7"
 features = ["compat"]
 optional = true
