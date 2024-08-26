@@ -39,10 +39,19 @@ print("Package version:", version)
 
 # MAJOR, MINOR, PATCH = version.replace("b", "").split(".")
 MAJOR, MINOR, PATCH = version.split(".")
+F_MAJOR, F_MINOR, F_PATCH = file_version.split(".")
+
+IS_FILE = False
+if MAJOR < F_MAJOR or MINOR < F_MINOR:
+    MAJOR, MINOR, PATCH = F_MAJOR, F_MINOR, F_PATCH
+    IS_FILE = True
+
 
 if "b" in PATCH:
     PATCH, BETA = PATCH.split("b")
     BETA = int(BETA) + 1
+elif IS_FILE:
+    BETA = 0
 else:
     PATCH = int(PATCH) + 1
     BETA = 0

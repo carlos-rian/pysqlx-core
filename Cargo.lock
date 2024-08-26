@@ -1984,7 +1984,7 @@ dependencies = [
 
 [[package]]
 name = "pysqlx-core"
-version = "0.1.50"
+version = "0.2.0"
 dependencies = [
  "base64 0.12.3",
  "bigdecimal",
