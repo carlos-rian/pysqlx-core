@@ -23,8 +23,15 @@ file_version = toml.loads(text)["package"]["version"]
 print("Package version:", version)
 
 MAJOR, MINOR, PATCH = version.split(".")
+F_MAJOR, F_MINOR, F_PATCH = file_version.split(".")
 
-PATCH = int(PATCH) + 1
+IS_FILE = False
+if MAJOR < F_MAJOR or MINOR < F_MINOR:
+    MAJOR, MINOR, PATCH = F_MAJOR, F_MINOR, F_PATCH
+    IS_FILE = True
+
+if IS_FILE is False:
+    PATCH = int(PATCH) + 1
 
 new_version: str = ".".join([MAJOR, MINOR, str(PATCH)])
 
@@ -38,7 +45,7 @@ if new_version not in new_text:
 with open("Cargo.toml", mode="w") as file:
     file.write(new_text)
 
-env_file = os.getenv('GITHUB_ENV')
+env_file = os.getenv("GITHUB_ENV")
 
 with open(env_file, mode="a") as file:
     file.write(f"\nPY_SQLX_VERSION=v{new_version}")
