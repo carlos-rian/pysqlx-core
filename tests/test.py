@@ -2,8 +2,6 @@ from datetime import datetime, date, time
 from uuid import UUID
 from enum import Enum
 from pysqlx_core import new, PySQLxStatement
-import asyncio
-import uvloop
 from pprint import pprint
 import logging
 from decimal import Decimal
@@ -66,6 +64,47 @@ def typ():
         GRAY = "gray"
         BLACK = "black"
 
+    class EnumColorsAsStr(str, Enum):
+        BLUE = "blue"
+        RED = "red"
+        GRAY = "gray"
+        BLACK = "black"
+
+    ALL_TYPES = [
+        None,
+        3618,  # int (smallint)
+        -3762183126230668,  # int (bigint)
+        36,  # int (serial)
+        36,  # int (smallserial)
+        36,  # int (bigserial)
+        130.3064,  # float (numeric)
+        2159.912,  # float (float)
+        1577.3155,  # float (double)
+        Decimal("6803.77"),  # float (money), parsed from string '$6,803.77'
+        "C",  # str (char)
+        "ATYOLOUREPOJRSNOWKMULTTRHJPTCWOIYHQVVIXVUFZNCMEFJTRLCJZMKNJVAUYIEZYKVPWCWGGRDBUKKEDQHSEYPACMNGBOLHLC",  # str (varchar)
+        "text",  # str (text)
+        False,  # bool (boolean)
+        date.fromisoformat("2022-10-27"),  # str (date)
+        time.fromisoformat("00:00:21"),  # str (time)
+        datetime.fromisoformat("2022-10-27 15:29:27.000000"),
+        datetime.utcnow(),
+        EnumColorsAsStr.BLUE,
+        UUID("19b3d203-e4b7-4b7b-8bf2-476abea92b04"),
+        {"cep": "01001-000"},
+        {"cep": "01001-000"},
+        "<note><to>Tove</to></note>",
+        "192.168.0.1",
+        b"DEADBEEF",
+        ("name", "age"),
+        (1, 2, 3),
+        (date(2022, 10, 27), date(2022, 10, 27)),
+        (
+            UUID("7b97c8a6-7e5a-4412-a57d-78565a136582"),
+            UUID("7b97c8a6-7e5a-4412-a57d-78565a136583"),
+        ),
+    ]
+
     return {
         "type_int": None,
         "type_smallint": 3618,  # int (smallint)
@@ -87,9 +126,9 @@ def typ():
         "type_time": time.fromisoformat("00:00:21"),  # str (time)
         "type_datetime": datetime.fromisoformat("2022-10-27 15:29:27.000000"),
         "type_datetimetz": datetime.utcnow(),
-        "type_enum": EnumColors.BLUE,
+        "type_enum": EnumColorsAsStr.BLUE,
         "type_uuid": UUID("19b3d203-e4b7-4b7b-8bf2-476abea92b04"),
-        "type_json": {"cep": "01001-000"},
+        "type_json": ALL_TYPES,
         "type_jsonb": {"cep": "01001-000"},
         "type_xml": "<note><to>Tove</to></note>",
         "type_inet": "192.168.0.1",
@@ -315,15 +354,85 @@ async def mysql():
 
 
 async def main():
-    await mysql()
     await psql()
+    await mysql()
     await sqlite()
 
 
-if __name__ == "__main__":
-    # asyncio.run(main())
+# if __name__ == "__main__":
+# asyncio.run(main())
 
-    uvloop.install()
-    asyncio.run(main())
+# vloop.install()
+# asyncio.run(main())
 
-    # trio.run(main)
+# trio.run(main)
+
+
+p = PySQLxStatement(
+    provider="postgresql",
+    sql="""
+            INSERT INTO pysqlx_table (
+                type_int,
+                type_smallint,
+                type_bigint,
+                type_serial,
+                type_smallserial,
+                type_bigserial,
+                type_numeric,
+                type_float,
+                type_double,
+                type_money,
+                type_char,
+                type_varchar,
+                type_text,
+                type_boolean,
+                type_date,
+                type_time,
+                type_datetime,
+                type_datetimetz,
+                type_enum,
+                type_uuid,
+                type_json,
+                type_jsonb,
+                type_xml,
+                type_inet,
+                type_bytes,
+                type_array_text,
+                type_array_integer,
+                type_array_date,
+                type_array_uuid    
+            )
+            VALUES (
+                :type_int,
+                :type_smallint,
+                :type_bigint,
+                :type_serial,
+                :type_smallserial,
+                :type_bigserial,
+                :type_numeric,
+                :type_float,
+                :type_double,
+                :type_money,
+                :type_char,
+                :type_varchar,
+                :type_text,
+                :type_boolean,
+                :type_date,
+                :type_time,
+                :type_datetime,
+                :type_datetimetz,
+                :type_enum,
+                :type_uuid,
+                :type_json,
+                :type_jsonb,
+                :type_xml,
+                :type_inet,
+                :type_bytes,
+                :type_array_text,
+                :type_array_integer,
+                :type_array_date,
+                :type_array_uuid
+            );
+            """,
+    params=typ(),
+)

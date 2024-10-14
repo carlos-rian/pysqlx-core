@@ -1,7 +1,7 @@
 use super::errors::PySQLxInvalidParamError;
 use super::value::PySQLxValue;
 use bigdecimal::BigDecimal;
-use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, SecondsFormat, Utc};
 use log::info;
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyAnyMethods, PyDict, PyModule, PyTuple, PyType, PyTypeMethods};
@@ -66,8 +66,13 @@ impl PySQLxParamKind {
 
     fn from(py: Python, value: &Bound<'_, PyAny>, provider: &str) -> Self {
         // kind string is python class Type name
+        let mut py_type = get_python_type_name(value);
+        if Self::is_enum_instance(py, value) {
+            py_type = "Enum".to_string();
+        }
+
         info!("{:?}", value);
-        match get_python_type_name(value).as_str() {
+        match py_type.as_str() {
             "bool" => PySQLxParamKind::Boolean,
             "str" => PySQLxParamKind::String,
             "int" => PySQLxParamKind::Int,
@@ -185,7 +190,11 @@ impl Converters {
         value: &Bound<'_, PyAny>,
     ) -> Result<JsonValue, PySQLxInvalidParamError> {
         // the could be a PyDict, PyList, bool, int, float, str or None
-        match get_python_type_name(value).as_str() {
+        let mut py_type = get_python_type_name(value);
+        if PySQLxParamKind::is_enum_instance(py, value) {
+            py_type = "Enum".to_string();
+        }
+        match py_type.as_str() {
             "dict" => {
                 let dict = value.extract::<HashMap<String, Bound<PyAny>>>().unwrap();
                 let mut map = serde_json::Map::new();
@@ -221,9 +230,11 @@ impl Converters {
             }
             "datetime" => {
                 let datetime: DateTime<Utc> = Self::convert_to_datetime(value);
-                Ok(JsonValue::String(datetime.to_rfc3339()))
+                Ok(JsonValue::String(
+                    datetime.to_rfc3339_opts(SecondsFormat::Millis, true),
+                ))
             }
-            "uuid" => {
+            "UUID" => {
                 let rs_uuid = Self::convert_to_rs_uuid(value);
                 Ok(JsonValue::String(rs_uuid.to_string()))
             }
@@ -231,11 +242,11 @@ impl Converters {
                 let bytes = value.extract::<Vec<u8>>().unwrap();
                 Ok(JsonValue::String(base64::encode(bytes)))
             }
-            "decimal" => {
-                let decimal = value.extract::<String>().unwrap();
+            "Decimal" => {
+                let decimal = value.to_string();
                 Ok(JsonValue::String(decimal))
             }
-            "enum" => {
+            "Enum" => {
                 let enum_value = value
                     .getattr(intern!(py, "value"))
                     .unwrap()
