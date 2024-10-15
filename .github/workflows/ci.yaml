@@ -4,7 +4,6 @@ on:
   pull_request:
     branches:
       - "main"
-      - "release/*"
       - "deps/*"
 
     paths-ignore:
@@ -87,7 +86,8 @@ jobs:
   build:
     name: build on ${{ matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
     strategy:
-      fail-fast: false
+      # fail-fast: if the branch is not main, we don't need to build all the platforms
+      fail-fast: ${{ github.ref != 'refs/heads/main' }}
       max-parallel: 16
       matrix:
         os: [ubuntu, macos, windows]
@@ -160,6 +160,14 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Set up Perl (Ubuntu only)
+        if: matrix.os == 'ubuntu'
+        run: sudo apt-get install -y perl
+  
+      - name: Install IPC::Cmd (Ubuntu only)
+        if: matrix.os == 'ubuntu'
+        run: sudo cpan IPC::Cmd
 
       - name: set up python
         uses: actions/setup-python@v5
@@ -205,7 +213,7 @@ jobs:
   build-pgo:
     name: pgo build on ${{ matrix.os }} / ${{ matrix.interpreter }}
     strategy:
-      fail-fast: false
+      fail-fast: ${{ github.ref != 'refs/heads/main' }}
       max-parallel: 16
       matrix:
         os: [ubuntu, windows, macos]
@@ -240,6 +248,14 @@ jobs:
           python-version: ${{ matrix.interpreter }}
           allow-prereleases: true
       
+      - name: Set up Perl (Ubuntu only)
+        if: matrix.os == 'ubuntu'
+        run: sudo apt-get install -y perl
+  
+      - name: Install IPC::Cmd (Ubuntu only)
+        if: matrix.os == 'ubuntu'
+        run: sudo cpan IPC::Cmd
+
       - name: install rust stable
         id: rust-toolchain
         uses: dtolnay/rust-toolchain@stable
