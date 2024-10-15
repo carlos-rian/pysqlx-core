@@ -61,6 +61,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          architecture: 'x64'
+
       - run: pip install -U toml httpx
 
       - name: production - check package version
@@ -161,13 +167,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Perl (Ubuntu only)
+      - name: Set up Perl and install IPC::Cmd (Ubuntu only)
         if: matrix.os == 'ubuntu'
-        run: sudo apt-get install -y perl libssl-dev
-  
-      - name: Install IPC::Cmd (Ubuntu only)
-        if: matrix.os == 'ubuntu'
-        run: sudo cpan IPC::Cmd
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y perl libssl-dev pkg-config
+          sudo cpan IPC::Cmd
 
       - name: set up python
         uses: actions/setup-python@v5
@@ -248,13 +253,12 @@ jobs:
           python-version: ${{ matrix.interpreter }}
           allow-prereleases: true
       
-      - name: Set up Perl (Ubuntu only)
+      - name: Set up Perl and install IPC::Cmd (Ubuntu only)
         if: matrix.os == 'ubuntu'
-        run: sudo apt-get install -y perl libssl-dev
-  
-      - name: Install IPC::Cmd (Ubuntu only)
-        if: matrix.os == 'ubuntu'
-        run: sudo cpan IPC::Cmd
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y perl libssl-dev pkg-config
+          sudo cpan IPC::Cmd
 
       - name: install rust stable
         id: rust-toolchain
