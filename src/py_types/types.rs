@@ -2,14 +2,13 @@ use super::converter::{Converters, SQLPosition};
 use super::errors::PySQLxInvalidParamError;
 use super::param::Params;
 use super::value::PySQLxValue;
+use cuid::Cuid2Constructor;
 use log::{debug, info};
 use pyo3::prelude::*;
 use pyo3::types::{PyAny, PyBytes, PyTuple};
 use pyo3::{pyclass, Bound, PyObject, PyResult, Python, ToPyObject};
 use quaint::ast::EnumVariant;
 use quaint::{Value, ValueType};
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -145,17 +144,14 @@ pub struct PySQLxStatement {
 impl PySQLxStatement {
     fn generate_random_string(length: usize, exist_keys: &Vec<String>, sql: &String) -> String {
         // generate random string with length to replace the parameter in the query
-        let rand_string: String = thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(length)
-            .map(char::from)
-            .collect();
+        let constructor = Cuid2Constructor::new().with_length(length as u16);
+        let rand_string: String = constructor.create_id();
         // check if the random string is already exist in the keys
         if exist_keys.contains(&rand_string) || sql.contains(&rand_string) {
             // if exist, generate again with length + 1
             return PySQLxStatement::generate_random_string(length + 1, &exist_keys, &sql);
         }
-        format!(":{}", rand_string.to_lowercase())
+        format!(":pysqlx_{}", rand_string.to_lowercase())
     }
 
     fn mapped_sql(sql: &str, mut param_keys: Vec<String>) -> (String, Vec<(i8, SQLPosition)>) {
