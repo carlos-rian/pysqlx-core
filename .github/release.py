@@ -6,30 +6,21 @@ with open("Cargo.toml", mode="r") as file:
 
 
 def get_version():
+    uri = "https://pypi.org/pypi/pysqlx-core/json"
     for _ in range(3):
-        resp = httpx.get("https://pypi.org/pypi/pysqlx-core/json")
-        if resp.status_code == 200:
+        resp = httpx.get(uri)
+        if resp.is_success:
             break
-    data: dict = resp.json()
+    json: dict = resp.json()
 
-    releases = data["releases"]
+    releases = json["releases"]
     versions = sorted(
         releases.keys(),
-        key=lambda x: int(x.replace(".", "").replace("b", "").replace("a", "")),
+        key=lambda x: int(x.replace(".", "").replace("b", "")),
         reverse=True,
     )
-    versions = [v for v in versions if "b" in v]
-
-    current_version = data["info"]["version"]
-
-    if versions:
-        if int(current_version.replace(".", "")) > int(
-            versions[0].split("b")[0].replace(".", "")
-        ):
-            return current_version
-        return versions[0]
-
-    return current_version
+    versions = [v for v in versions if v.startswith("0.2.0") and "b" in v]
+    return versions.pop() if versions else "0.2.0b-1"
 
 
 version: str = get_version()
