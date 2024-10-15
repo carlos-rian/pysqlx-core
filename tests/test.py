@@ -359,13 +359,13 @@ async def main():
     await sqlite()
 
 
-# if __name__ == "__main__":
-# asyncio.run(main())
+if __name__ == "__main__":
+    import asyncio, uvloop  # , trio
 
-# vloop.install()
-# asyncio.run(main())
+    uvloop.install()
+    asyncio.run(main())
 
-# trio.run(main)
+    # trio.run(main)
 
 
 p = PySQLxStatement(
