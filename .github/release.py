@@ -51,7 +51,7 @@ PATCH = "".join([str(PATCH), "-beta", str(BETA)])
 
 new_version: str = ".".join([MAJOR, MINOR, str(PATCH)])
 
-print("Package new version:", new_version)
+print("Package new version: ", new_version)
 
 new_text = text.replace(f'version = "{file_version}"', f'version = "{new_version}"')
 
