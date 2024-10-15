@@ -230,7 +230,7 @@ impl GetRow for PostgresRow {
                 PostgresType::TIMESTAMP => match row.try_get(i)? {
                     Some(val) => {
                         let ts: NaiveDateTime = val;
-                        let dt = DateTime::<Utc>::from_utc(ts, Utc);
+                        let dt = DateTime::from_naive_utc_and_offset(ts, Utc);
                         Value::datetime(dt)
                     }
                     None => Value::null_datetime(),
@@ -334,7 +334,7 @@ impl GetRow for PostgresRow {
 
                         let dates = val
                             .into_iter()
-                            .map(|dt| ValueType::DateTime(dt.map(|dt| DateTime::<Utc>::from_utc(dt, Utc))));
+                            .map(|dt| ValueType::DateTime(dt.map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc))));
 
                         Value::array(dates)
                     }
@@ -503,7 +503,7 @@ impl GetRow for PostgresRow {
                     None => Value::null_array(),
                 },
                 ref x => match x.kind() {
-                    Kind::Enum(_) => match row.try_get(i)? {
+                    Kind::Enum => match row.try_get(i)? {
                         Some(val) => {
                             let val: EnumString = val;
 
@@ -512,7 +512,7 @@ impl GetRow for PostgresRow {
                         None => Value::null_enum(),
                     },
                     Kind::Array(inner) => match inner.kind() {
-                        Kind::Enum(_) => match row.try_get(i)? {
+                        Kind::Enum => match row.try_get(i)? {
                             Some(val) => {
                                 let val: Vec<Option<EnumString>> = val;
                                 let variants = val

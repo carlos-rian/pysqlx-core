@@ -1,5 +1,7 @@
 use super::errors::PySQLxInvalidParamError;
 use super::value::PySQLxValue;
+use base64::engine::general_purpose;
+use base64::Engine as _;
 use bigdecimal::BigDecimal;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, SecondsFormat, Utc};
 use log::info;
@@ -240,7 +242,7 @@ impl Converters {
             }
             "bytes" => {
                 let bytes = value.extract::<Vec<u8>>().unwrap();
-                Ok(JsonValue::String(base64::encode(bytes)))
+                Ok(JsonValue::String(general_purpose::STANDARD.encode(bytes)))
             }
             "Decimal" => {
                 let decimal = value.to_string();
@@ -271,7 +273,7 @@ impl Converters {
             Err(_) => {
                 let naive_dt = value.extract::<NaiveDateTime>().unwrap();
                 //datetime without timezone
-                DateTime::<Utc>::from_utc(naive_dt, Utc)
+                DateTime::from_naive_utc_and_offset(naive_dt, Utc)
             }
         }
     }
