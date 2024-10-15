@@ -171,7 +171,7 @@ jobs:
         if: matrix.os == 'ubuntu'
         run: |
           sudo apt-get update
-          sudo apt-get install -y perl libssl-dev pkg-config
+          sudo apt-get install -y perl libssl-dev pkg-config librust-openssl-dev build-essential
           sudo cpan IPC::Cmd
 
       - name: set up python
@@ -257,7 +257,7 @@ jobs:
         if: matrix.os == 'ubuntu'
         run: |
           sudo apt-get update
-          sudo apt-get install -y perl libssl-dev pkg-config
+          sudo apt-get install -y perl libssl-dev pkg-config librust-openssl-dev build-essential
           sudo cpan IPC::Cmd
 
       - name: install rust stable
