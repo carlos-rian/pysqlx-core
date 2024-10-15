@@ -163,7 +163,7 @@ jobs:
       
       - name: Set up Perl (Ubuntu only)
         if: matrix.os == 'ubuntu'
-        run: sudo apt-get install -y perl
+        run: sudo apt-get install -y perl libssl-dev
   
       - name: Install IPC::Cmd (Ubuntu only)
         if: matrix.os == 'ubuntu'
@@ -250,7 +250,7 @@ jobs:
       
       - name: Set up Perl (Ubuntu only)
         if: matrix.os == 'ubuntu'
-        run: sudo apt-get install -y perl
+        run: sudo apt-get install -y perl libssl-dev
   
       - name: Install IPC::Cmd (Ubuntu only)
         if: matrix.os == 'ubuntu'
