@@ -91,7 +91,7 @@ jobs:
   build:
     name: build on ${{ matrix.os }} (${{ matrix.target }} - ${{ matrix.manylinux || 'auto' }})
     strategy:
-      fail-fast: false
+      fail-fast: ${{ github.ref != 'refs/heads/main' }}
       max-parallel: 16
       matrix:
         os: [ubuntu, macos, windows]
@@ -213,7 +213,7 @@ jobs:
   build-pgo:
     name: pgo build on ${{ matrix.os }} / ${{ matrix.interpreter }}
     strategy:
-      fail-fast: false
+      fail-fast: ${{ github.ref != 'refs/heads/main' }}
       max-parallel: 16
       matrix:
         os: [ubuntu, windows, macos]
@@ -265,6 +265,10 @@ jobs:
         if: contains(github.ref, 'release')
         run: |
           python .github/release.py
+      
+      - name: install openssl
+        if: matrix.os == 'ubuntu'
+        run: sudo apt-get install pkg-config libssl-dev
 
       - name: build pgo-optimized wheel
         uses: PyO3/maturin-action@v1
