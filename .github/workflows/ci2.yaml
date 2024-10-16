@@ -1,4 +1,4 @@
-name: ci
+name: ci2
 
 on:
   pull_request:
@@ -33,6 +33,8 @@ jobs:
     # ignore because the pyo3 test not working
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: build wheel
         uses: PyO3/maturin-action@v1
         with:
