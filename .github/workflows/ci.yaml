@@ -186,8 +186,10 @@ jobs:
       - name: install openssl
         if: matrix.os == 'ubuntu'
         run: |
+          sudo apt update && sudo apt upgrade
+          sudo apt-get install make build-essentia 
+          sudo apt-get install perl libipc-run-perl
           sudo apt-get install pkg-config libssl-dev
-          sudo apt-get install libipc-cmd-perl
       
       - name: build wheel
         uses: PyO3/maturin-action@v1
@@ -271,8 +273,10 @@ jobs:
       - name: install openssl
         if: matrix.os == 'ubuntu'
         run: |
+          sudo apt update && sudo apt upgrade
+          sudo apt-get install make build-essentia 
+          sudo apt-get install perl libipc-run-perl
           sudo apt-get install pkg-config libssl-dev
-          sudo apt-get install libipc-cmd-perl
 
       - name: build pgo-optimized wheel
         uses: PyO3/maturin-action@v1
