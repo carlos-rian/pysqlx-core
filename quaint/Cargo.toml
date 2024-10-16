@@ -70,7 +70,7 @@ url = "2.1"
 hex = "0.4"
 
 either = { version = "1.6", optional = true }
-base64 = { version = "0.12.3" }
+base64 = { version = "0.22" }
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
 lru-cache = { version = "0.1", optional = true }
 serde_json = { version = "1.0.48", features = ["float_roundtrip"] }
