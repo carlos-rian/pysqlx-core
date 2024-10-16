@@ -201,6 +201,8 @@ jobs:
             --out dist
             --interpreter ${{ matrix.interpreter || '3.8 3.9 3.10 3.11 3.12 3.13 pypy3.9 pypy3.10' }}
           rust-toolchain: stable
+          before-script-linux: |
+            sudo apt-get install -y pkg-config libssl-dev
           # sccache is not supported on Windows
           sccache: true
           docker-options: -e CI
