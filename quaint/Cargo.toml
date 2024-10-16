@@ -110,7 +110,7 @@ optional = true
 [target.'cfg(not(any(target_os = "macos", target_os = "ios")))'.dependencies.tiberius]
 version = "0.12.3"
 optional = true
-features = ["sql-browser-tokio", "chrono", "bigdecimal"]
+features = ["sql-browser-tokio", "chrono", "bigdecimal", "tds73"]
 
 [target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies.tiberius]
 version = "0.12.3"

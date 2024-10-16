@@ -182,6 +182,10 @@ jobs:
         if: contains(github.ref, 'release')
         run: |
           python .github/release.py
+        
+      - name: install openssl
+        if: matrix.os == 'ubuntu'
+        run: sudo apt-get install pkg-config libssl-dev
       
       - name: build wheel
         uses: PyO3/maturin-action@v1
