@@ -271,14 +271,6 @@ jobs:
         if: contains(github.ref, 'release')
         run: |
           python .github/release.py
-      
-      - name: install openssl
-        if: matrix.os == 'ubuntu'
-        run: |
-          sudo apt update && sudo apt upgrade
-          sudo apt-get install make build-essential
-          sudo apt-get install perl libipc-run-perl
-          sudo apt-get install pkg-config libssl-dev
 
       - name: build pgo-optimized wheel
         uses: PyO3/maturin-action@v1
@@ -290,6 +282,9 @@ jobs:
             --out dist
             --interpreter ${{ matrix.interpreter }}
           rust-toolchain: stable
+          before-script-linux: |
+            apt update && apt upgrade -y
+            apt install -y pkg-config libssl-dev
           docker-options: -e CI
 
       - run: ${{ matrix.ls || 'ls -lh' }} dist/
