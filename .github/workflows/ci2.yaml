@@ -27,7 +27,6 @@ on:
 env:
   PKG_CONFIG_ALLOW_CROSS: 1
   PY_SQLX_VERSION: 0.0.1 # change when the run "release - check package version"
-  BEFORE_SCRIPT_LINUX: "cat etc/*release"
 
 jobs:
   rust-test:
@@ -35,11 +34,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set BEFORE_SCRIPT_LINUX from build.sh
-        run: |
-          echo "BEFORE_SCRIPT_LINUX=$(cat .github/build.sh)" >> $GITHUB_ENV
-
 
       - name: build wheel
         uses: PyO3/maturin-action@v1
@@ -51,7 +45,7 @@ jobs:
             --out dist
             --interpreter '3.8 3.9 3.10 3.11 3.12 3.13 pypy3.9 pypy3.10'
           rust-toolchain: stable
-          before-script-linux: ${{ env.BEFORE_SCRIPT_LINUX }}
+          before-script-linux: $(cat .github/build.sh)
           # sccache is not supported on Windows
           sccache: true
           docker-options: -e CI
