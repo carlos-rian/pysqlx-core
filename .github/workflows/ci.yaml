@@ -183,13 +183,12 @@ jobs:
         run: |
           python .github/release.py
         
-      - name: install openssl
-        if: matrix.os == 'ubuntu'
-        run: |
-          sudo apt update && sudo apt upgrade
-          sudo apt-get install make build-essential
-          sudo apt-get install perl libipc-run-perl
-          sudo apt-get install pkg-config libssl-dev
+      # - name: install openssl
+      #   run: |
+      #     sudo apt update && sudo apt upgrade
+      #     sudo apt-get install make build-essential
+      #     sudo apt-get install perl libipc-run-perl
+      #     sudo apt-get install pkg-config libssl-dev
       
       - name: build wheel
         uses: PyO3/maturin-action@v1
@@ -202,8 +201,8 @@ jobs:
             --interpreter ${{ matrix.interpreter || '3.8 3.9 3.10 3.11 3.12 3.13 pypy3.9 pypy3.10' }}
           rust-toolchain: stable
           before-script-linux: |
-            apt update && sudo apt upgrade
-            apt-get install -y pkg-config libssl-dev
+            apt update && apt upgrade -y
+            apt install -y pkg-config libssl-dev
           # sccache is not supported on Windows
           sccache: true
           docker-options: -e CI
