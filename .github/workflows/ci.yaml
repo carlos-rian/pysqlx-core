@@ -283,8 +283,7 @@ jobs:
             --interpreter ${{ matrix.interpreter }}
           rust-toolchain: stable
           before-script-linux: |
-            apt update && apt upgrade -y
-            apt install -y pkg-config libssl-dev
+            cat /etc/*-release
           docker-options: -e CI
 
       - run: ${{ matrix.ls || 'ls -lh' }} dist/
