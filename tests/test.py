@@ -359,14 +359,12 @@ async def main():
     await sqlite()
 
 
-# if __name__ == "__main__":
-# asyncio.run(main())
+if __name__ == "__main__":
+    import asyncio
+    import uvloop
 
-# vloop.install()
-# asyncio.run(main())
-
-# trio.run(main)
-
+    uvloop.install()
+    asyncio.run(main())
 
 p = PySQLxStatement(
     provider="postgresql",
