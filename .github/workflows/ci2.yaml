@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  pull_request:
+    branches:
+      - "main"
+      - "deps/*"
+
+    paths-ignore:
+      - "LICENSE"
+      - "SECURITY.md"
+      - "makefile"
+      - ".gitingore"
+      #- ".github/workflows/*"
+  push:
+    branches:
+      - "main"
+      - "release/*"
+      - "deps/*"
+    paths-ignore:
+      - "LICENSE"
+      - "SECURITY.md"
+      - "makefile"
+      - ".gitingore"
+      #- ".github/workflows/*"
+  
+env:
+  PKG_CONFIG_ALLOW_CROSS: 1
+  PY_SQLX_VERSION: 0.0.1 # change when the run "release - check package version"
+
+jobs:
+  rust-test:
+    # ignore because the pyo3 test not working
+    runs-on: ubuntu-latest
+    steps:
+      - name: build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: i686
+          manylinux: auto
+          args: >
+            --release
+            --out dist
+            --interpreter '3.8 3.9 3.10 3.11 3.12 3.13 pypy3.9 pypy3.10'
+          rust-toolchain: stable
+          before-script-linux: cat /etc/*release
+            # apt update && apt upgrade -y
+            #apt install -y pkg-config libssl-dev
+          # sccache is not supported on Windows
+          sccache: true
+          docker-options: -e CI
