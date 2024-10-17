@@ -213,6 +213,7 @@ jobs:
                     echo "Detected Debian or Ubuntu"
                     apt update && apt upgrade -y
                     apt install -y pkg-config libssl-dev
+                    apt install -y build-essential gcc make libpcre3-dev wget zlib1g-dev libssl-dev
                     ;;
                 fedora)
                     echo "Detected Fedora"
