@@ -211,7 +211,8 @@ jobs:
                     ;;
                 debian|ubuntu)
                     echo "Detected Debian or Ubuntu"
-                    apt-get install -y pkg-config libssl-dev
+                    apt update && apt upgrade -y
+                    apt install -y pkg-config libssl-dev
                     ;;
                 fedora)
                     echo "Detected Fedora"
