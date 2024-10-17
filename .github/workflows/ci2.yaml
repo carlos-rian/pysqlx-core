@@ -45,7 +45,50 @@ jobs:
             --out dist
             --interpreter '3.8 3.9 3.10 3.11 3.12 3.13 pypy3.9 pypy3.10'
           rust-toolchain: stable
-          before-script-linux: $(cat .github/build.sh)
+          before-script-linux: |
+            # Detect the Linux distribution
+            if [ -f /etc/os-release ]; then
+                . /etc/os-release
+                DISTRO=$ID
+            else
+                echo "Unable to detect the Linux distribution."
+                exit 1
+            fi
+
+            # Install packages based on the detected distro
+            case $DISTRO in
+                arch)
+                    echo "Detected Arch Linux"
+                    sudo pacman -S pkgconf openssl
+                    ;;
+                debian|ubuntu)
+                    echo "Detected Debian or Ubuntu"
+                    sudo apt-get install -y pkg-config libssl-dev
+                    ;;
+                fedora)
+                    echo "Detected Fedora"
+                    sudo dnf install -y pkgconf perl-FindBin perl-IPC-Cmd openssl-devel
+                    ;;
+                alpine)
+                    echo "Detected Alpine Linux"
+                    sudo apk add pkgconf openssl-dev
+                    ;;
+                opensuse|suse)
+                    echo "Detected openSUSE"
+                    sudo zypper install -y libopenssl-devel
+                    ;;
+                centos)
+                    echo "Detected CentOS"
+                    sudo yum install -y pkgconf openssl-devel
+                    ;;
+                *)
+                    echo "Unsupported Linux distribution: $DISTRO"
+                    exit 1
+                    ;;
+            esac
+
+            echo "Installation complete!"
+
           # sccache is not supported on Windows
           sccache: true
           docker-options: -e CI

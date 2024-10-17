@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Detect the Linux distribution
 if [ -f /etc/os-release ]; then
     . /etc/os-release
