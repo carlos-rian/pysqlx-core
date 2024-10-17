@@ -203,6 +203,8 @@ jobs:
                 exit 1
             fi
 
+            echo "OpenSSL Version-$(openssl version)"
+
             # Install packages based on the detected distro
             case $DISTRO in
                 arch)
@@ -212,7 +214,7 @@ jobs:
                 debian|ubuntu)
                     echo "Detected Debian or Ubuntu"
                     apt update && apt upgrade -y
-                    apt install -y pkg-config libssl-dev
+                    apt install -y pkg-config libssl-dev openssl perl
                     apt install -y build-essential gcc make libpcre3-dev wget zlib1g-dev libssl-dev
                     ;;
                 fedora)
