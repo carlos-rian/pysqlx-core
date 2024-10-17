@@ -79,16 +79,9 @@ jobs:
                     ;;
                 centos)
                     echo "Detected CentOS"
-                    yum -y update
-                    yum install -y make gcc perl-core pcre-devel wget zlib-devel
-                    wget https://www.openssl.org/source/openssl-3.0.0.tar.gz
-                    tar -zxf openssl-3.0.0.tar.gz
-                    rm openssl-3.0.0.tar.gz
-                    bash cd /usr/src/openssl-3.0.0
-                    ./config
-                    make
-                    make test
-                    make install
+                    yum update -y
+                    yum install -y make gcc perl-core pcre-devel wget zlib-devel openssl-devel
+                    yum install -y openssl 
                     ;;
                 *)
                     echo "Unsupported Linux distribution: $DISTRO"
